@@ -12,3 +12,7 @@
   .employee-item.superintendent { color: pink; }
   .employee-item.shop-trucking { color: orange; }
   .employee-item.default { color: #333; }
+
+  .employee-item h6 {
+    color: red;
+  }
