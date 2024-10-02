@@ -1,12 +1,15 @@
 import React from 'react';
 import { useDrag } from 'react-dnd';
 
-const Employee = ({ id, name, number, email, address }) => {
+const Employee = ({ id, name, number, email, address, unionId, unionName, color }) => {
   console.log('Employee ID:', id);
   console.log('Employee Name:', name);
-  console.log('Employee number', number)
-  console.log('Employee email', email)
-  console.log('Employee address', address)
+  console.log('Employee number', number);
+  console.log('Employee email', email);
+  console.log('Employee address', address);
+  console.log('Employee union ID:', unionId);
+  console.log('Employee union name:', unionName);
+  console.log('Employee color:', color);
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
@@ -31,13 +34,13 @@ const Employee = ({ id, name, number, email, address }) => {
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
+        color: color || 'black', // Use the provided color or default to black
       }}
     >
       <h6
         className="primary"
         data-toggle="modal"
         data-target={`#${modalId}`}
-        style={{ color: 'red' }} // This line makes the name red
       >
         {name}
       </h6>
@@ -55,6 +58,7 @@ const Employee = ({ id, name, number, email, address }) => {
               <p>Email: {email}</p>
               <p>Number: {number}</p>
               <p>Address: {address}</p>
+              <p>Union: {unionName}</p>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
