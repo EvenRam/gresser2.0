@@ -23,9 +23,6 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     <div
       ref={drop}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
         border: '1px solid gray',
         width: '170px',
         minHeight: '100px',
@@ -49,8 +46,8 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             address={employee.address} />
         ))
       )}
-      <h6 className='employee-count'>Employees: {employeeCount}</h6>
-
+      <hr className='breakline'/>
+      <h6 className='employee-count'>Employees: {employees.length}</h6>
     </div>
   );
 };
