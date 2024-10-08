@@ -3,7 +3,6 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-
 router.get('/', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());
@@ -29,37 +28,17 @@ router.get('/', async (req, res) => {
     }
 });
 
-
 router.get('/employeecard', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());
         console.log("Current user is: ", req.user.username);
         
-        
-        const notAssigned = req.query === "true";
-        console.log(`Filter for employees without jobs: ${req.query.notAssigned}`);
-                
-        if (notAssigned){
-        const sqlText =
-        `
-            SELECT "id", "first_name", "last_name", "email", "address", "phone_number"
-            FROM "add_employee"
-            ORDER BY "last_name" ASC, "first_name" ASC;
-        `;
-        console.log("updating status with value", notAssigned);
-        try {
-            await pool.query(sqlText);
-            res.sendStatus(204);
-        } catch (error) {
-            console.log("Error updating employee status", error);
-            res.sendStatus(500);
-        }
-        } else {
-            const queryText = `
-            SELECT "id", "first_name", "last_name", "email", "address", "phone_number"
-            FROM "add_employee"
-            WHERE "job_id" IS NULL
-            ORDER BY "last_name" ASC, "first_name" ASC;
+        const queryText = `
+            SELECT ae."id", ae."first_name", ae."last_name", ae."email", ae."address", ae."phone_number", u."union_name"
+            FROM "add_employee" ae
+            LEFT JOIN "unions" u ON ae."union_id" = u."id"
+            WHERE ae."employee_status" = true AND ae."job_id" IS NULL
+            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
         `;
         
         console.log(`Executing SQL query: ${queryText}`);
@@ -71,7 +50,8 @@ router.get('/employeecard', async (req, res) => {
             console.log(`Error making database query ${queryText}`, error);
             res.sendStatus(500);
         }
-    }
+    } else {
+        res.sendStatus(401);
     }
 });
 
@@ -99,7 +79,6 @@ router.get('/union', async (req, res) => {
     }
 });
 
-
 router.get('/withunions', async (req, res) => {
     try {
         const sqlText = `
@@ -122,7 +101,6 @@ router.get('/withunions', async (req, res) => {
         const unions = {};
         
         result.rows.forEach(row => {
-          
             if (!unions[row.union_id]) {
                 unions[row.union_id] = {
                     id: row.union_id,
@@ -130,7 +108,6 @@ router.get('/withunions', async (req, res) => {
                     employees: []
                 };
             }
-            
             
             if (row.employee_id) {
                 unions[row.union_id].employees.push({
@@ -140,19 +117,16 @@ router.get('/withunions', async (req, res) => {
                     phone_number: row.employee_phone_number,
                     email: row.employee_email,
                     address: row.employee_address
-                
                 });
             }
         });
         
-       
         res.send(Object.values(unions));
     } catch (error) {
         console.error('Error fetching unions with employees:', error);
         res.status(500).send('Error fetching unions with employees');
     }
 });
-
 
 router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('User is authenticated?:', req.isAuthenticated());
@@ -195,7 +169,6 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
         res.sendStatus(500);
     }
 });
-
 
 router.put('/:id', async (req, res) => {
     const employeeId = req.params.id;
@@ -274,6 +247,5 @@ router.put('/:id', async (req, res) => {
         }
     }
 });
-
 
 module.exports = router;

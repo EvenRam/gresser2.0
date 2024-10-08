@@ -1,84 +1,46 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useDrag, useDrop } from 'react-dnd';
 import ProjectBox from './ProjectBox';
+import Employee from './Employee';
 import './EmployeeStyles.css';
 import './Scheduling.css';
 
-const DraggableJobBox = ({ job, index, moveJob, moveEmployee }) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: 'JOB',
-    item: { id: job.id, index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: 'JOB',
-    hover: (draggedItem, monitor) => {
-      if (draggedItem.index !== index) {
-        moveJob(draggedItem.index, index);
-        draggedItem.index = index;
-      }
-    },
-  });
-
-  return (
-    <div ref={(node) => drag(drop(node))} className="draggable-job-box" style={{ opacity: isDragging ? 0.5 : 1 }}>
-      <ProjectBox
-        id={job.id}
-        job_name={job.job_name}
-        employees={job.employees || []}
-        moveEmployee={moveEmployee}
-      />
-    </div>
-  );
-};
-
 const Scheduling = () => {
   const dispatch = useDispatch();
-  const [isLoading, setIsLoading] = useState(true);
+  const employeeCard = useSelector((state) => state.cardReducer); // This now contains only active employees
   const jobsBox = useSelector((state) => state.jobReducer);
-  const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
-      setIsLoading(false);
-    };
-    fetchData();
+    dispatch({ type: 'FETCH_EMPLOYEE_CARD' }); // This action now fetches only active employees
+    dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
   }, [dispatch]);
 
-  useEffect(() => {
-    if (jobsBox && Array.isArray(jobsBox)) {
-      setJobs(jobsBox);
-    }
-  }, [jobsBox]);
-
-  const moveJob = useCallback((dragIndex, hoverIndex) => {
-    setJobs((prevJobs) => {
-      const newJobs = [...prevJobs];
-      const draggedJob = newJobs[dragIndex];
-      newJobs.splice(dragIndex, 1);
-      newJobs.splice(hoverIndex, 0, draggedJob);
-      return newJobs;
-    });
-  }, []);
-
-  const moveEmployee = useCallback((employeeId, targetProjectId) => {
+  const moveEmployee = (employeeId, targetProjectId) => {
     dispatch({ type: 'MOVE_EMPLOYEE', payload: { employeeId, targetProjectId } });
-  }, [dispatch]);
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  };
 
   return (
     <div className="scheduling-container">
       <div>
-        {!jobs || jobs.length === 0 ? (
+        <h3>Active Employees</h3>
+        <div className="employee-list">
+          {employeeCard.map((employee) => (
+            <div key={employee.id} className="employee-item">
+              <Employee
+                id={employee.id}
+                name={`${employee.first_name} ${employee.last_name}`}
+                number={employee.phone_number}
+                email={employee.email}
+                address={employee.address}
+                unionName={employee.union_name}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        {!jobsBox || jobsBox.length === 0 || !Array.isArray(jobsBox) ? (
           <table className="no-jobs-table">
             <tbody>
               <tr>
@@ -88,14 +50,15 @@ const Scheduling = () => {
           </table>
         ) : (
           <div className="jobs-container">
-            {jobs.map((job, index) => (
-              <DraggableJobBox
-                key={job.id}
-                job={job}
-                index={index}
-                moveJob={moveJob}
-                moveEmployee={moveEmployee}
-              />
+            {jobsBox.map((job) => (
+              <div key={job.id} className="job-box">
+                <ProjectBox
+                  id={job.id}
+                  job_name={job.job_name}
+                  employees={job.employees}
+                  moveEmployee={moveEmployee}
+                />
+              </div>
             ))}
           </div>
         )}
