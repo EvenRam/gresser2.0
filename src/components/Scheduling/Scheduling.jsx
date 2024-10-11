@@ -39,7 +39,7 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee }) => {
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
-  const jobsBox = useSelector((state) => state.jobReducer);
+  const jobsBox = useSelector((state) => state.projectReducer);
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {

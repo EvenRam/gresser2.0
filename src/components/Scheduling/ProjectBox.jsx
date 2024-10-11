@@ -43,7 +43,9 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             name={`${employee.first_name} ${employee.last_name}`}
             number={employee.phone_number}
             email={employee.email}
-            address={employee.address} />
+            address={employee.address}
+            union_id={employee.union_id}       
+            union_name={employee.union_name} />
         ))
       )}
       <hr className='breakline'/>

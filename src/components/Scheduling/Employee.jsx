@@ -2,12 +2,8 @@ import React from 'react';
 import { useDrag } from 'react-dnd';
 
 
-const Employee = ({ id, name, number, email, address }) => {
-  console.log('Employee ID:', id);
-  console.log('Employee Name:', name);
-  console.log('Employee number', number)
-  console.log('Employee email', email)
-  console.log('Employee address', address)
+const Employee = ({ id, name, number, email, address, union_id, union_name }) => {
+  console.log('Employee DATA:', id,name, number, email, address, union_id, union_name);
 
 
 

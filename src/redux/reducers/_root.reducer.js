@@ -7,7 +7,7 @@ import editJobReducer from './editjob.reducer';
 import jobReducer from './job.reducer';
 import cardReducer from './card.reducer';
 import employeeReducer from './employeeReducer';
-// import projectReducer from './project.reducer';
+import projectReducer from './project.reducer';
 import unionReducer from './union.reducer';
 import unionBoxReducer from './unionBox.reducer';
 // rootReducer is the primary reducer for our entire project
@@ -24,7 +24,7 @@ const rootReducer = combineReducers({
   editJobReducer,
   jobReducer,
   cardReducer,
-  // projectReducer,
+  projectReducer,
   unionReducer,
   unionBoxReducer,
   employeeReducer
