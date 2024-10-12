@@ -5,9 +5,14 @@ import axios from 'axios';
 function* fetchEmployeeInfo() {
   try {
     const response = yield call(axios.get, '/api/addemployee');
+        console.log('Fetched employee info:', response.data);
+    
     yield put({ type: 'SET_EMPLOYEE_INFO', payload: response.data });
+        console.log('Fetched employee info:', response.data);
+
   } catch (error) {
     console.error('Error fetching employee information:', error);
+    yield put({ type: 'FETCH_ERROR', payload: 'Failed to fetch employee information.' });
   }
 }
 

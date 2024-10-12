@@ -10,11 +10,12 @@ router.get('/', async (req, res) => {
         console.log("Current user is: ", req.user.username);
         
         const sqlText = `
-            SELECT ae.*, u.union_name 
-            FROM "add_employee" ae
-            LEFT JOIN "unions" u ON ae."union_id" = u."id"
-            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-        `;
+        SELECT ae.*, u.union_name, ae.current_location
+        FROM "add_employee" ae
+        LEFT JOIN "unions" u ON ae."union_id" = u."id"
+        ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+    `;
+    
         
         try {
             const result = await pool.query(sqlText);
@@ -180,12 +181,13 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
             unionId = unionResult.rows[0].id;
         }
 
-        const insertEmployeeQuery = `
-            INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING "id"
-        `;
+      // Insert employee with current_location set to "union"
+      const insertEmployeeQuery = 
+      `INSERT INTO "add_employee" (
+          "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id", "current_location"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union')  
+      RETURNING "id"`;
+
         const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, job_id, unionId];
         await pool.query(insertEmployeeQuery, employeeValues);
 

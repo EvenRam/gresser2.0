@@ -4,23 +4,23 @@ const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
 
+
 router.post('/', rejectUnauthenticated, async (req, res) => {
     const { employeeId, targetProjectId, targetUnionId } = req.body;
 
     try {
         await pool.query('BEGIN');
 
-        // Check if we are moving to a project or a union
         let result;
         if (targetProjectId) {
             result = await pool.query(
-                'UPDATE "add_employee" SET "job_id" = $1, "union_id" = NULL WHERE "id" = $2',
-                [targetProjectId, employeeId]
+                'UPDATE "add_employee" SET "job_id" = $1, "union_id" = NULL, "current_location" = $2 WHERE "id" = $3',
+                [targetProjectId, 'project', employeeId]
             );
         } else if (targetUnionId) {
             result = await pool.query(
-                'UPDATE "add_employee" SET "union_id" = $1, "job_id" = NULL WHERE "id" = $2',
-                [targetUnionId, employeeId]
+                'UPDATE "add_employee" SET "union_id" = $1, "job_id" = NULL, "current_location" = $2 WHERE "id" = $3',
+                [targetUnionId, 'union', employeeId]
             );
         } else {
             throw new Error('No target specified');
@@ -38,5 +38,4 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
         res.status(500).send(`Error moving employee: ${error.message}`);
     }
 });
-
 module.exports = router;
