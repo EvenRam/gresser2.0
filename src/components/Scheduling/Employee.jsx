@@ -1,28 +1,17 @@
 import React from 'react';
 import { useDrag } from 'react-dnd';
 
-
 const Employee = ({ id, name, number, email, address }) => {
-  console.log('Employee ID:', id);
-  console.log('Employee Name:', name);
-  console.log('Employee number', number)
-  console.log('Employee email', email)
-  console.log('Employee address', address)
-
-
-
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { id: id },
+    item: { id, name },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }));
 
-// Unique ID for each modal
-  const modalId = `employee-modal-${id}`; 
+  const modalId = `employee-modal-${id}`;
 
- 
   return (
     <div
       ref={drag}
@@ -30,16 +19,14 @@ const Employee = ({ id, name, number, email, address }) => {
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
         margin: '-8px 0 0 2px',
-        // border: '1px solid white',
         cursor: 'move',
-        // backgroundColor: 'white',
         borderRadius: '4px',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
       }}
     >
- <h6
+      <h6
         className="primary"
         data-toggle="modal"
         data-target={`#${modalId}`}

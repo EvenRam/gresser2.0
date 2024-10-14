@@ -1,0 +1,12 @@
+.scheduling-page-container {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .jobs-section {
+    width: 48%; 
+  }
+  
+  .unions-section {
+    width: 48%; 
+  }

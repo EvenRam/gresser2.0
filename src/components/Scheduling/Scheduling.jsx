@@ -7,11 +7,11 @@ import './Scheduling.css';
 
 const Scheduling = () => {
   const dispatch = useDispatch();
-  const employeeCard = useSelector((state) => state.cardReducer); // This now contains only active employees
+  const employeeCard = useSelector((state) => state.cardReducer);
   const jobsBox = useSelector((state) => state.jobReducer);
 
   useEffect(() => {
-    dispatch({ type: 'FETCH_EMPLOYEE_CARD' }); // This action now fetches only active employees
+    dispatch({ type: 'FETCH_EMPLOYEE_CARD' });
     dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
   }, [dispatch]);
 
@@ -19,10 +19,13 @@ const Scheduling = () => {
     dispatch({ type: 'MOVE_EMPLOYEE', payload: { employeeId, targetProjectId } });
   };
 
+  // Filter active jobs
+  const activeJobs = jobsBox.filter(job => job.status === 'active');
+
   return (
     <div className="scheduling-container">
       <div>
-        <h3>Active Employees</h3>
+        <h3>Employees</h3>
         <div className="employee-list">
           {employeeCard.map((employee) => (
             <div key={employee.id} className="employee-item">
@@ -40,22 +43,22 @@ const Scheduling = () => {
       </div>
 
       <div>
-        {!jobsBox || jobsBox.length === 0 || !Array.isArray(jobsBox) ? (
+        {!activeJobs || activeJobs.length === 0 ? (
           <table className="no-jobs-table">
             <tbody>
               <tr>
-                <td colSpan="7">YOU HAVE NO JOBS</td>
+                <td colSpan="7">YOU HAVE NO ACTIVE JOBS</td>
               </tr>
             </tbody>
           </table>
         ) : (
           <div className="jobs-container">
-            {jobsBox.map((job) => (
+            {activeJobs.map((job) => (
               <div key={job.id} className="job-box">
                 <ProjectBox
                   id={job.id}
                   job_name={job.job_name}
-                  employees={job.employees}
+                  employees={job.employees ? job.employees.filter(emp => emp.employee_status) : []}
                   moveEmployee={moveEmployee}
                 />
               </div>

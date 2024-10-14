@@ -3,83 +3,66 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-router.get('/', async (req, res) => {
-    if (req.isAuthenticated()) {
-        console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user.username);
-        
-        const sqlText = `
-            SELECT ae.*, u.union_name 
-            FROM "add_employee" ae
-            LEFT JOIN "unions" u ON ae."union_id" = u."id"
-            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-        `;
-        
-        try {
-            const result = await pool.query(sqlText);
-            console.log(`GET from database`, result);
-            res.send(result.rows);
-        } catch (error) {
-            console.log(`Error making database query ${sqlText}`, error);
-            res.sendStatus(500);
-        }
-    } else {
-        res.sendStatus(401);
+router.get('/', rejectUnauthenticated, async (req, res) => {
+    console.log('User is authenticated:', req.isAuthenticated());
+    console.log("Current user is:", req.user.username);
+    
+    const sqlText = `
+        SELECT ae.*, u.union_name 
+        FROM "add_employee" ae
+        LEFT JOIN "unions" u ON ae."union_id" = u."id"
+        ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+    `;
+    
+    try {
+        const result = await pool.query(sqlText);
+        console.log(`GET from database`, result.rows);
+        res.send(result.rows);
+    } catch (error) {
+        console.log(`Error making database query ${sqlText}`, error);
+        res.sendStatus(500);
     }
 });
 
-router.get('/employeecard', async (req, res) => {
-    if (req.isAuthenticated()) {
-        console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user.username);
-        
-        const queryText = `
-            SELECT ae."id", ae."first_name", ae."last_name", ae."email", ae."address", ae."phone_number", u."union_name"
-            FROM "add_employee" ae
-            LEFT JOIN "unions" u ON ae."union_id" = u."id"
-            WHERE ae."employee_status" = true AND ae."job_id" IS NULL
-            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-        `;
-        
-        console.log(`Executing SQL query: ${queryText}`);
-        try {
-            const result = await pool.query(queryText);
-            console.log(`GET EmployeeCard from database`, result.rows);
-            res.send(result.rows);
-        } catch (error) {
-            console.log(`Error making database query ${queryText}`, error);
-            res.sendStatus(500);
-        }
-    } else {
-        res.sendStatus(401);
+router.get('/employeecard', rejectUnauthenticated, async (req, res) => {
+    const status = req.query.status === 'active' ? true : false;
+    
+    const queryText = `
+        SELECT ae."id", ae."first_name", ae."last_name", ae."email", ae."address", ae."phone_number", u."union_name", ae."employee_status"
+        FROM "add_employee" ae
+        LEFT JOIN "unions" u ON ae."union_id" = u."id"
+        WHERE ae."employee_status" = $1
+        ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+    `;
+    
+    try {
+        const result = await pool.query(queryText, [status]);
+        console.log('Fetched employees:', result.rows);
+        res.send(result.rows);
+    } catch (error) {
+        console.log(`Error making database query ${queryText}`, error);
+        res.sendStatus(500);
     }
 });
 
-router.get('/union', async (req, res) => {
-    if (req.isAuthenticated()) {
-        console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user.username);
+router.get('/union', rejectUnauthenticated, async (req, res) => {
+    const sqlText = `
+        SELECT "id", "union_name"
+        FROM "unions"
+        ORDER BY "union_name" ASC;
+    `; 
 
-        const sqlText = `
-            SELECT "id", "union_name"
-            FROM "unions"
-            ORDER BY "union_name" ASC;
-        `; 
-
-        try {
-            const result = await pool.query(sqlText);
-            console.log(`GET from database`, result);
-            res.send(result.rows);
-        } catch (error) {
-            console.log(`Error making database query ${sqlText}`, error);
-            res.sendStatus(500);
-        }
-    } else {
-        res.sendStatus(401);
+    try {
+        const result = await pool.query(sqlText);
+        console.log(`GET unions from database`, result.rows);
+        res.send(result.rows);
+    } catch (error) {
+        console.log(`Error making database query ${sqlText}`, error);
+        res.sendStatus(500);
     }
 });
 
-router.get('/withunions', async (req, res) => {
+router.get('/withunions', rejectUnauthenticated, async (req, res) => {
     try {
         const sqlText = `
             SELECT 
@@ -90,7 +73,8 @@ router.get('/withunions', async (req, res) => {
                 add_employee.last_name AS employee_last_name,
                 add_employee.phone_number AS employee_phone_number,
                 add_employee.email AS employee_email,
-                add_employee.address AS employee_address
+                add_employee.address AS employee_address,
+                add_employee.employee_status
             FROM unions
             LEFT JOIN add_employee ON unions.id = add_employee.union_id
             ORDER BY unions.union_name, add_employee.id;
@@ -116,7 +100,8 @@ router.get('/withunions', async (req, res) => {
                     last_name: row.employee_last_name,
                     phone_number: row.employee_phone_number,
                     email: row.employee_email,
-                    address: row.employee_address
+                    address: row.employee_address,
+                    employee_status: row.employee_status
                 });
             }
         });
@@ -129,11 +114,9 @@ router.get('/withunions', async (req, res) => {
 });
 
 router.post('/', rejectUnauthenticated, async (req, res) => {
-    console.log('User is authenticated?:', req.isAuthenticated());
-    console.log('Current user is:', req.user.username);
-    console.log('Current request body is:', req.body);
+    console.log('Adding new employee:', req.body);
 
-    const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
+    const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address } = req.body;
 
     try {
         const checkUnionQuery = `
@@ -156,23 +139,24 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
 
         const insertEmployeeQuery = `
             INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "union_id"
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING "id"
         `;
-        const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, job_id, unionId];
-        await pool.query(insertEmployeeQuery, employeeValues);
+        const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, unionId];
+        const result = await pool.query(insertEmployeeQuery, employeeValues);
 
-        res.status(201).send({ message: 'Employee and union record created successfully' });
+        console.log('Employee added successfully:', result.rows[0]);
+        res.status(201).send({ message: 'Employee added successfully', id: result.rows[0].id });
     } catch (error) {
-        console.error('Error making POST insert for add_employee and unions:', error);
-        res.sendStatus(500);
+        console.error('Error adding employee:', error);
+        res.status(500).send('Error adding employee');
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', rejectUnauthenticated, async (req, res) => {
     const employeeId = req.params.id;
-    console.log("employee id", employeeId);
+    console.log("Updating employee id:", employeeId);
     const {
         first_name,
         last_name,
@@ -181,30 +165,21 @@ router.put('/:id', async (req, res) => {
         phone_number,
         email,
         address,
-        job_id,
         union_id
     } = req.body;
 
-    if (employee_status !== undefined &&
-        !first_name &&
-        !last_name &&
-        !employee_number &&
-        !phone_number &&
-        !email &&
-        !address &&
-        !job_id &&
-        !union_id) {
+    if (employee_status !== undefined && Object.keys(req.body).length === 1) {
         const queryText = `
             UPDATE "add_employee"
             SET "employee_status" = $1
             WHERE "id" = $2;
         `;
-        console.log("updating status with value", employee_status);
+        console.log("Updating employee status:", employee_status);
         try {
             await pool.query(queryText, [employee_status, employeeId]);
             res.sendStatus(204);
         } catch (error) {
-            console.log("Error updating employee status", error);
+            console.log("Error updating employee status:", error);
             res.sendStatus(500);
         }
     } else {
@@ -216,7 +191,6 @@ router.put('/:id', async (req, res) => {
             phone_number,
             email,
             address,
-            job_id,
             union_id,
             employeeId
         ];
@@ -230,9 +204,8 @@ router.put('/:id', async (req, res) => {
                 "phone_number" = $5,
                 "email" = $6,
                 "address" = $7,
-                "job_id" = $8,
-                "union_id" = $9
-            WHERE "id" = $10;
+                "union_id" = $8
+            WHERE "id" = $9;
         `;
         try {
             const result = await pool.query(query, values);

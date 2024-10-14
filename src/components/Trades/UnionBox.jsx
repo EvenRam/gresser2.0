@@ -5,31 +5,24 @@ import Employee from '../Scheduling/Employee';
 import './Box.css';
 
 const UnionBox = ({ id, employees, union_name, color }) => {
-  // console.log('NAME in union box:', union_name);
-  // console.log('id in union box', id);
-  // console.log("employees", employees);
-  // console.log("what is the color", color);
-
   const dispatch = useDispatch();
 
-  const moveEmployee = (employeeId, targetProjectId, targetUnionId) => ({
-    type: 'MOVE_EMPLOYEE',
-    payload: { employeeId, targetProjectId, targetUnionId }
-  });
+  const moveEmployee = (employeeId, targetProjectId, targetUnionId) => {
+    dispatch({
+      type: 'MOVE_EMPLOYEE',
+      payload: { employeeId, targetProjectId, targetUnionId }
+    });
+  };
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    drop: (item) => {
-        
-        // Dispatch the action when an employee is dropped
-      dispatch(moveEmployee(item.id, null, id)); // Move to union
-    },
+    drop: (item) => moveEmployee(item.id, null, id),
     collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
+      isOver: !!monitor.isOver(),
     }),
-}));
+  }));
 
-
+  const activeEmployees = employees.filter(emp => emp.employee_status);
 
   return (
     <div
@@ -45,18 +38,17 @@ const UnionBox = ({ id, employees, union_name, color }) => {
     >
       <h4 className='small-text' style={{ color }}>{union_name}</h4>
       <div className="separator"></div>
-      {employees.length === 0 ? (
-        <p>No employees assigned</p>
+      {activeEmployees.length === 0 ? (
+        <p>No active employees assigned</p>
       ) : (
-        employees.map(employee => (
+        activeEmployees.map(employee => (
           <Employee
             key={employee.id}
             id={employee.id}
             name={`${employee.first_name} ${employee.last_name}`}
-            number={`${employee.phone_number}`}
-            email={`${employee.email}`}
-            address={`${employee.address}`}
-            
+            number={employee.phone_number}
+            email={employee.email}
+            address={employee.address}
           />
         ))
       )}
@@ -65,5 +57,3 @@ const UnionBox = ({ id, employees, union_name, color }) => {
 };
 
 export default UnionBox;
-
-

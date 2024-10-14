@@ -6,7 +6,6 @@ import './Trades.css';
 
 const Trades = () => {
     const dispatch = useDispatch();
-    const unions = useSelector((state) => state.unionReducer);
     const unionBox = useSelector((state) => state.unionBoxReducer);
 
     useEffect(() => {
@@ -14,9 +13,7 @@ const Trades = () => {
         dispatch({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
     }, [dispatch]);
 
-    const moveEmployee = (employeeId, targetUnionId) => {
-        dispatch({ type: 'MOVE_EMPLOYEE', payload: { employeeId, targetUnionId } });
-    };
+    console.log('Union boxes:', unionBox);  // Add this line for debugging
 
     return (
         <div className="trades-container">
@@ -29,7 +26,6 @@ const Trades = () => {
                             union_name={union.union_name}
                             employees={union.employees}
                             color={unionColors[union.union_name]} 
-                            moveEmployee={moveEmployee}
                         />
                     </div>
                 ))}
@@ -39,5 +35,3 @@ const Trades = () => {
 };
 
 export default Trades;
-
-
