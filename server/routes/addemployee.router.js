@@ -31,40 +31,24 @@ router.get('/', async (req, res) => {
 });
 
 
-// router.get('/employeecard', (req, res) => {
-//     if (req.isAuthenticated()) {
-//         console.log('User is authenticated?:', req.isAuthenticated());
-//         console.log("Current user is: ", req.user.username);
+// router.get('/employeecard', rejectUnauthenticated, async (req, res) => {
+//     const status = req.query.status === 'active' ? true : false;
 
-//         const sqlText = `
-//         SELECT 
-//         ae."id", 
-//         ae."first_name", 
-//         ae."last_name", 
-//         ae."phone_number",
-//         ae."email", 
-//         ae."address",  
-//         ae."union_id", 
-//         u."union_name",  
-//         ae."current_location"
-//     FROM "add_employee" AS ae
-//     LEFT JOIN "unions" AS u ON ae."union_id" = u."id"  
-//     WHERE ae."project_id" IS NULL
-//     ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-//             `;
+//     const queryText = `
+//         SELECT ae."id", ae."first_name", ae."last_name", ae."email", ae."address", ae."phone_number", u."union_name", ae."employee_status"
+//         FROM "add_employee" ae
+//         LEFT JOIN "unions" u ON ae."union_id" = u."id"
+//         WHERE ae."employee_status" = $1
+//         ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+//     `;
 
-//         pool
-//             .query(sqlText)
-//             .then((result) => {
-//                 console.log(`GET from database`, result);
-//                 res.send(result.rows);
-//             })
-//             .catch((error) => {
-//                 console.log(`Error making database query ${sqlText}`, error);
-//                 res.sendStatus(500);
-//             });
-//     } else {
-//         res.sendStatus(401);
+//     try {
+//         const result = await pool.query(queryText, [status]);
+//         console.log('Fetched employees:', result.rows);
+//         res.send(result.rows);
+//     } catch (error) {
+//         console.log(`Error making database query ${queryText}`, error);
+//         res.sendStatus(500);
 //     }
 // });
 
