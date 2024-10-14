@@ -56,7 +56,8 @@ const UnionBox = ({ id, employees, union_name, color }) => {
             number={`${employee.phone_number}`}
             email={`${employee.email}`}
             address={`${employee.address}`}
-            
+            union_id={`${employee.union_id}`} 
+          union_name={`${employee.union_name}`} 
           />
         ))
       )}
