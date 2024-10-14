@@ -48,19 +48,21 @@ CREATE TABLE rain_days (
 
 
 CREATE TABLE "add_employee" (
-    "id" SERIAL PRIMARY KEY, 
-    "first_name" VARCHAR(80),
-    "last_name" VARCHAR(80),
-    "employee_number" VARCHAR(80),
-    "employee_status" BOOLEAN,
-    "phone_number" VARCHAR(80),
-    "email" VARCHAR(80),
-    "address" VARCHAR(120),
-    "job_id" INT,
-    "union_id" INT,
-    FOREIGN KEY ("job_id") REFERENCES "jobs" ("job_id"),
-    FOREIGN KEY ("union_id") REFERENCES "unions" ("id") 
+  "id" SERIAL PRIMARY KEY,
+  "first_name" VARCHAR(80),
+  "last_name" VARCHAR(80),
+  "employee_number" VARCHAR(80),
+  "employee_status" BOOLEAN,
+  "phone_number" VARCHAR(80),
+  "email" VARCHAR(80),
+  "address" VARCHAR(120),
+  "current_location" VARCHAR(50), 
+  "job_id" INT,
+  "union_id" INT,
+  FOREIGN KEY ("job_id") REFERENCES "jobs" ("job_id"),
+  FOREIGN KEY ("union_id") REFERENCES "unions" ("id")
 );
+
 
 CREATE TABLE "unions" (
     "id" SERIAL PRIMARY KEY,

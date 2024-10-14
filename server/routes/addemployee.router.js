@@ -10,15 +10,16 @@ router.get('/', async (req, res) => {
         console.log("Current user is: ", req.user.username);
         
         const sqlText = `
-            SELECT ae.*, u.union_name 
-            FROM "add_employee" ae
-            LEFT JOIN "unions" u ON ae."union_id" = u."id"
-            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-        `;
+        SELECT ae.*, u.union_name
+        FROM "add_employee" ae
+        LEFT JOIN "unions" u ON ae."union_id" = u."id"
+        ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+    `;
+    
         
         try {
             const result = await pool.query(sqlText);
-            console.log(`GET from database`, result);
+            console.log(`GET from database addemployee`, result);
             res.send(result.rows);
         } catch (error) {
             console.log(`Error making database query ${sqlText}`, error);
@@ -30,50 +31,26 @@ router.get('/', async (req, res) => {
 });
 
 
-router.get('/employeecard', async (req, res) => {
-    if (req.isAuthenticated()) {
-        console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user.username);
-        
-        
-        const notAssigned = req.query === "true";
-        console.log(`Filter for employees without jobs: ${req.query.notAssigned}`);
-                
-        if (notAssigned){
-        const sqlText =
-        `
-            SELECT "id", "first_name", "last_name", "email", "address", "phone_number"
-            FROM "add_employee"
-            ORDER BY "last_name" ASC, "first_name" ASC;
-        `;
-        console.log("updating status with value", notAssigned);
-        try {
-            await pool.query(sqlText);
-            res.sendStatus(204);
-        } catch (error) {
-            console.log("Error updating employee status", error);
-            res.sendStatus(500);
-        }
-        } else {
-            const queryText = `
-            SELECT "id", "first_name", "last_name", "email", "address", "phone_number"
-            FROM "add_employee"
-            WHERE "job_id" IS NULL
-            ORDER BY "last_name" ASC, "first_name" ASC;
-        `;
-        
-        console.log(`Executing SQL query: ${queryText}`);
-        try {
-            const result = await pool.query(queryText);
-            console.log(`GET EmployeeCard from database`, result.rows);
-            res.send(result.rows);
-        } catch (error) {
-            console.log(`Error making database query ${queryText}`, error);
-            res.sendStatus(500);
-        }
-    }
-    }
-});
+// router.get('/employeecard', rejectUnauthenticated, async (req, res) => {
+//     const status = req.query.status === 'active' ? true : false;
+
+//     const queryText = `
+//         SELECT ae."id", ae."first_name", ae."last_name", ae."email", ae."address", ae."phone_number", u."union_name", ae."employee_status"
+//         FROM "add_employee" ae
+//         LEFT JOIN "unions" u ON ae."union_id" = u."id"
+//         WHERE ae."employee_status" = $1
+//         ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+//     `;
+
+//     try {
+//         const result = await pool.query(queryText, [status]);
+//         console.log('Fetched employees:', result.rows);
+//         res.send(result.rows);
+//     } catch (error) {
+//         console.log(`Error making database query ${queryText}`, error);
+//         res.sendStatus(500);
+//     }
+// });
 
 router.get('/union', async (req, res) => {
     if (req.isAuthenticated()) {
@@ -111,8 +88,11 @@ router.get('/withunions', async (req, res) => {
                 add_employee.last_name AS employee_last_name,
                 add_employee.phone_number AS employee_phone_number,
                 add_employee.email AS employee_email,
-                add_employee.address AS employee_address
-            FROM unions
+                add_employee.address AS employee_address,
+                add_employee.current_location AS employee_current_location, 
+                add_employee.union_id AS employee_union_id,
+                 unions.union_name AS employee_union_name
+                FROM unions
             LEFT JOIN add_employee ON unions.id = add_employee.union_id
             ORDER BY unions.union_name, add_employee.id;
         `;
@@ -139,7 +119,11 @@ router.get('/withunions', async (req, res) => {
                     last_name: row.employee_last_name,
                     phone_number: row.employee_phone_number,
                     email: row.employee_email,
-                    address: row.employee_address
+                    address: row.employee_address,
+                    current_location: row.employee_current_location, 
+                    union_id: row.employee_union_id,
+                    union_name: row.employee_union_name
+
                 
                 });
             }
@@ -180,12 +164,13 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
             unionId = unionResult.rows[0].id;
         }
 
-        const insertEmployeeQuery = `
-            INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING "id"
-        `;
+      // Insert employee with current_location set to "union"
+      const insertEmployeeQuery = 
+      `INSERT INTO "add_employee" (
+          "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id", "current_location"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union')  
+      RETURNING "id"`;
+
         const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, job_id, unionId];
         await pool.query(insertEmployeeQuery, employeeValues);
 

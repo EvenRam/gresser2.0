@@ -5,9 +5,14 @@ import axios from 'axios';
 function* fetchEmployeeInfo() {
   try {
     const response = yield call(axios.get, '/api/addemployee');
+        console.log('Fetched employee info:', response.data);
+    
     yield put({ type: 'SET_EMPLOYEE_INFO', payload: response.data });
+        console.log('Fetched employee info:', response.data);
+
   } catch (error) {
     console.error('Error fetching employee information:', error);
+    yield put({ type: 'FETCH_ERROR', payload: 'Failed to fetch employee information.' });
   }
 }
 
@@ -47,18 +52,17 @@ function* fetchProjectsWithEmployees() {
 
 function* handleMoveEmployee(action) {
   try {
-      const { employeeId, targetProjectId, targetUnionId } = action.payload;
+      const { employeeId, targetProjectId } = action.payload;
 
       // Make an API call to move the employee
-      yield call(axios.post, '/api/moveEmployee', { 
+      yield call(axios.post, '/api/moveemployee', { 
           employeeId, 
-          targetProjectId, 
-          targetUnionId 
+          targetProjectId
       });
 
       // Fetch updated projects and employee card information 
       yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
-      yield put({ type: 'FETCH_EMPLOYEE_CARD' });
+      yield put({ type: 'FETCH_EMPLOYEE_INFO' });
       yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
   } catch (error) {
       yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });

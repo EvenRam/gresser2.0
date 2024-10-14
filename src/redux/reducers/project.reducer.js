@@ -1,19 +1,20 @@
-// const projectReducer = (state = [], action) => {
-//     switch (action.type) {
+const projectReducer = (state = [], action) => {
+
+        switch (action.type) {
+          case 'SET_JOB':
+            return action.payload;
       
-//       case 'SET_PROJECTS_WITH_EMPLOYEES':
-//         console.log('SET_PROJECTS_WITH_EMPLOYEES', action.payload);
+          case 'SET_PROJECTS_WITH_EMPLOYEES':
+            return action.payload.map(project => ({
+              ...project,
+              employees: project.employees || []
+            }));
+      
+          default:
+            return state;
+        }
+      };
+      
         
-//         return action.payload;
   
-      
-//       case 'ADD_PROJECT':
-      
-//         return [...state, action.payload];
-//       default:
-//         return state;
-//     }
-//   };
-  
-  
-//   export default projectReducer
+  export default projectReducer
