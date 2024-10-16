@@ -1,35 +1,37 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import Employee from '../Scheduling/Employee';
 import './Box.css';
 
-const UnionBox = ({ id, employees, union_name, color }) => {
-  // console.log('NAME in union box:', union_name);
-  // console.log('id in union box', id);
-  // console.log("employees", employees);
-  // console.log("what is the color", color);
-
+const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
+  const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
-  const moveEmployee = (employeeId, targetProjectId, targetUnionId) => ({
+  const employees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
+
+  const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId) => ({
     type: 'MOVE_EMPLOYEE',
-    payload: { employeeId, targetProjectId, targetUnionId }
+    payload: { employeeId, targetProjectId, sourceUnionId, targetUnionId }
   });
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    drop: (item) => {
-        
-        // Dispatch the action when an employee is dropped
-      dispatch(moveEmployee(item.id, null, id)); // Move to union
+    drop: (item, monitor) => {
+      const didDrop = monitor.didDrop();
+      if (didDrop) {
+        return;
+      }
+      
+      // If the employee is from a different union or a project, move them
+      if (item.union_id !== id || item.current_location === 'project') {
+        dispatch(moveEmployee(item.id, null, item.union_id, id));
+      }
     },
     collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
+      isOver: !!monitor.isOver(),
     }),
-}));
-
-
+  }));
 
   return (
     <div
@@ -53,11 +55,11 @@ const UnionBox = ({ id, employees, union_name, color }) => {
             key={employee.id}
             id={employee.id}
             name={`${employee.first_name} ${employee.last_name}`}
-            number={`${employee.phone_number}`}
-            email={`${employee.email}`}
-            address={`${employee.address}`}
-            union_id={`${employee.union_id}`} 
-          union_name={`${employee.union_name}`} 
+            number={employee.phone_number}
+            email={employee.email}
+            address={employee.address}
+            union_id={id}
+            union_name={union_name}
           />
         ))
       )}
@@ -65,6 +67,4 @@ const UnionBox = ({ id, employees, union_name, color }) => {
   );
 };
 
-export default UnionBox;
-
-
+export default React.memo(UnionBox);

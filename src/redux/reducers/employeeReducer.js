@@ -1,40 +1,52 @@
 const initialState = {
-  // Only maintain a record of current employee locations
-  employees: [] // All employees to track their current locations
-};
-
-const employeeReducer = (state = initialState, action) => {
-  switch (action.type) {
+    employees: [] // All employees with their current locations
+  };
+  
+  const employeeReducer = (state = initialState, action) => {
+    switch (action.type) {
       case 'SET_EMPLOYEE_INFO':
-          return { ...state, employees: action.payload }; // Set all employees
-
+        return { ...state, employees: action.payload };
+  
       case 'MOVE_EMPLOYEE': {
-          const { employeeId, targetProjectId } = action.payload;
-
-          // Find the employee in the current list
-          const employeeToMove = state.employees.find(emp => emp.id === employeeId);
-
-          if (!employeeToMove) return state; // If not found, return current state
-
-          // Update the employee's location
-          const updatedEmployee = {
-              ...employeeToMove,
-              current_location: targetProjectId ? 'project' : 'union',
-              job_id: targetProjectId || null // Update job_id or set it to null
+        const { employeeId, targetProjectId, sourceUnionId, targetUnionId } = action.payload;
+  
+        // Find the employee in the current list
+        const employeeToMove = state.employees.find(emp => emp.id === employeeId);
+  
+        if (!employeeToMove) return state; // If not found, return current state
+  
+        let updatedEmployee = { ...employeeToMove };
+  
+        if (targetProjectId) {
+          // Moving to a project
+          updatedEmployee = {
+            ...updatedEmployee,
+            current_location: 'project',
+            job_id: targetProjectId,
+            union_id: updatedEmployee.union_id // Maintain union affiliation
           };
-
-          // Update the employees array
-          return {
-              ...state,
-              employees: state.employees.map(emp =>
-                  emp.id === employeeId ? updatedEmployee : emp
-              )
+        } else if (targetUnionId) {
+          // Moving to a union
+          updatedEmployee = {
+            ...updatedEmployee,
+            current_location: 'union',
+            job_id: null,
+            union_id: targetUnionId
           };
+        }
+  
+        // Update the employees array
+        return {
+          ...state,
+          employees: state.employees.map(emp =>
+            emp.id === employeeId ? updatedEmployee : emp
+          )
+        };
       }
-
+  
       default:
-          return state; // Always return current state for unrecognized actions
-  }
-};
-
-export default employeeReducer;
+        return state;
+    }
+  };
+  
+  export default employeeReducer;

@@ -4,15 +4,15 @@ import Employee from './Employee';
 import '../Trades/Box.css'
 
 const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
-  console.log('Id in job box:', id)
-  console.log("Employees in JobBox component:", employees)
-  console.log("job_name", job_name)
+  console.log('Id in job box:', id);
+  console.log("Employees in JobBox component:", employees);
+  console.log("job_name", job_name);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: (item) => {
       console.log('Dropped item:', item);
-      moveEmployee(item.id, id);
+      moveEmployee(item.id, id, item.union_id);
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -44,9 +44,10 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             number={employee.phone_number}
             email={employee.email}
             address={employee.address}   
-          Location={employee.current_location}
+            location={employee.current_location}
             union_id={employee.union_id}       
-            union_name={employee.union_name} />
+            union_name={employee.union_name}
+          />
         ))
       )}
       <hr className='breakline'/>
@@ -55,4 +56,4 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   );
 };
 
-export default ProjectBox;
+export default React.memo(ProjectBox);
