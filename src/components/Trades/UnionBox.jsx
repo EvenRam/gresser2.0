@@ -48,7 +48,9 @@ const UnionBox = ({ id, employees, union_name, color }) => {
       {employees.length === 0 ? (
         <p>No employees assigned</p>
       ) : (
-        employees.map(employee => (
+        employees
+                  .filter(employee => employee.employee_status === true) // Filter out inactive employees
+.map(employee => (
           <Employee
             key={employee.id}
             id={employee.id}
@@ -56,6 +58,7 @@ const UnionBox = ({ id, employees, union_name, color }) => {
             number={`${employee.phone_number}`}
             email={`${employee.email}`}
             address={`${employee.address}`}
+            employee_status={`${employee.employee_status}`}
             union_id={`${employee.union_id}`} 
           union_name={`${employee.union_name}`} 
           />

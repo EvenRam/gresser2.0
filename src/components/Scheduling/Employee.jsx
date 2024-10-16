@@ -2,9 +2,9 @@ import React from 'react'; // Importing React to use its features
 import { useDrag } from 'react-dnd'; // Importing the useDrag hook from react-dnd for drag-and-drop functionality
 
 // Employee component definition
-const Employee = ({ id, name, number, email, address, union_id, union_name }) => {
+const Employee = ({ id, name, number,employee_status, email, address, union_id, union_name }) => {
   // Logging employee data for debugging purposes
-  console.log('Employee DATA:', id, name, number, email, address, union_id, union_name);
+  console.log('Employee DATA:', id, name, number, " employee status:" ,employee_status, email, address, union_id, union_name);
 
   // Using the useDrag hook to make the employee component draggable
   const [{ isDragging }, drag] = useDrag(() => ({
