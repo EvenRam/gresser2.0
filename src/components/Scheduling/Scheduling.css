@@ -23,10 +23,21 @@
   margin-bottom: 10px;
 }
 
-.namelinebreak, .breakline {
-  margin: 5px 0;
-}
+
 
 .employee-count {
   margin-bottom: 0;
+}
+
+.employee-count {
+  margin-bottom: -5px;
+  margin-left: -5px;
+  margin-right: -5px;
+  text-align: end;
+  padding-right: 5px;
+  background-color: rgb(79, 76, 76);
+  color: white;
+  font-size:small;
+  
+
 }
