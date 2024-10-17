@@ -1,35 +1,56 @@
 import React from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import Employee from '../Scheduling/Employee';
 import './Box.css';
 
-const UnionBox = ({ id, employees, union_name, color }) => {
-  // console.log('NAME in union box:', union_name);
-  // console.log('id in union box', id);
-  // console.log("employees", employees);
-  // console.log("what is the color", color);
-
+const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
+  const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
-  const moveEmployee = (employeeId, targetProjectId, targetUnionId) => ({
-    type: 'MOVE_EMPLOYEE',
-    payload: { employeeId, targetProjectId, targetUnionId }
-  });
+  console.log(`UnionBox Render - ${union_name} (id: ${id})`);
+
+  const employees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
+
+  console.log(`UnionBox ${union_name} (id: ${id}) - Current employees:`, employees);
+
+  const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId) => {
+    console.log('moveEmployee called with:', { employeeId, targetProjectId, sourceUnionId, targetUnionId });
+    return {
+      type: 'MOVE_EMPLOYEE',
+      payload: { employeeId, targetProjectId, sourceUnionId, targetUnionId }
+    };
+  };
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    drop: (item) => {
-        
-        // Dispatch the action when an employee is dropped
-      dispatch(moveEmployee(item.id, null, id)); // Move to union
+    drop: (item, monitor) => {
+      console.log(`Drop detected in ${union_name} (id: ${id})`);
+      console.log('Dropped item:', item);
+      
+      const didDrop = monitor.didDrop();
+      if (didDrop) {
+        console.log('Item was already dropped in a child component');
+        return;
+      }
+      
+      if (item.union_id !== id || item.current_location !== 'union') {
+        console.log(`Moving employee ${item.id} to union ${id}`);
+        dispatch(moveEmployee(item.id, null, item.union_id, id));
+      } else {
+        console.log(`Employee ${item.id} is already in this union. No action taken.`);
+      }
+
+      // Log the updated state after the drop
+      setTimeout(() => {
+        const updatedEmployees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
+        console.log(`UnionBox ${union_name} (id: ${id}) - Updated employees after drop:`, updatedEmployees);
+      }, 0);
     },
     collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
+      isOver: !!monitor.isOver(),
     }),
-}));
-
-
+  }), [id, union_name, dispatch, allEmployees]);
 
   return (
     <div
@@ -43,7 +64,7 @@ const UnionBox = ({ id, employees, union_name, color }) => {
         backgroundColor: isOver ? '#f0f0f0' : '#fff',
       }}
     >
-      <h4 className='small-text' style={{ color }}>{union_name}</h4>
+      <h4 className='small-text' style={{ color }}>{union_name} (ID: {id})</h4>
       <div className="separator"></div>
       {employees.length === 0 ? (
         <p>No employees assigned</p>
@@ -55,12 +76,14 @@ const UnionBox = ({ id, employees, union_name, color }) => {
             key={employee.id}
             id={employee.id}
             name={`${employee.first_name} ${employee.last_name}`}
-            number={`${employee.phone_number}`}
-            email={`${employee.email}`}
-            address={`${employee.address}`}
-            employee_status={`${employee.employee_status}`}
-            union_id={`${employee.union_id}`} 
-          union_name={`${employee.union_name}`} 
+
+            number={employee.phone_number}
+            email={employee.email}
+            address={employee.address}
+            union_id={id}
+            union_name={union_name}
+            location="union"
+
           />
         ))
       )}
@@ -68,6 +91,4 @@ const UnionBox = ({ id, employees, union_name, color }) => {
   );
 };
 
-export default UnionBox;
-
-
+export default React.memo(UnionBox);

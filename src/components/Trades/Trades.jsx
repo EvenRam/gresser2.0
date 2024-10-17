@@ -14,8 +14,11 @@ const Trades = () => {
         dispatch({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
     }, [dispatch]);
 
-    const moveEmployee = (employeeId, targetUnionId) => {
-        dispatch({ type: 'MOVE_EMPLOYEE', payload: { employeeId, targetUnionId } });
+    const moveEmployee = (employeeId, targetProjectId, sourceUnionId) => {
+        dispatch({ 
+            type: 'MOVE_EMPLOYEE', 
+            payload: { employeeId, targetProjectId, sourceUnionId }
+        });
     };
 
     return (
@@ -38,5 +41,3 @@ const Trades = () => {
 };
 
 export default Trades;
-
-
