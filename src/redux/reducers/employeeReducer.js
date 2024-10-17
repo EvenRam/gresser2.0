@@ -1,5 +1,5 @@
 const initialState = {
-    employees: [] // All employees with their current locations
+    employees: []
   };
   
   const employeeReducer = (state = initialState, action) => {
@@ -8,40 +8,21 @@ const initialState = {
         return { ...state, employees: action.payload };
   
       case 'MOVE_EMPLOYEE': {
-        const { employeeId, targetProjectId, sourceUnionId, targetUnionId } = action.payload;
+        const { employeeId, targetProjectId, targetUnionId } = action.payload;
   
-        // Find the employee in the current list
-        const employeeToMove = state.employees.find(emp => emp.id === employeeId);
+        const updatedEmployees = state.employees.map(emp => {
+          if (emp.id === employeeId) {
+            return {
+              ...emp,
+              current_location: targetProjectId ? 'project' : 'union',
+              job_id: targetProjectId || null,
+              union_id: targetUnionId || emp.union_id
+            };
+          }
+          return emp;
+        });
   
-        if (!employeeToMove) return state; // If not found, return current state
-  
-        let updatedEmployee = { ...employeeToMove };
-  
-        if (targetProjectId) {
-          // Moving to a project
-          updatedEmployee = {
-            ...updatedEmployee,
-            current_location: 'project',
-            job_id: targetProjectId,
-            union_id: updatedEmployee.union_id // Maintain union affiliation
-          };
-        } else if (targetUnionId) {
-          // Moving to a union
-          updatedEmployee = {
-            ...updatedEmployee,
-            current_location: 'union',
-            job_id: null,
-            union_id: targetUnionId
-          };
-        }
-  
-        // Update the employees array
-        return {
-          ...state,
-          employees: state.employees.map(emp =>
-            emp.id === employeeId ? updatedEmployee : emp
-          )
-        };
+        return { ...state, employees: updatedEmployees };
       }
   
       default:
