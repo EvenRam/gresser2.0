@@ -7,12 +7,9 @@ import { useHistory } from 'react-router-dom';
 const EditForm = () => {
 
     const dispatch = useDispatch();
-    // Hook to nav to different routes
     const history = useHistory();
-    //Get job to edit from the redux sotre
     const editJob = useSelector((store) => store.editJobReducer)
-    // handle input changes
-    // dispatch action to update job
+  
     function handleChange(event, property) {
         dispatch({
             type: 'EDIT_ONCHANGE',
@@ -23,7 +20,6 @@ const EditForm = () => {
         })
     }
 
-    //handle form submission
     function handleSubmit(event) {
         event.preventDefault();
         console.log("edit job", editJob.job_id);
@@ -42,7 +38,6 @@ const EditForm = () => {
 
     return (
         <>
-            {/* Render form with inputs for editiing jobs */}
 
             <h2 className='edit-job'> Edit Job </h2>
             <form className='edit-form'
@@ -61,7 +56,7 @@ const EditForm = () => {
                 </div>
                 <div className='name'>
                 <label> 
-                    Job Number: 
+                    Job Name: 
                     <input
                         placeholder='Job Name'
                         value={editJob.job_name}

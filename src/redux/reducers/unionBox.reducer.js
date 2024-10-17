@@ -1,3 +1,6 @@
+// this reducer is responsible for all active employees in the union box.
+
+
 const unionBoxReducer = (state = [], action) => {
     switch (action.type) {
         case 'SET_EMPLOYEE_WITH_UNION':
@@ -18,6 +21,7 @@ const unionBoxReducer = (state = [], action) => {
                     return union;
                 });
             }
+
 
             // If moving between unions
             if (sourceUnionId && targetUnionId) {
@@ -55,3 +59,4 @@ const unionBoxReducer = (state = [], action) => {
 };
 
 export default unionBoxReducer;
+

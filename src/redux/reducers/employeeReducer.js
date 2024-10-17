@@ -1,4 +1,5 @@
 const initialState = {
+
     employees: []
   };
   
@@ -23,11 +24,15 @@ const initialState = {
         });
   
         return { ...state, employees: updatedEmployees };
+
+
       }
   
       default:
+
         return state;
     }
   };
   
   export default employeeReducer;
+

@@ -1,11 +1,15 @@
+
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useDrag, useDrop } from 'react-dnd';
 import ProjectBox from './ProjectBox';
 import './EmployeeStyles.css';
+
 import './Scheduling.css';
 import DraggableJobBox from './DraggableJobBox';
 
 const Scheduling = () => {
+
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const jobsBox = useSelector((state) => state.projectReducer);
@@ -55,21 +59,25 @@ const Scheduling = () => {
 
   if (isLoading) {
     return <div>Loading...</div>;
+
   }
 
   return (
     <div className="scheduling-container">
       <div>
+
         {!memoizedJobs || memoizedJobs.length === 0 ? (
           <table className="no-jobs-table">
             <tbody>
               <tr>
                 <td colSpan="7">YOU HAVE NO JOBS</td>
+
               </tr>
             </tbody>
           </table>
         ) : (
           <div className="jobs-container">
+
             {memoizedJobs.map((job, index) => (
               <DraggableJobBox
                 key={job.id}
@@ -78,6 +86,7 @@ const Scheduling = () => {
                 moveJob={moveJob}
                 moveEmployee={moveEmployee}
                 employees={allEmployees.filter(emp => emp.current_location === 'project' && emp.job_id === job.id)}
+
               />
             ))}
           </div>
@@ -87,4 +96,6 @@ const Scheduling = () => {
   );
 };
 
+
 export default React.memo(Scheduling);
+

@@ -23,20 +23,25 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     <div
       ref={drop}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
         border: '1px solid gray',
         width: '170px',
         minHeight: '100px',
         margin: '-5px',
         padding: '5px',
         backgroundColor: isOver ? 'lightgray' : 'white',
-      }}
+       }}
     >
-      <h4 className='projectboxname' style={{ backgroundColor: '#396a54', color: 'white', padding: '5px' }}>{job_name}</h4>
-      <hr className='namelinebreak'/>
+      <h4 className='projectboxname' 
+      style={{ backgroundColor: '#396a54', color: 'white', padding: '5px' ,fontSize: '16px'   }}>{job_name}</h4>
       {employees.length === 0 ? (
         <p>No employees assigned</p>
       ) : (
-        employees.map(employee => (
+        employees
+        .filter(employee => employee.employee_status === true) 
+        .map(employee => (
           <Employee
             key={employee.id}
             id={employee.id}
@@ -44,13 +49,14 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             number={employee.phone_number}
             email={employee.email}
             address={employee.address}   
-            location={employee.current_location}
+            employee_status={employee.employee_status}
+          Location={employee.current_location}
             union_id={employee.union_id}       
             union_name={employee.union_name}
-          />
+             />
+
         ))
       )}
-      <hr className='breakline'/>
       <h6 className='employee-count'>Employees: {employees.length}</h6>
     </div>
   );
