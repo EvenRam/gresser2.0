@@ -1,12 +1,13 @@
 const initialState = {
   // Only maintain a record of current employee locations
-  employees: [] // All employees to track their current locations
+  // All employees to track their current locations
+  employees: [] 
 };
 
 const employeeReducer = (state = initialState, action) => {
   switch (action.type) {
       case 'SET_EMPLOYEE_INFO':
-          return { ...state, employees: action.payload }; // Set all employees
+          return { ...state, employees: action.payload }; 
 
       case 'MOVE_EMPLOYEE': {
           const { employeeId, targetProjectId } = action.payload;
@@ -14,13 +15,14 @@ const employeeReducer = (state = initialState, action) => {
           // Find the employee in the current list
           const employeeToMove = state.employees.find(emp => emp.id === employeeId);
 
-          if (!employeeToMove) return state; // If not found, return current state
+          if (!employeeToMove) return state; 
 
           // Update the employee's location
           const updatedEmployee = {
               ...employeeToMove,
               current_location: targetProjectId ? 'project' : 'union',
-              job_id: targetProjectId || null // Update job_id or set it to null
+              // Update job_id or set it to null
+              job_id: targetProjectId || null 
           };
 
           // Update the employees array
@@ -33,7 +35,7 @@ const employeeReducer = (state = initialState, action) => {
       }
 
       default:
-          return state; // Always return current state for unrecognized actions
+          return state; 
   }
 };
 

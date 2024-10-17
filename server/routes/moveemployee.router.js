@@ -1,9 +1,8 @@
-// Import required modules
-const express = require('express');
-const pool = require('../modules/pool'); // PostgreSQL connection pool
-const router = express.Router();
-const { rejectUnauthenticated } = require('../modules/authentication-middleware'); // Middleware to ensure only authenticated users can access the route
 
+const express = require('express');
+const pool = require('../modules/pool'); 
+const router = express.Router();
+const { rejectUnauthenticated } = require('../modules/authentication-middleware'); 
 router.post('/', rejectUnauthenticated, async (req, res) => {
     const { employeeId, targetProjectId } = req.body; 
 
@@ -38,25 +37,4 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
 
 
 
-// A commented-out PUT route to update the employee's location directly
-// router.put('/updatelocation/:id', async (req, res) => {
-//     const employeeId = req.params.id; // Get employeeId from the route parameters
-//     const { newLocation } = req.body; // Destructure the request body to get the new location (either 'project' or 'union')
-
-//     const sqlText = `
-//         UPDATE "add_employee"
-//         SET "current_location" = $1
-//         WHERE "id" = $2;
-//     `; // SQL query to update the employee's current location
-
-//     try {
-//         await pool.query(sqlText, [newLocation, employeeId]); // Execute the query with the new location and employeeId
-//         res.sendStatus(204); // Send a 204 status for a successful update (No Content)
-//     } catch (error) {
-//         console.error('Error updating employee location:', error); // Log any errors
-//         res.sendStatus(500); // Send a 500 status if there is an error
-//     }
-// });
-
-// Export the router for use in the Express app
 module.exports = router;

@@ -40,6 +40,7 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
 
       >
         {name} 
+        {console.log("Employee Name:",name)}
       </h6>
 
       <div className="modal fade" id={modalId} tabIndex="-1" role="dialog" aria-labelledby={`${modalId}-label`} aria-hidden="true">
@@ -55,6 +56,7 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
               <p>Email: {email}</p>
               <p>Number: {number}</p>
               <p>Address: {address}</p>
+              {console.log("Employees pop up info: Email", email, "Number", number, "address", address)}
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -66,5 +68,4 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
   );
 };
 
-// Exporting the Employee component to be used in other parts of the application
 export default Employee;

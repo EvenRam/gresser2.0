@@ -57,7 +57,6 @@ function* deleteJob(action){
 }
 
 function* jobSaga() {
-    // handles the action types
     yield takeLatest ('FETCH_JOB', fetchJob);
     yield takeLatest ('ADD_JOB', addJob);
     yield takeLatest('TOGGLE_JOB_STATUS', toggleJobStatus)
