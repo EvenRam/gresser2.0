@@ -71,12 +71,8 @@ const UnionBox = ({ id, union_name, color }) => {
             return (
               <Employee
                 key={employee.id}
-                id={employee.id}
+                {...employee}
                 name={`${employee.first_name} ${employee.last_name}`}
-                phone_number={employee.phone_number}
-                email={employee.email}
-                address={employee.address}
-                employee_status={employee.employee_status}
                 union_id={id}
                 union_name={union_name}
                 current_location="union"

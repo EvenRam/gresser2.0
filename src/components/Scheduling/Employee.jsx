@@ -2,8 +2,8 @@ import React from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
-const Employee = ({ id, name, phone_number, email, address, employee_status, union_id, union_name, current_location }) => {
-  console.log('Employee props:', { id, name, phone_number, email, address, employee_status, union_id, union_name, current_location });
+const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location }) => {
+  console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location });
 
   const unionColor = unionColors[union_name] || 'black';
   
@@ -55,8 +55,6 @@ const Employee = ({ id, name, phone_number, email, address, employee_status, uni
               <p>Number: {phone_number || 'N/A'}</p>
               <p>Address: {address || 'N/A'}</p>
               <p>Union: {union_name || 'N/A'}</p>
-              <p>Current Location: {current_location || 'N/A'}</p>
-              <p>Status: {employee_status ? 'Active' : 'Inactive'}</p>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
