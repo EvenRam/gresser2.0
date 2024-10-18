@@ -9,6 +9,7 @@ const UnionBox = ({ id, union_name, color }) => {
   const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
   console.log(`UnionBox Render - ${union_name} (id: ${id})`);
+  console.log('All Employees from Redux:', allEmployees);
 
   const employees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
 
@@ -40,12 +41,6 @@ const UnionBox = ({ id, union_name, color }) => {
       } else {
         console.log(`Employee ${item.id} is already in this union. No action taken.`);
       }
-
-      // Log the updated state after the drop
-      setTimeout(() => {
-        const updatedEmployees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
-        console.log(`UnionBox ${union_name} (id: ${id}) - Updated employees after drop:`, updatedEmployees);
-      }, 0);
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -70,22 +65,24 @@ const UnionBox = ({ id, union_name, color }) => {
         <p>No employees assigned</p>
       ) : (
         employees
-                  .filter(employee => employee.employee_status === true) 
-.map(employee => (
-          <Employee
-            key={employee.id}
-            id={employee.id}
-            name={`${employee.first_name} ${employee.last_name}`}
-
-            number={employee.phone_number}
-            email={employee.email}
-            address={employee.address}
-            union_id={id}
-            union_name={union_name}
-            location="union"
-
-          />
-        ))
+          .filter(employee => employee.employee_status === true)
+          .map(employee => {
+            console.log(`Employee in UnionBox - ${employee.first_name} ${employee.last_name}:`, employee);
+            return (
+              <Employee
+                key={employee.id}
+                id={employee.id}
+                name={`${employee.first_name} ${employee.last_name}`}
+                phone_number={employee.phone_number}
+                email={employee.email}
+                address={employee.address}
+                employee_status={employee.employee_status}
+                union_id={id}
+                union_name={union_name}
+                current_location="union"
+              />
+            );
+          })
       )}
     </div>
   );

@@ -35,7 +35,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
        }}
     >
       <h4 className='projectboxname' 
-      style={{ backgroundColor: '#396a54', color: 'white', padding: '5px' ,fontSize: '16px'   }}>{job_name}</h4>
+      style={{ backgroundColor: '#396a54', color: 'white', padding: '5px' ,fontSize: '16px' }}>{job_name}</h4>
       {employees.length === 0 ? (
         <p>No employees assigned</p>
       ) : (
@@ -44,20 +44,12 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
         .map(employee => (
           <Employee
             key={employee.id}
-            id={employee.id}
+            {...employee}
             name={`${employee.first_name} ${employee.last_name}`}
-            number={employee.phone_number}
-            email={employee.email}
-            address={employee.address}   
-            employee_status={employee.employee_status}
-          Location={employee.current_location}
-            union_id={employee.union_id}       
-            union_name={employee.union_name}
-             />
-
+          />
         ))
       )}
-      <h6 className='employee-count'>Employees: {employees.length}</h6>
+      <h6 className='employee-count'>Employees: {employees.filter(emp => emp.employee_status === true).length}</h6>
     </div>
   );
 };
