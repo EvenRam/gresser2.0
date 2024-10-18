@@ -1,19 +1,17 @@
-
 import React from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
-const Employee = ({ id, name, number,employee_status, email, address, union_id, union_name }) => {
-  console.log('Employee DATA:', id, name, number, " employee status:" ,employee_status, email, address, union_id, union_name);
-  const unionColor = unionColors[union_name] || 'black'; 
-  
+const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location }) => {
+  console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location });
+
+  const unionColor = unionColors[union_name] || 'black';
   
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { id, union_id, union_name }, // Include union information in the dragged item
+    item: { id, union_id, union_name, current_location },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
-
     }),
   }));
 
@@ -21,7 +19,6 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
 
   return (
     <div
-
       ref={drag}
       style={{
         opacity: isDragging ? 0.5 : 1,
@@ -32,18 +29,16 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        backgroundColor: isDragging ? '#f0f0f0' : 'transparent', // Add background color change when dragging
+        backgroundColor: isDragging ? '#f0f0f0' : 'transparent',
       }}
     >
       <h6
         className="primary"
         data-toggle="modal"
         data-target={`#${modalId}`}
-        style={{ color: unionColor }} 
+        style={{ color: unionColor }}
       >
         {name}
-         {console.log("Employee Name:",name)}
-
       </h6>
 
       <div className="modal fade" id={modalId} tabIndex="-1" role="dialog" aria-labelledby={`${modalId}-label`} aria-hidden="true">
@@ -56,14 +51,10 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
               </button>
             </div>
             <div className="modal-body">
-              <p>Email: {email}</p>
-              <p>Number: {number}</p>
-              <p>Address: {address}</p>
-
-              <p>Union: {union_name}</p> {/* Add union name to modal */}
-
-              {console.log("Employees pop up info: Email", email, "Number", number, "address", address)}
-
+              <p>Email: {email || 'N/A'}</p>
+              <p>Number: {phone_number || 'N/A'}</p>
+              <p>Address: {address || 'N/A'}</p>
+              <p>Union: {union_name || 'N/A'}</p>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -75,6 +66,4 @@ const Employee = ({ id, name, number,employee_status, email, address, union_id, 
   );
 };
 
-
 export default Employee;
-
