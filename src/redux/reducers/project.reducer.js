@@ -1,9 +1,11 @@
 const projectReducer = (state = [], action) => {
   switch (action.type) {
     case 'SET_JOB':
+      console.log('SET_JOB payload:', action.payload);
       return action.payload;
 
     case 'SET_PROJECTS_WITH_EMPLOYEES':
+      console.log('SET_PROJECTS_WITH_EMPLOYEES payload:', action.payload);
       return action.payload.map(project => ({
         ...project,
         employees: project.employees || []
@@ -11,30 +13,27 @@ const projectReducer = (state = [], action) => {
 
     case 'MOVE_EMPLOYEE':
       const { employeeId, targetProjectId, sourceProjectId } = action.payload;
+      console.log('MOVE_EMPLOYEE payload:', action.payload);
       
       return state.map(project => {
-        // Remove employee from source project
         if (project.id === sourceProjectId) {
           return {
             ...project,
             employees: project.employees.filter(emp => emp.id !== employeeId)
           };
         }
-        
-        // Add employee to target project
         if (project.id === targetProjectId) {
-          const employeeToMove = state
+          const movedEmployee = state
             .find(p => p.id === sourceProjectId)
             ?.employees.find(emp => emp.id === employeeId);
-
-          if (employeeToMove) {
+          
+          if (movedEmployee) {
             return {
               ...project,
-              employees: [...project.employees, employeeToMove]
+              employees: [...project.employees, {...movedEmployee, job_id: targetProjectId}]
             };
           }
         }
-        
         return project;
       });
 

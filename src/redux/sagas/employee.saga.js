@@ -1,4 +1,4 @@
-import { put, takeLatest, call } from 'redux-saga/effects';
+import { put, takeLatest, call, select } from 'redux-saga/effects';
 import axios from 'axios';
 
 function* fetchEmployeeInfo() {
@@ -26,38 +26,47 @@ function* fetchEmployeeCard() {
     const response = yield call(axios.get, '/api/addemployee/employeecard');
     yield put({ type: 'SET_EMPLOYEE_CARD', payload: response.data });
   } catch (error) {
-    console.error('Error fetching employee information:', error);
+    console.error('Error fetching employee card information:', error);
   }
 }
 
 function* fetchProjectsWithEmployees() {
   try {
     const response = yield call(axios.get, '/api/project/withEmployees');
-    console.log("Response for fetchProjectsWithEmployees", response.data);
+    console.log("Fetched projects with employees:", response.data);
     yield put({ type: 'SET_PROJECTS_WITH_EMPLOYEES', payload: response.data });
   } catch (error) {
     console.error('Error fetching projects with employees:', error);
+    console.log('Projects fetched:', response.data);
+    yield put({ type: 'FETCH_PROJECTS_FAILURE', error: error.message });
   }
 }
 
 function* handleMoveEmployee(action) {
   try {
-    const { employeeId, targetProjectId, sourceUnionId } = action.payload;
+    const { employeeId, targetProjectId, sourceUnionId, sourceProjectId } = action.payload;
+    console.log('Moving employee:', { employeeId, targetProjectId, sourceUnionId, sourceProjectId });
 
-    // Make an API call to move the employee
     yield call(axios.post, '/api/moveemployee', { 
       employeeId, 
       targetProjectId,
-      sourceUnionId
+      sourceUnionId,
+      sourceProjectId
     });
 
-    // Fetch updated projects and employee information 
+    yield put({ 
+      type: 'MOVE_EMPLOYEE_SUCCESS', 
+      payload: { employeeId, targetProjectId, sourceProjectId } 
+    });
+
     yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
     yield put({ type: 'FETCH_EMPLOYEE_INFO' });
     yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
+
+    console.log('Employee moved successfully');
   } catch (error) {
     console.error('Error moving employee:', error);
-    yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });
+    yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error: error.message });
   }
 }
 
