@@ -7,6 +7,7 @@ import './Scheduling.css';
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const projects = useSelector((state) => state.projectReducer);
   const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
@@ -14,7 +15,7 @@ const Scheduling = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
+        await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
         await dispatch({ type: 'FETCH_EMPLOYEE_INFO' });
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -23,7 +24,7 @@ const Scheduling = () => {
       }
     };
     fetchData();
-  }, [dispatch]);
+  }, [dispatch, selectedDate]);
 
   const moveEmployee = useCallback((employeeId, targetProjectId, sourceUnionId, sourceProjectId) => {
     dispatch({
@@ -39,18 +40,31 @@ const Scheduling = () => {
     }));
   }, [projects, allEmployees]);
 
+  const handleDateChange = (e) => {
+    setSelectedDate(e.target.value);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="scheduling-container">
+      <div className="date-selector">
+        <label htmlFor="schedule-date">Select Date: </label>
+        <input
+          type="date"
+          id="schedule-date"
+          value={selectedDate}
+          onChange={handleDateChange}
+        />
+      </div>
       <div>
         {!memoizedProjects || memoizedProjects.length === 0 ? (
           <table className="no-jobs-table">
             <tbody>
               <tr>
-                <td colSpan="7">YOU HAVE NO JOBS</td>
+                <td colSpan="7">NO JOBS SCHEDULED FOR THIS DATE</td>
               </tr>
             </tbody>
           </table>
