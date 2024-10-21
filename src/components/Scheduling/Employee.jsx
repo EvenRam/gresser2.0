@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
 const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location, isHighlighted, onClick }) => {
-  console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location });
+  console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location, isHighlighted });
 
   const unionColor = unionColors[union_name] || 'black';
   
@@ -13,7 +13,7 @@ const Employee = ({ id, name, phone_number, email, address, union_id, union_name
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }));
+  }), [id, union_id, union_name, current_location]);
 
   const handleClick = useCallback((e) => {
     e.preventDefault();
@@ -76,4 +76,4 @@ const Employee = ({ id, name, phone_number, email, address, union_id, union_name
   );
 };
 
-export default Employee;
+export default React.memo(Employee);
