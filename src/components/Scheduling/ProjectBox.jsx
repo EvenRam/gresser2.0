@@ -1,23 +1,34 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDrop } from 'react-dnd';
 import Employee from './Employee';
 import '../Trades/Box.css'
 
 const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
-  console.log('Id in job box:', id);
-  console.log("Employees in JobBox component:", employees);
-  console.log("job_name", job_name);
+  const [highlightedEmployeeId, setHighlightedEmployeeId] = useState(null);
+
+  const handleDrop = useCallback((item) => {
+    console.log('Dropped item:', item);
+    moveEmployee(item.id, id, item.union_id);
+    
+    // Highlight the employee if it's coming from any project box
+    if (item.current_location === 'project') {
+      setHighlightedEmployeeId(item.id);
+    }
+  }, [id, moveEmployee]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    drop: (item) => {
-      console.log('Dropped item:', item);
-      moveEmployee(item.id, id, item.union_id);
-    },
+    drop: handleDrop,
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
-  }));
+  }), [handleDrop]);
+
+  const handleEmployeeClick = useCallback((employeeId, isHighlighted) => {
+    if (isHighlighted) {
+      setHighlightedEmployeeId(null);
+    }
+  }, []);
 
   return (
     <div
@@ -46,6 +57,8 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             key={employee.id}
             {...employee}
             name={`${employee.first_name} ${employee.last_name}`}
+            isHighlighted={employee.id === highlightedEmployeeId}
+            onClick={handleEmployeeClick}
           />
         ))
       )}

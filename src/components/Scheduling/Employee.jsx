@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
-const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location }) => {
+const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location, isHighlighted, onClick }) => {
   console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location });
 
   const unionColor = unionColors[union_name] || 'black';
@@ -15,11 +15,20 @@ const Employee = ({ id, name, phone_number, email, address, union_id, union_name
     }),
   }));
 
+  const handleClick = useCallback((e) => {
+    e.preventDefault();
+    if (e.type === 'contextmenu' && isHighlighted) {
+      console.log('Employee right-clicked:', id);
+      onClick(id, isHighlighted);
+    }
+  }, [id, onClick, isHighlighted]);
+
   const modalId = `employee-modal-${id}`;
 
   return (
     <div
       ref={drag}
+      onContextMenu={handleClick}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -29,7 +38,8 @@ const Employee = ({ id, name, phone_number, email, address, union_id, union_name
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        backgroundColor: isDragging ? '#f0f0f0' : 'transparent',
+        backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
+        transition: 'background-color 0.1s ease',
       }}
     >
       <h6
