@@ -33,10 +33,17 @@ const Scheduling = () => {
   }, [dispatch]);
 
   const memoizedProjects = useMemo(() => {
-    return projects.map(project => ({
+    const projectsWithEmployees = projects.map(project => ({
       ...project,
       employees: allEmployees.filter(emp => emp.job_id === project.id)
     }));
+
+    // Sort projects: non-empty first, then empty
+    return projectsWithEmployees.sort((a, b) => {
+      if (a.employees.length === 0 && b.employees.length > 0) return 1;
+      if (a.employees.length > 0 && b.employees.length === 0) return -1;
+      return 0;
+    });
   }, [projects, allEmployees]);
 
   const totalAssignedEmployees = useMemo(() => {
@@ -70,6 +77,9 @@ const Scheduling = () => {
                 employees={project.employees}
               />
             ))}
+            {memoizedProjects.length % 2 !== 0 && (
+              <div className="empty-job-box"></div>
+            )}
           </div>
         )}
       </div>
