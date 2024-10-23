@@ -14,6 +14,7 @@ function* fetchEmployeeInfo() {
 
 function* addEmployeeInfo(action) {
   try {
+    console.log('Payload to server:', action.payload); // Log payload here
     yield call(axios.post, '/api/addemployee', action.payload);
     yield put({ type: 'FETCH_EMPLOYEE_INFO' });
   } catch (error) {
@@ -21,14 +22,14 @@ function* addEmployeeInfo(action) {
   }
 }
 
-function* fetchEmployeeCard() {
-  try {
-    const response = yield call(axios.get, '/api/addemployee/employeecard');
-    yield put({ type: 'SET_EMPLOYEE_CARD', payload: response.data });
-  } catch (error) {
-    console.error('Error fetching employee information:', error);
-  }
-}
+// function* fetchEmployeeCard() {
+//   try {
+//     const response = yield call(axios.get, '/api/addemployee/employeecard');
+//     yield put({ type: 'SET_EMPLOYEE_CARD', payload: response.data });
+//   } catch (error) {
+//     console.error('Error fetching employee information:', error);
+//   }
+// }
 
 function* fetchProjectsWithEmployees() {
   try {
@@ -73,11 +74,11 @@ function* statusToggle(action) {
   }
 }
 
-function* fetchEmployeeUnion() {
+function* fetchUnion() {
   try {
     const response = yield call(axios.get, '/api/addemployee/union');
-    yield put({ type: 'SET_EMPLOYEE_UNION', payload: response.data });
-    yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
+    yield put({ type: 'SET_UNIONS', payload: response.data });
+    // yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
   } catch (error) {
     console.error('Error fetching employee union information:', error);
   }
@@ -96,10 +97,10 @@ function* fetchUnionsWithEmployees() {
 export default function* rootSaga() {
   yield takeLatest('FETCH_EMPLOYEE_INFO', fetchEmployeeInfo);
   yield takeLatest('ADD_EMPLOYEE_INFO', addEmployeeInfo);
-  yield takeLatest('FETCH_EMPLOYEE_CARD', fetchEmployeeCard);
+  // yield takeLatest('FETCH_EMPLOYEE_CARD', fetchEmployeeCard);
   yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
   yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
   yield takeLatest('EMPLOYEE_TOGGLE_STATUS', statusToggle);
-  yield takeLatest('FETCH_EMPLOYEE_UNION', fetchEmployeeUnion);
+  yield takeLatest('FETCH_UNION', fetchUnion);
   yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
 }

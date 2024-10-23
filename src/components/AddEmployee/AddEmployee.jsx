@@ -7,6 +7,8 @@ import ToggleEmployee from './ToggleEmployee';
 const AddEmployee = () => {
     const dispatch = useDispatch();
     const employees = useSelector((state) => state.addEmployeeReducer);
+    const unions = useSelector((state) => state.unionReducer); 
+    console.log("Union Reducer", unions)
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -20,6 +22,7 @@ const AddEmployee = () => {
 
     useEffect(() => {
         dispatch({ type: 'FETCH_EMPLOYEE_INFO' });
+        dispatch({ type: 'FETCH_UNION' }); 
     }, [dispatch]);
 
     const handleSubmit = (event) => {
@@ -33,6 +36,9 @@ const AddEmployee = () => {
             email,
             address
         };
+
+        console.log('Payload:', newEmployee); // Check the payload here
+
         dispatch({ type: 'ADD_EMPLOYEE_INFO', payload: newEmployee });
 
         setFirstName('');
@@ -111,7 +117,7 @@ const AddEmployee = () => {
                 />
 
             {/* <label htmlFor="union_name">Select Union:</label> */}
-            <select
+            {/* <select
                 id="union_name"
                 name="union_name"
                 value={unionName}
@@ -123,7 +129,24 @@ const AddEmployee = () => {
                 <option value="23 - Laborers">23 - Laborers</option>
                 <option value="24 - Operators">24 - Operators</option>
                 <option value="25 - Carpenters">25 - Carpenters</option>
-            </select>
+            </select> */}
+
+
+<select
+    id="union_name"
+    name="union_name"
+    value={unionName}
+    onChange={(event) => setUnionName(event.target.value)}
+>
+    <option value="" disabled>Select a union</option>
+    {unions.map((union) => (
+        <option key={union.id} value={union.union_name}>
+            {union.union_name}
+            {console.log("mapping union names", union.union_name)}
+        </option>
+    ))}
+</select>
+
         </div>
 
 

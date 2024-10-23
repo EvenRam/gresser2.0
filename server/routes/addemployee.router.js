@@ -158,10 +158,10 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-
 router.put('/:id', async (req, res) => {
     const employeeId = req.params.id;
-    console.log("employee id", employeeId);
+    console.log("Employee ID:", employeeId);
+
     const {
         first_name,
         last_name,
@@ -171,88 +171,104 @@ router.put('/:id', async (req, res) => {
         email,
         address,
         job_id,
-        union_id
+        union_name  // Updated to accept union_name instead of union_id
     } = req.body;
 
-    // If employee_status is provided, we check for its specific value (active or inactive)
-    if (employee_status !== undefined &&
-        !first_name &&
-        !last_name &&
-        !employee_number &&
-        !phone_number &&
-        !email &&
-        !address &&
-        !job_id &&
-        !union_id) {
-        
-        let queryText;
-        let queryParams;
-        
-        // If the employee is set to inactive, update job_id to null and current_location to 'inactive'
-        if (employee_status === false) {
-            queryText = `
-                UPDATE "add_employee"
-                SET "employee_status" = $1, "job_id" = NULL, "current_location" = 'inactive'
-                WHERE "id" = $2;
+    try {
+        let unionId;
+        if (union_name) {
+            // Check if the union_name exists in the unions table
+            const checkUnionQuery = `
+                SELECT "id" FROM "unions" WHERE "union_name" = $1;
             `;
-            queryParams = [employee_status, employeeId];
-        } else {
-            // If the employee is set to active, you can revert their current_location to 'union'
-            queryText = `
-                UPDATE "add_employee"
-                SET "employee_status" = $1, "current_location" = 'union'
-                WHERE "id" = $2;
-            `;
-            queryParams = [employee_status, employeeId];
+            const unionResult = await pool.query(checkUnionQuery, [union_name]);
+            
+            if (unionResult.rows.length > 0) {
+                unionId = unionResult.rows[0].id;
+            } else {
+                // If not found, insert the new union and retrieve its id
+                const insertUnionQuery = `
+                    INSERT INTO "unions" ("union_name")
+                    VALUES ($1)
+                    RETURNING "id";
+                `;
+                const newUnionResult = await pool.query(insertUnionQuery, [union_name]);
+                unionId = newUnionResult.rows[0].id;
+            }
         }
 
-        console.log("updating employee with query:", queryText, queryParams);
-        try {
-            await pool.query(queryText, queryParams);
-            res.sendStatus(204); // Success with no content
-        } catch (error) {
-            console.log("Error updating employee status", error);
-            res.sendStatus(500);
-        }
-    } else {
-        // Handle other fields update as before
-        const values = [
-            first_name,
-            last_name,
-            employee_number,
-            employee_status,
-            phone_number,
-            email,
-            address,
-            job_id,
-            union_id,
-            employeeId
-        ];
-        const query = `
-            UPDATE "add_employee"
-            SET
-                "first_name" = $1,
-                "last_name" = $2,
-                "employee_number" = $3,
-                "employee_status" = $4,
-                "phone_number" = $5,
-                "email" = $6,
-                "address" = $7,
-                "job_id" = $8,
-                "union_id" = $9
-            WHERE "id" = $10;
-        `;
-        try {
-            const result = await pool.query(query, values);
-            if (result.rowCount > 0) {
-                res.sendStatus(204);
+        // Check if only employee status is being updated, and handle accordingly
+        if (employee_status !== undefined &&
+            !first_name &&
+            !last_name &&
+            !employee_number &&
+            !phone_number &&
+            !email &&
+            !address &&
+            !job_id &&
+            !union_name) {
+
+            let queryText;
+            let queryParams;
+
+            if (employee_status === false) {
+                queryText = `
+                    UPDATE "add_employee"
+                    SET "employee_status" = $1, "job_id" = NULL, "current_location" = 'inactive'
+                    WHERE "id" = $2;
+                `;
+                queryParams = [employee_status, employeeId];
             } else {
-                res.sendStatus(404);
+                queryText = `
+                    UPDATE "add_employee"
+                    SET "employee_status" = $1, "current_location" = 'union'
+                    WHERE "id" = $2;
+                `;
+                queryParams = [employee_status, employeeId];
             }
-        } catch (error) {
-            console.error('Error updating employee:', error);
-            res.status(500).json({ error: 'Internal server error' });
+
+            console.log("Updating employee status with query:", queryText, queryParams);
+            await pool.query(queryText, queryParams);
+            res.sendStatus(204); // No content
+        } else {
+            // Update other fields including union_id
+            const queryText = `
+                UPDATE "add_employee"
+                SET
+                    "first_name" = $1,
+                    "last_name" = $2,
+                    "employee_number" = $3,
+                    "employee_status" = $4,
+                    "phone_number" = $5,
+                    "email" = $6,
+                    "address" = $7,
+                    "job_id" = $8,
+                    "union_id" = $9
+                WHERE "id" = $10;
+            `;
+            const queryParams = [
+                first_name,
+                last_name,
+                employee_number,
+                employee_status,
+                phone_number,
+                email,
+                address,
+                job_id,
+                unionId, // Use unionId (either found or inserted)
+                employeeId
+            ];
+
+            const result = await pool.query(queryText, queryParams);
+            if (result.rowCount > 0) {
+                res.sendStatus(204); // Success with no content
+            } else {
+                res.sendStatus(404); // Not found
+            }
         }
+    } catch (error) {
+        console.error('Error updating employee with union:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
