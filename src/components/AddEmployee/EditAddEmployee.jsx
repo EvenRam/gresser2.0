@@ -9,7 +9,7 @@ function EditEmployee() {
     const editEmployee = useSelector((store) => store.editEmployeeReducer);
     console.log("editEmployee reducer",editEmployee)
     const unions = useSelector((store) => store.unionReducer);
-    console.log("union reducer",unions)
+    console.log("union reducer DAta",unions)
 
     
 
@@ -26,6 +26,8 @@ function EditEmployee() {
 
     const handleUnionChange = (event) => {
         const selectedUnionId = event.target.value; 
+        console.log("Selected Union ID:", selectedUnionId); // Log the selected union ID
+
         const selectedUnion = unions.find(union => union.id === Number(selectedUnionId)); 
     
         // Dispatch both union_id and union_name to the Redux store
@@ -95,26 +97,35 @@ function EditEmployee() {
                             value={editEmployee.employee_number}
                             onChange={(event) => handleChange(event, 'employee_number')}
                         />
-                    </label>
+                          </label>
                 </div>
-                
+                {/* <div>
+                    <label>
+                        Union ID
+                        <input
+                        className='union-id'
+                            type="text"
+                            name="union_id"
+                            value={editEmployee.union_id}
+                            onChange={(event) => handleChange(event, 'union_id')}
+                        />
+                    </label>
+                </div> */}
                 <div>
-                <label>Union Trade
                 <select
-    id="union_name"
-    name="union_name"
+    id="union_id"
+    name="union_id"
     value={editEmployee.union_id}
-    onChange={handleUnionChange}
+    onChange={(event) => handleUnionChange(event, 'union_id')}
 >
     <option value="" disabled>Select a union</option>
     {unions.map((union) => (
         <option key={union.id} value={union.id}>
             {union.union_name}
+            {console.log("union_names:", union.union_name, "union_id:", union.union_id)}
         </option>
     ))}
 </select>
-
-                    </label>
 
                 </div>
                 <div>

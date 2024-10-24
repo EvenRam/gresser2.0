@@ -8,7 +8,7 @@ const AddEmployee = () => {
     const dispatch = useDispatch();
     const employees = useSelector((state) => state.addEmployeeReducer);
     const unions = useSelector((state) => state.unionReducer); 
-    console.log("Union Reducer", unions , "Union Id:", unions.union_id)
+    console.log("Union Reducer", unions)
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -26,13 +26,19 @@ const AddEmployee = () => {
         dispatch({ type: 'FETCH_UNION' }); 
     }, [dispatch]);
 
+   
     const handleSubmit = (event) => {
         event.preventDefault();
+        
+        // Find the selected union by its ID to get the union_name
+        const selectedUnion = unions.find(union => union.id === Number(unionId));
+        
         const newEmployee = {
             first_name: firstName,
             last_name: lastName,
             employee_number: employeeNumber,
             union_id: unionId, // use union_id when adding an employee
+            union_name: selectedUnion ? selectedUnion.union_name : "", // Include the union_name
             phone_number: phoneNumber,
             email,
             address
