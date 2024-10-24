@@ -8,15 +8,16 @@ const AddEmployee = () => {
     const dispatch = useDispatch();
     const employees = useSelector((state) => state.addEmployeeReducer);
     const unions = useSelector((state) => state.unionReducer); 
-    console.log("Union Reducer", unions)
+    console.log("Union Reducer", unions , "Union Id:", unions.union_id)
 
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [employeeNumber, setEmployeeNumber] = useState('');
-    const [unionName, setUnionName] = useState(''); 
+    const [unionId, setUnionId] = useState(''); // use unionId for correct union handling
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
+
 
     const history = useHistory();
 
@@ -31,7 +32,7 @@ const AddEmployee = () => {
             first_name: firstName,
             last_name: lastName,
             employee_number: employeeNumber,
-            union_name: unionName,
+            union_id: unionId, // use union_id when adding an employee
             phone_number: phoneNumber,
             email,
             address
@@ -44,7 +45,7 @@ const AddEmployee = () => {
         setFirstName('');
         setLastName('');
         setEmployeeNumber('');
-        setUnionName('');
+        setUnionId('');
         setPhoneNumber('');
         setEmail('');
         setAddress('');
@@ -69,7 +70,7 @@ const AddEmployee = () => {
         setFirstName(dummyData.firstName);
         setLastName(dummyData.lastName);
         setEmployeeNumber(dummyData.employeeNumber);
-        setUnionName(dummyData.unionName);
+        setUnionId(dummyData.unionId);
         setPhoneNumber(dummyData.phoneNumber);
         setEmail(dummyData.email);
         setAddress(dummyData.address);
@@ -98,21 +99,21 @@ const AddEmployee = () => {
                     type="text"
                     name="last_name"
                     placeholder="Last Name"
-                    value={lastName}
+                    value={lastName || ""}
                     onChange={(event) => setLastName(event.target.value)}
                 />
                 <input
                     type="text"
                     name="first_name"
                     placeholder="First Name"
-                    value={firstName}
+                    value={firstName || ""}
                     onChange={(event) => setFirstName(event.target.value)}
                 />
                 <input
                     type="text"
                     name="employee_number"
                     placeholder="Employee Number"
-                    value={employeeNumber}
+                    value={employeeNumber || ""}
                     onChange={(event) => setEmployeeNumber(event.target.value)}
                 />
 
@@ -132,20 +133,20 @@ const AddEmployee = () => {
             </select> */}
 
 
-<select
-    id="union_name"
-    name="union_name"
-    value={unionName}
-    onChange={(event) => setUnionName(event.target.value)}
->
-    <option value="" disabled>Select a union</option>
-    {unions.map((union) => (
-        <option key={union.id} value={union.union_name}>
-            {union.union_name}
-            {console.log("mapping union names", union.union_name)}
-        </option>
-    ))}
-</select>
+<label htmlFor="union_name">Select Union:</label>
+                    <select
+                        id="union_name"
+                        name="union_name"
+                        value={unionId || ""}
+                        onChange={(event) => setUnionId(event.target.value)}
+                    >
+                        <option value="" disabled>Select a union</option>
+                        {unions.map((union) => (
+                            <option key={union.id} value={union.id}>
+                                {union.union_name}
+                            </option>
+                        ))}
+                    </select>
 
         </div>
 
@@ -200,7 +201,8 @@ const AddEmployee = () => {
                             <td>{emp.last_name}</td>
                             <td>{emp.first_name}</td>
                             <td>{emp.employee_number}</td>
-                            <td>{emp.union_name}</td>
+                            <td>{emp.union_name}
+                            {console.log(" union name:", emp.union_name)}</td>
                             <td>
                                 <ToggleEmployee emp={emp} />
                             </td>

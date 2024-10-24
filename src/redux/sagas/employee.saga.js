@@ -6,6 +6,8 @@ function* fetchEmployeeInfo() {
     const response = yield call(axios.get, '/api/addemployee');
     console.log('Fetched employee info:', response.data);
     yield put({ type: 'SET_EMPLOYEE_INFO', payload: response.data });
+    console.log('Fetched employee response.data:', response.data);
+
   } catch (error) {
     console.error('Error fetching employee information:', error);
     yield put({ type: 'FETCH_ERROR', payload: 'Failed to fetch employee information.' });
@@ -78,7 +80,10 @@ function* fetchUnion() {
   try {
     const response = yield call(axios.get, '/api/addemployee/union');
     yield put({ type: 'SET_UNIONS', payload: response.data });
+    console.log("fetch union payload", response.data);
+
     // yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
+
   } catch (error) {
     console.error('Error fetching employee union information:', error);
   }

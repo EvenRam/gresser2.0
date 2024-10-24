@@ -175,25 +175,21 @@ router.put('/:id', async (req, res) => {
     } = req.body;
 
     try {
-        let unionId;
+         let unionId; // Variable to hold the union_id after looking it up
         if (union_name) {
-            // Check if the union_name exists in the unions table
+            // Query to check if the provided union_name exists in the "unions" table
             const checkUnionQuery = `
                 SELECT "id" FROM "unions" WHERE "union_name" = $1;
             `;
+            // Execute the query with the union_name provided by the user
             const unionResult = await pool.query(checkUnionQuery, [union_name]);
             
             if (unionResult.rows.length > 0) {
+                // If the union_name exists, get the existing union_id
                 unionId = unionResult.rows[0].id;
             } else {
-                // If not found, insert the new union and retrieve its id
-                const insertUnionQuery = `
-                    INSERT INTO "unions" ("union_name")
-                    VALUES ($1)
-                    RETURNING "id";
-                `;
-                const newUnionResult = await pool.query(insertUnionQuery, [union_name]);
-                unionId = newUnionResult.rows[0].id;
+                // If the union_name doesn't exist, return an error
+                return res.status(400).json({ error: 'Union does not exist' });
             }
         }
 
