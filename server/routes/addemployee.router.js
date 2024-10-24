@@ -131,6 +131,7 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
         let unionId;
         if (unionCheckResult.rows.length > 0) {
             unionId = unionCheckResult.rows[0].id;
+            return res.status(400).json({ error: 'Union does not exist' });
         } else {
             const insertUnionQuery = `
                 INSERT INTO "unions" ("union_name")
@@ -171,11 +172,11 @@ router.put('/:id', async (req, res) => {
         email,
         address,
         job_id,
-        union_name  // Updated to accept union_name instead of union_id
+        union_name
     } = req.body;
 
     try {
-         let unionId; // Variable to hold the union_id after looking it up
+         let unionId; 
         if (union_name) {
             // Query to check if the provided union_name exists in the "unions" table
             const checkUnionQuery = `
@@ -225,7 +226,7 @@ router.put('/:id', async (req, res) => {
 
             console.log("Updating employee status with query:", queryText, queryParams);
             await pool.query(queryText, queryParams);
-            res.sendStatus(204); // No content
+            res.sendStatus(204); 
         } else {
             // Update other fields including union_id
             const queryText = `
@@ -251,15 +252,17 @@ router.put('/:id', async (req, res) => {
                 email,
                 address,
                 job_id,
-                unionId, // Use unionId (either found or inserted)
+                unionId, 
                 employeeId
             ];
 
+            
+
             const result = await pool.query(queryText, queryParams);
             if (result.rowCount > 0) {
-                res.sendStatus(204); // Success with no content
+                res.sendStatus(204); 
             } else {
-                res.sendStatus(404); // Not found
+                res.sendStatus(404);
             }
         }
     } catch (error) {

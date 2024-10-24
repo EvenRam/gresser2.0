@@ -13,22 +13,26 @@ const initialState = {
 const editEmployeeReducer = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_EDIT_EMPLOYEE':
-            // Set the state to the payload, which should be the employee being edited
-            return { ...state, ...action.payload }; // Merge with existing state
+            return { ...state, ...action.payload }; // Set the state to the payload
+
         case 'EDIT_ONCHANGE':
-            // Update a specific property in the state
+            // Update specific properties in the state
             return {
                 ...state,
                 [action.payload.property]: action.payload.value
             };
-        case 'EDIT_UNION':
-            // Update union_id specifically
+
+        case 'UPDATE_UNION':
+            // Specifically handle union updates if needed
             return {
                 ...state,
-                union_id: action.payload.union_id // Ensure union_id is updated
+                union_id: action.payload.union_id,
+                union_name: action.payload.union_name
             };
+
         case 'EDIT_CLEAR':
             return initialState;
+
         default:
             return state;
     }

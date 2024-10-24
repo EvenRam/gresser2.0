@@ -18,6 +18,7 @@ function* addEmployeeInfo(action) {
   try {
     console.log('Payload to server:', action.payload); // Log payload here
     yield call(axios.post, '/api/addemployee', action.payload);
+    console.log("add employee actiopn.payload:", action.payload)
     yield put({ type: 'FETCH_EMPLOYEE_INFO' });
   } catch (error) {
     console.error('Error adding employee information:', error);

@@ -13,7 +13,7 @@ const AddEmployee = () => {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [employeeNumber, setEmployeeNumber] = useState('');
-    const [unionId, setUnionId] = useState(''); // use unionId for correct union handling
+    const [unionId, setUnionId] = useState(''); 
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
@@ -38,7 +38,7 @@ const AddEmployee = () => {
             address
         };
 
-        console.log('Payload:', newEmployee); // Check the payload here
+        console.log('Payload:', newEmployee); 
 
         dispatch({ type: 'ADD_EMPLOYEE_INFO', payload: newEmployee });
 
@@ -117,20 +117,6 @@ const AddEmployee = () => {
                     onChange={(event) => setEmployeeNumber(event.target.value)}
                 />
 
-            {/* <label htmlFor="union_name">Select Union:</label> */}
-            {/* <select
-                id="union_name"
-                name="union_name"
-                value={unionName}
-                onChange={(event) => setUnionName(event.target.value)}
-            >
-                <option value="" disabled>Select a union</option>
-                <option value="21 - Bricklayers">21 - Bricklayers</option>
-                <option value="22 - Cement Masons/Finishers">22 - Cement Masons/Finishers</option>
-                <option value="23 - Laborers">23 - Laborers</option>
-                <option value="24 - Operators">24 - Operators</option>
-                <option value="25 - Carpenters">25 - Carpenters</option>
-            </select> */}
 
 
 <label htmlFor="union_name">Select Union:</label>
@@ -202,7 +188,7 @@ const AddEmployee = () => {
                             <td>{emp.first_name}</td>
                             <td>{emp.employee_number}</td>
                             <td>{emp.union_name}
-                            {console.log(" union name:", emp.union_name)}</td>
+                            {console.log(" union name:", emp.union_name,  "union_id: ",emp.union_id)}</td>
                             <td>
                                 <ToggleEmployee emp={emp} />
                             </td>
