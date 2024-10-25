@@ -33,11 +33,22 @@ const Scheduling = () => {
   }, [dispatch]);
 
   const memoizedProjects = useMemo(() => {
-    return projects.map(project => ({
+    const projectsWithEmployees = projects.map(project => ({
       ...project,
       employees: allEmployees.filter(emp => emp.job_id === project.id)
     }));
+
+    // Sort projects: non-empty first, then empty
+    return projectsWithEmployees.sort((a, b) => {
+      if (a.employees.length === 0 && b.employees.length > 0) return 1;
+      if (a.employees.length > 0 && b.employees.length === 0) return -1;
+      return 0;
+    });
   }, [projects, allEmployees]);
+
+  const totalAssignedEmployees = useMemo(() => {
+    return memoizedProjects.reduce((total, project) => total + project.employees.length, 0);
+  }, [memoizedProjects]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -45,6 +56,7 @@ const Scheduling = () => {
 
   return (
     <div className="scheduling-container">
+      <h2 className="total-employees">Total Employees Assigned to Projects: {totalAssignedEmployees}</h2>
       <div>
         {!memoizedProjects || memoizedProjects.length === 0 ? (
           <table className="no-jobs-table">
@@ -65,6 +77,9 @@ const Scheduling = () => {
                 employees={project.employees}
               />
             ))}
+            {memoizedProjects.length % 2 !== 0 && (
+              <div className="empty-job-box"></div>
+            )}
           </div>
         )}
       </div>
