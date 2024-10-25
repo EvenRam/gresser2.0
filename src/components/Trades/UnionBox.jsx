@@ -48,7 +48,7 @@ const UnionBox = ({ id, union_name, color }) => {
   }), [id, union_name, dispatch, allEmployees]);
 
   return (
-    <div
+    <div 
       ref={drop}
       style={{
         border: '1px solid gray',
@@ -59,8 +59,9 @@ const UnionBox = ({ id, union_name, color }) => {
         backgroundColor: isOver ? '#f0f0f0' : '#fff',
       }}
     >
-      <h4 className='small-text' style={{ color }}>{union_name} (ID: {id})</h4>
+      <h4 className='small-text' style={{ color }}>{union_name}</h4>
       <div className="separator"></div>
+      <div className='union_box'> 
       {employees.length === 0 ? (
         <p>No employees assigned</p>
       ) : (
@@ -72,14 +73,17 @@ const UnionBox = ({ id, union_name, color }) => {
               <Employee
                 key={employee.id}
                 {...employee}
-                name={`${employee.first_name} ${employee.last_name}`}
+                className="employee-name" name={`${employee.first_name} ${employee.last_name}`}
                 union_id={id}
                 union_name={union_name}
                 current_location="union"
+               
+
               />
             );
           })
       )}
+      </div>
     </div>
   );
 };

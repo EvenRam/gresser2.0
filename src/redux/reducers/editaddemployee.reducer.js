@@ -3,7 +3,7 @@ const initialState = {
     last_name: '',
     employee_number: '',
     union_id: '',
-    union_name: "",
+    union_name: '',
     employee_status: 0,
     phone_number: '',
     email: '',

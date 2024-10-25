@@ -1,10 +1,24 @@
 
-  .small-text {
-    font-size: 16px;
-  }
+/* For the union name */
+.small-text {
+  font-size: 16px;
+  margin-bottom: 5px;  
+  /* text-align: center;   */
 
-  .separator {
-    border-bottom: 1px solid black;
-    margin: 10px 0;
-  }
-  
+}
+
+/* For the separator */
+.separator {
+  border-bottom: 1px solid black;
+  margin: -5px 0;  
+  margin-bottom: 15px;
+  width: 100%;  /* Full width */
+}
+
+
+/* .union_box,.employee-name {
+  font-size: 16px;
+  text-align: center;  
+  display: block;     
+  margin-top: 5px;
+} */
