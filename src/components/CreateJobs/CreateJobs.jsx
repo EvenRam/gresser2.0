@@ -9,7 +9,7 @@ const CreateJobs = () => {
     const dispatch = useDispatch();
     const history = useHistory();
 
-    const jobs = useSelector(store => store.jobReducer);
+
 
     // state variables defines for input fields
     const [jobNumber, setJobNumber] = useState('');

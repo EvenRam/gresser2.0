@@ -20,6 +20,7 @@ const JobHistory = () => {
     axios.get(url)
       .then(response => {
         setJobs(response.data);
+        console.log("response.data", response.data)
       })
       .catch(error => {
         console.error('Error fetching jobs:', error);
@@ -51,7 +52,7 @@ const JobHistory = () => {
       return (
         <ul>
           {rainDays.map((rainDay) => (
-            <li key={rainDay.date}>
+            <li key={rainDay.id}>
               {formatDate(rainDay.date)}
             </li>
           ))}
@@ -143,8 +144,8 @@ const JobHistory = () => {
                 <td>{job.location}</td>
                 <td>{formatDate(job.start_date)}</td>
                 <td>{formatDate(job.end_date)}</td>
-                <td>{job.status ? 'Active' : 'Inactive'}</td>
-                <td>{renderEmployees(job.employees)}</td>
+                <td>{job.status}</td>
+                <td>{renderEmployees(job.employees, job.job_id)}</td>
                 <td>{renderRainDays(job.rain_days)}</td>
                 {filterDate && (
                   <td>
