@@ -56,34 +56,32 @@ const Scheduling = () => {
 
   return (
     <div className="scheduling-container">
-      <h2 className="total-employees">Total Employees Assigned to Projects: {totalAssignedEmployees}</h2>
-      <div>
-        {!memoizedProjects || memoizedProjects.length === 0 ? (
-          <table className="no-jobs-table">
-            <tbody>
-              <tr>
-                <td colSpan="7">YOU HAVE NO JOBS</td>
-              </tr>
-            </tbody>
-          </table>
-        ) : (
-          <div className="jobs-container">
-            {memoizedProjects.map((project, index) => (
-              <DraggableJobBox
-                key={project.id}
-                job={project}
-                index={index}
-                moveEmployee={moveEmployee}
-                employees={project.employees}
-              />
-            ))}
-            {memoizedProjects.length % 2 !== 0 && (
-              <div className="empty-job-box"></div>
-            )}
-          </div>
-        )}
-      </div>
+    <h2 className="total-employees">Total Employees: {totalAssignedEmployees}</h2>
+    <div>
+      {!memoizedProjects || memoizedProjects.length === 0 ? (
+        <table className="no-jobs-table">
+          <tbody>
+            <tr>
+              <td colSpan="7">YOU HAVE NO JOBS</td>
+            </tr>
+          </tbody>
+        </table>
+      ) : (
+        <div className="jobs-container">
+          {memoizedProjects.map((project, index) => (
+            <DraggableJobBox
+              key={project.id}
+              job={project}
+              index={index}
+              moveEmployee={moveEmployee}
+              employees={project.employees}
+            />
+          ))}
+        </div>
+      )}
     </div>
+  </div>
+  
   );
 };
 
