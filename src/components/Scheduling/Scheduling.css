@@ -1,5 +1,8 @@
 .scheduling-container {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+  width: 120%;
 }
 
 .jobs-container {
@@ -45,4 +48,12 @@
   .jobs-container {
     grid-template-columns: 1fr;
   }
+}
+
+.total-employees{
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 25px;
+  font-size: 14px;
+
 }

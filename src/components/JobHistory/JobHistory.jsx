@@ -20,8 +20,7 @@ const JobHistory = () => {
     axios.get(url)
       .then(response => {
         setJobs(response.data);
-        console.log("response.data", response.data)
-
+        console.log("response.data", response.data);
       })
       .catch(error => {
         console.error('Error fetching jobs:', error);
@@ -44,7 +43,7 @@ const JobHistory = () => {
       return (
         <ul>
           {employees.map((employee) => (
-            <li key={employee.id}>
+            <li key={employee.employee_id}>
               {employee.first_name} {employee.last_name}
             </li>
           ))}
@@ -57,13 +56,12 @@ const JobHistory = () => {
 
   const renderRainDays = (rainDays) => {
     const uniqueDates = [...new Set(rainDays.map(day => day.date))];
-    console.log("uniqueDate", uniqueDates)
+    console.log("uniqueDate", uniqueDates);
   
     return uniqueDates.length > 0 ? (
       <ul>
         {uniqueDates.map((date) => (
           <li key={date}>{formatDate(date)}</li>
-          
         ))}
       </ul>
     ) : (
@@ -71,8 +69,6 @@ const JobHistory = () => {
     );
   };
   
-  
-
   const rainCheckBox = (jobId) => {
     axios.post('/api/jobhistory/rainday', { jobId, date: filterDate })
       .then(() => {
@@ -144,7 +140,7 @@ const JobHistory = () => {
         <tbody className="history-tbody">
           {jobs.length === 0 ? (
             <tr>
-              <td colSpan="8">No Projects occurred on this day</td>
+              <td colSpan="8">No projects available</td>
             </tr>
           ) : (
             jobs.map((job) => (
@@ -155,15 +151,12 @@ const JobHistory = () => {
                 <td>{formatProjectDate(job.start_date)}</td>
                 <td>{formatProjectDate(job.end_date)}</td>
                 <td>{job.status}</td>
-                <td>{renderEmployees(job.employees,job.job_id)}</td>
+                <td>{renderEmployees(job.employees)}</td>
                 <td>{renderRainDays(job.rain_days)}</td>
                 {filterDate && (
                   <td>
-                    <input
-                      type="checkbox"
-                      checked={job.rain_days.some(function(rd) {
-                        return formatDate(rd.date) === formatDate(filterDate);
-                      })}
+                    <input 
+                      type="checkbox" 
                       onChange={() => rainCheckBox(job.job_id)}
                     />
                   </td>
@@ -174,34 +167,13 @@ const JobHistory = () => {
         </tbody>
       </table>
       {report && (
-        <div className="report-container">
-          <div className="report-content">
-            <h2>Report</h2>
-            <table className="report-table">
-              <tbody>
-                <tr>
-                  <td>Total Projects:</td>
-                  <td>{report.totalJobs}</td>
-                </tr>
-                <tr>
-                  <td>Total Employees:</td>
-                  <td>{report.totalEmployees}</td>
-                </tr>
-                <tr>
-                  <td>Total Rain Days:</td>
-                  <td>{report.totalRainDays}</td>
-                </tr>
-                <tr>
-                  <td>Average Employees per Job:</td>
-                  <td>{report.averageEmployeesPerJob}</td>
-                </tr>
-                <tr>
-                  <td>Total Estimated Hours:</td>
-                  <td>{report.totalEstimatedHours}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div className="report">
+          <h2>Report</h2>
+          <p>Total Jobs: {report.totalJobs}</p>
+          <p>Total Employees: {report.totalEmployees}</p>
+          <p>Total Rain Days: {report.totalRainDays}</p>
+          <p>Average Employees per Job: {report.averageEmployeesPerJob}</p>
+          <p>Total Estimated Hours: {report.totalEstimatedHours}</p>
         </div>
       )}
     </div>

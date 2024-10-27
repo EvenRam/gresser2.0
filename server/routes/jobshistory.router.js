@@ -5,7 +5,7 @@ const pool = require('../modules/pool');
 router.get('/', async (req, res) => {
   try {
     const filterDate = req.query.filterDate;
-    console.log("filterDate", filterDate)
+    console.log("filterDate", filterDate);
 
     let jobsWithDetailsQuery = `
       SELECT 
@@ -39,6 +39,25 @@ router.get('/', async (req, res) => {
     }
 
     jobsWithDetailsQuery += `
+      GROUP BY 
+        j.job_id, 
+        j.job_number, 
+        j.job_name, 
+        j.location, 
+        j.start_date, 
+        j.end_date, 
+        j.status, 
+        ae.id, 
+        ae.first_name, 
+        ae.last_name, 
+        ae.employee_number, 
+        ae.employee_status, 
+        ae.phone_number, 
+        ae.email, 
+        ae.address, 
+        ae.current_location, 
+        ae.union_id,
+        rd.date
       ORDER BY j.job_id, ae.id, rd.date
     `;
 
@@ -84,8 +103,8 @@ router.get('/', async (req, res) => {
         };
       }
 
-      // Add employee details if present
-      if (employee_id) {
+      // Add employee details if present, avoiding duplicates
+      if (employee_id && !jobs[job_id].employees.some(emp => emp.employee_id === employee_id)) {
         jobs[job_id].employees.push({
           employee_id,
           first_name,
@@ -117,7 +136,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-
 router.post('/rainday', async (req, res) => {
   try {
     const { jobId, date } = req.body;
@@ -139,6 +157,5 @@ router.post('/rainday', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 module.exports = router;

@@ -11,14 +11,14 @@
   flex-wrap: wrap;
   justify-content: flex-start;
   max-width: 100%;
-  margin-left: 20px;
+  margin-left: 20px;margin-top: 18px;
   
 }
 
 .union-box {
   flex: 0 0 5%;
   box-sizing: border-box;
-  padding: 2px;
+  padding: 6px;
   margin: 2px;
   
 }
