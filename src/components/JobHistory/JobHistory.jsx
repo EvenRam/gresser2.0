@@ -21,16 +21,24 @@ const JobHistory = () => {
       .then(response => {
         setJobs(response.data);
         console.log("response.data", response.data)
+
       })
       .catch(error => {
         console.error('Error fetching jobs:', error);
       });
   };
 
-  const formatDate = (dateString) => {
+  const formatProjectDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const formatDate = (dateString) => {
+    // Parse the date string to avoid timezone offset issues
+    const [year, month, day] = dateString.split('-');
+    const localDate = new Date(year, month - 1, day);
+    return localDate.toLocaleDateString();
+  };
+  
   const renderEmployees = (employees) => {
     if (employees && employees.length > 0) {
       return (
@@ -48,20 +56,22 @@ const JobHistory = () => {
   };
 
   const renderRainDays = (rainDays) => {
-    if (rainDays && rainDays.length > 0) {
-      return (
-        <ul>
-          {rainDays.map((rainDay) => (
-            <li key={rainDay.id}>
-              {formatDate(rainDay.date)}
-            </li>
-          ))}
-        </ul>
-      );
-    } else {
-      return <span>No rain days</span>;
-    }
+    const uniqueDates = [...new Set(rainDays.map(day => day.date))];
+    console.log("uniqueDate", uniqueDates)
+  
+    return uniqueDates.length > 0 ? (
+      <ul>
+        {uniqueDates.map((date) => (
+          <li key={date}>{formatDate(date)}</li>
+          
+        ))}
+      </ul>
+    ) : (
+      <span>No rain days</span>
+    );
   };
+  
+  
 
   const rainCheckBox = (jobId) => {
     axios.post('/api/jobhistory/rainday', { jobId, date: filterDate })
@@ -142,10 +152,10 @@ const JobHistory = () => {
                 <td>{job.job_number}</td>
                 <td>{job.job_name}</td>
                 <td>{job.location}</td>
-                <td>{formatDate(job.start_date)}</td>
-                <td>{formatDate(job.end_date)}</td>
+                <td>{formatProjectDate(job.start_date)}</td>
+                <td>{formatProjectDate(job.end_date)}</td>
                 <td>{job.status}</td>
-                <td>{renderEmployees(job.employees, job.job_id)}</td>
+                <td>{renderEmployees(job.employees,job.job_id)}</td>
                 <td>{renderRainDays(job.rain_days)}</td>
                 {filterDate && (
                   <td>

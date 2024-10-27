@@ -5,6 +5,7 @@ const pool = require('../modules/pool');
 router.get('/', async (req, res) => {
   try {
     const filterDate = req.query.filterDate;
+    console.log("filterDate", filterDate)
 
     let jobsWithDetailsQuery = `
       SELECT 
@@ -44,67 +45,70 @@ router.get('/', async (req, res) => {
     const jobsResult = await pool.query(jobsWithDetailsQuery);
     const rows = jobsResult.rows;
 
+    // Organize jobs and their details in an object
     const jobs = {};
     rows.forEach(row => {
-  const {
-    job_id,
-    job_number,
-    job_name,
-    location,
-    start_date,
-    end_date,
-    job_status,
-    employee_id,
-    first_name,
-    last_name,
-    employee_number,
-    employee_status,
-    phone_number,
-    email,
-    address,
-    current_location,
-    union_id,
-    rain_day
-  } = row;
+      const {
+        job_id,
+        job_number,
+        job_name,
+        location,
+        start_date,
+        end_date,
+        job_status,
+        employee_id,
+        first_name,
+        last_name,
+        employee_number,
+        employee_status,
+        phone_number,
+        email,
+        address,
+        current_location,
+        union_id,
+        rain_day
+      } = row;
 
-  if (!jobs[job_id]) {
-    jobs[job_id] = {
-      job_id,
-      job_number,
-      job_name,
-      location,
-      start_date,
-      end_date,
-      status: job_status,
-      employees: [],
-      rain_days: []
-    };
-  }
+      // Initialize job object if it doesn't exist
+      if (!jobs[job_id]) {
+        jobs[job_id] = {
+          job_id,
+          job_number,
+          job_name,
+          location,
+          start_date,
+          end_date,
+          status: job_status,
+          employees: [],
+          rain_days: []
+        };
+      }
 
-  if (employee_id) {
-    jobs[job_id].employees.push({
-      employee_id,
-      first_name,
-      last_name,
-      employee_number,
-      employee_status,
-      phone_number,
-      email,
-      address,
-      current_location,
-      union_id
+      // Add employee details if present
+      if (employee_id) {
+        jobs[job_id].employees.push({
+          employee_id,
+          first_name,
+          last_name,
+          employee_number,
+          employee_status,
+          phone_number,
+          email,
+          address,
+          current_location,
+          union_id
+        });
+      }
+
+      // Add rain day to the job if present and not already added
+      if (rain_day && !jobs[job_id].rain_days.some(day => day.date === rain_day)) {
+        jobs[job_id].rain_days.push({
+          date: new Date(rain_day).toISOString().split('T')[0] // Format as YYYY-MM-DD
+        });
+      }
     });
-  }
 
-  if (rain_day) {
-    // Format rain_day to an ISO date string (YYYY-MM-DD)
-    jobs[job_id].rain_days.push({
-      date: new Date(rain_day).toISOString().split('T')[0]
-    });
-  }
-});
-
-
+    // Convert jobs object to an array
     const jobsArray = Object.values(jobs);
     res.json(jobsArray);
   } catch (error) {
@@ -113,31 +117,20 @@ router.get('/', async (req, res) => {
   }
 });
 
+
 router.post('/rainday', async (req, res) => {
   try {
-    const { jobId } = req.body; 
+    const { jobId, date } = req.body;
 
-    // Check if a rain day already exists for the current date
-    const checkQuery = `
-      SELECT * FROM "rain_days" 
-      WHERE "job_id" = $1 AND "date" = CURRENT_DATE
-    `;
-    const checkResult = await pool.query(checkQuery, [jobId]);
+    const checkQuery = 'SELECT * FROM "rain_days" WHERE "job_id" = $1 AND "date" = $2';
+    const checkResult = await pool.query(checkQuery, [jobId, date]);
 
     if (checkResult.rows.length > 0) {
-      // If it exists, delete it
-      const deleteQuery = `
-        DELETE FROM "rain_days" 
-        WHERE "job_id" = $1 AND "date" = CURRENT_DATE
-      `;
-      await pool.query(deleteQuery, [jobId]);
+      const deleteQuery = 'DELETE FROM "rain_days" WHERE "job_id" = $1 AND "date" = $2';
+      await pool.query(deleteQuery, [jobId, date]);
     } else {
-      // If it doesn't exist, insert it
-      const insertQuery = `
-        INSERT INTO "rain_days" ("job_id", "date") 
-        VALUES ($1, CURRENT_DATE)
-      `;
-      await pool.query(insertQuery, [jobId]);
+      const insertQuery = 'INSERT INTO "rain_days" ("job_id", "date") VALUES ($1, $2)';
+      await pool.query(insertQuery, [jobId, date]);
     }
 
     res.sendStatus(200);
@@ -146,5 +139,6 @@ router.post('/rainday', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 module.exports = router;
