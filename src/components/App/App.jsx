@@ -16,6 +16,8 @@ import Footer from '../Footer/Footer';
 
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute';
 
+import RegisterPage from '../RegisterPage/RegisterPage';
+
 import AboutPage from '../AboutPage/AboutPage';
 import UserPage from '../UserPage/UserPage';
 import InfoPage from '../InfoPage/InfoPage';
@@ -77,6 +79,8 @@ function App() {
             {user.id ? <Redirect to="/user" /> : <LoginPage />}
           </Route>
 
+          <Route exact path="/registration">  {user.id ? <Redirect to="/user" /> : <RegisterPage />}  </Route>
+          
           <Route exact path="/home">
             {user.id ? <Redirect to="/user" /> : <LoginPage />}
           </Route>
