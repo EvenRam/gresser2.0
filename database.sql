@@ -70,3 +70,15 @@ CREATE TABLE "unions" (
 );
 
 	
+ALTER TABLE "add_employee" 
+ADD COLUMN "display_order" INTEGER;
+
+UPDATE add_employee
+SET display_order = sub.row_num - 1
+FROM (
+  SELECT id, job_id, 
+         ROW_NUMBER() OVER (PARTITION BY job_id ORDER BY id) as row_num
+  FROM add_employee
+  WHERE job_id IS NOT NULL
+) sub
+WHERE add_employee.id = sub.id;
