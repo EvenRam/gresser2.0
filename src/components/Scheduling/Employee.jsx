@@ -2,33 +2,77 @@ import React, { useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
-const Employee = ({ id, name, phone_number, email, address, union_id, union_name, current_location, isHighlighted, onClick }) => {
-  console.log('Employee props:', { id, name, phone_number, email, address, union_id, union_name, current_location, isHighlighted });
-
+const Employee = ({
+  id,
+  name,
+  phone_number,
+  email,
+  address,
+  union_id,
+  union_name,
+  current_location,
+  isHighlighted,
+  onClick,
+  index,
+  onReorder
+}) => {
   const unionColor = unionColors[union_name] || 'black';
-  
+
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { id, union_id, union_name, current_location },
+    item: { id, union_id, union_name, current_location, index },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [id, union_id, union_name, current_location]);
+  }));
 
-  const handleClick = useCallback((e) => {
+  const handleDragStart = (e) => {
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
     e.preventDefault();
-    if (e.type === 'contextmenu' && isHighlighted) {
-      console.log('Employee right-clicked:', id);
+    return false;
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+    if (draggedIndex !== index) {
+      onReorder(draggedIndex, index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    // Clean up if needed
+  };
+
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+    if (isHighlighted) {
       onClick(id, isHighlighted);
     }
-  }, [id, onClick, isHighlighted]);
+  }, [id, isHighlighted, onClick]);
 
   const modalId = `employee-modal-${id}`;
 
   return (
     <div
       ref={drag}
-      onContextMenu={handleClick}
+      draggable
+      onContextMenu={handleContextMenu}
+      onDragStart={(e) => {
+        handleDragStart(e);
+        e.dataTransfer.setData('text/plain', index.toString());
+      }}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDrop={handleDrop}
+      onDragEnd={handleDragEnd}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -39,7 +83,6 @@ const Employee = ({ id, name, phone_number, email, address, union_id, union_name
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
-        transition: 'background-color 0.1s ease',
       }}
     >
       <h6
