@@ -38,6 +38,29 @@ const projectReducer = (state = [], action) => {
         return project;
       });
 
+    case 'REORDER_PROJECTS':
+      const { sourceIndex, targetIndex } = action.payload;
+      const newProjects = [...state];
+      const [movedProject] = newProjects.splice(sourceIndex, 1);
+      newProjects.splice(targetIndex, 0, movedProject);
+      
+      // Update display_order for all projects
+      return newProjects.map((project, index) => ({
+        ...project,
+        display_order: index
+      }));
+
+    case 'UPDATE_EMPLOYEE_ORDER':
+      return state.map(project => {
+        if (project.id === action.payload.projectId) {
+          return {
+            ...project,
+            employees: action.payload.employees
+          };
+        }
+        return project;
+      });
+
     default:
       return state;
   }

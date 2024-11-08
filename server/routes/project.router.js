@@ -10,6 +10,7 @@ router.get('/withEmployees', async (req, res) => {
             jobs.job_id AS job_id, 
             jobs.job_name AS job_name, 
             jobs.status AS job_status,
+            jobs.display_order,
             add_employee.id AS employee_id, 
             add_employee.first_name AS employee_first_name,
             add_employee.last_name AS employee_last_name,
@@ -19,13 +20,13 @@ router.get('/withEmployees', async (req, res) => {
             add_employee.address AS employee_address,
             add_employee.current_location AS current_location,
             add_employee.union_id AS union_id,
-            add_employee.display_order AS display_order,
+            add_employee.display_order AS employee_display_order,
             unions.union_name AS union_name
         FROM jobs
         LEFT JOIN add_employee ON jobs.job_id = add_employee.job_id
         LEFT JOIN unions ON add_employee.union_id = unions.id
         WHERE jobs.status = 'Active'
-        ORDER BY jobs.job_id, add_employee.display_order NULLS LAST, add_employee.id
+        ORDER BY jobs.display_order NULLS LAST, jobs.job_id, add_employee.display_order NULLS LAST, add_employee.id
         `;
         
         const result = await pool.query(sqlText);
@@ -37,6 +38,7 @@ router.get('/withEmployees', async (req, res) => {
                 jobs[row.job_id] = {
                     id: row.job_id,
                     job_name: row.job_name,
+                    display_order: row.display_order,
                     employees: []
                 };
             }
@@ -53,19 +55,26 @@ router.get('/withEmployees', async (req, res) => {
                     current_location: row.current_location,
                     union_id: row.union_id,
                     union_name: row.union_name,
-                    display_order: row.display_order
+                    display_order: row.employee_display_order
                 });
             }
         });
         
-        res.send(Object.values(jobs));
+        // Convert to array and sort by display_order before sending
+        const orderedJobs = Object.values(jobs).sort((a, b) => {
+            if (a.display_order === null) return 1;
+            if (b.display_order === null) return -1;
+            return a.display_order - b.display_order;
+        });
+        
+        res.send(orderedJobs);
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
 
-// New endpoint to update employee order
+// Update employee order endpoint
 router.put('/updateOrder', async (req, res) => {
     try {
         const { projectId, orderedEmployeeIds } = req.body;
@@ -89,6 +98,33 @@ router.put('/updateOrder', async (req, res) => {
         await pool.query('ROLLBACK');
         console.error('Error updating employee order:', error);
         res.status(500).send('Error updating employee order');
+    }
+});
+
+// New endpoint to update project order
+router.put('/updateProjectOrder', async (req, res) => {
+    try {
+        const { orderedProjectIds } = req.body;
+        
+        // Start a transaction
+        await pool.query('BEGIN');
+        
+        // Update each project's display_order
+        for (let i = 0; i < orderedProjectIds.length; i++) {
+            await pool.query(
+                `UPDATE "jobs" 
+                 SET "display_order" = $1 
+                 WHERE "job_id" = $2`,
+                [i, orderedProjectIds[i]]
+            );
+        }
+        
+        await pool.query('COMMIT');
+        res.sendStatus(200);
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error updating project order:', error);
+        res.status(500).send('Error updating project order');
     }
 });
 

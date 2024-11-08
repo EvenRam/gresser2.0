@@ -12,3 +12,15 @@
   .employee-item.superintendent { color: pink; }
   .employee-item.shop-trucking { color: orange; }
   .employee-item.default { color: #333; }
+
+  .draggable-job-box {
+    transition: background-color 0.2s ease;
+  }
+  
+  .job-over {
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  
+  .draggable-job-box:hover {
+    z-index: 1;
+  }
