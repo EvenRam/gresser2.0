@@ -10,7 +10,6 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   const highlightedEmployees = useSelector(state => state.employeeReducer.highlightedEmployees);
   const [orderedEmployees, setOrderedEmployees] = useState([]);
 
-  // Sort employees by display_order when component mounts or employees change
   useEffect(() => {
     const sorted = [...employees].sort((a, b) => {
       if (a.display_order === null) return 1;
@@ -23,9 +22,15 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   const handleDrop = useCallback((item) => {
     console.log('Dropped item:', item);
     console.log('Current project box ID:', id);
+    
+    // If the item is coming from a different project or union
+    const isExternalMove = item.current_location === 'union' || 
+                          (item.current_location === 'project' && item.projectId !== id);
+    
     moveEmployee(item.id, id, item.union_id);
     
-    if (item.current_location === 'project') {
+    // Only highlight if it's an external move
+    if (isExternalMove && item.current_location === 'project') {
       dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: item.id, isHighlighted: true } });
     }
   }, [id, moveEmployee, dispatch]);
@@ -51,18 +56,15 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     setOrderedEmployees(newOrder);
 
     try {
-      // Get ordered employee IDs
       const orderedEmployeeIds = newOrder
         .filter(emp => emp.employee_status === true)
         .map(emp => emp.id);
 
-      // Send update to server
       await axios.put('/api/project/updateOrder', {
         projectId: id,
         orderedEmployeeIds
       });
 
-      // Update Redux store
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
@@ -72,7 +74,6 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       });
     } catch (error) {
       console.error('Error updating employee order:', error);
-      // Optionally revert the order if the server update fails
       setOrderedEmployees(employees);
     }
   }, [orderedEmployees, id, dispatch, employees]);
@@ -107,6 +108,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
               <Employee
                 key={employee.id}
                 {...employee}
+                projectId={id} // Pass project ID to the Employee component
                 index={index}
                 name={`${employee.first_name} ${employee.last_name}`}
                 isHighlighted={isHighlighted}

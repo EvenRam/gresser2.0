@@ -14,17 +14,25 @@ const Employee = ({
   isHighlighted,
   onClick,
   index,
-  onReorder
+  onReorder,
+  projectId // Add projectId to props
 }) => {
   const unionColor = unionColors[union_name] || 'black';
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { id, union_id, union_name, current_location, index },
+    item: { 
+      id, 
+      union_id, 
+      union_name, 
+      current_location, 
+      index,
+      projectId // Include projectId in the drag item
+    },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }));
+  }), [id, union_id, union_name, current_location, index, projectId]);
 
   const handleDragStart = (e) => {
     e.dataTransfer.effectAllowed = 'move';
