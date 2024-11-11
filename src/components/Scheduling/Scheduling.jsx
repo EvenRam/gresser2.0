@@ -8,7 +8,12 @@ import './Scheduling.css';
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
-  const projects = useSelector((state) => state.projectReducer);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const projects = useSelector((state) => {
+    const projectData = state.projectReducer;
+    console.log('Raw project data from Redux:', projectData);
+    return projectData;
+  });
   const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
   useEffect(() => {
@@ -35,15 +40,13 @@ const Scheduling = () => {
 
   const moveJob = useCallback(async (sourceIndex, targetIndex) => {
     try {
-      // Update state first for immediate feedback
       dispatch({
         type: 'REORDER_PROJECTS',
         payload: { sourceIndex, targetIndex }
       });
 
-      // Get the updated order of project IDs
       const orderedProjectIds = projects
-        .slice() // Create a copy of the array
+        .slice()
         .sort((a, b) => {
           if (a.display_order === null) return 1;
           if (b.display_order === null) return -1;
@@ -51,50 +54,83 @@ const Scheduling = () => {
         })
         .map(project => project.id);
 
-      // Move the project in the ordered array
       const [movedId] = orderedProjectIds.splice(sourceIndex, 1);
       orderedProjectIds.splice(targetIndex, 0, movedId);
 
-      // Persist the new order to the database
       await axios.put('/api/project/updateProjectOrder', {
         orderedProjectIds
       });
     } catch (error) {
       console.error('Error updating project order:', error);
-      // You might want to add error handling here, such as reverting the order in the UI
     }
   }, [dispatch, projects]);
 
+  const isDateInRange = (startDate, endDate, selectedDate) => {
+    if (!startDate || !endDate || !selectedDate) return false;
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const selected = new Date(selectedDate);
+    
+    // Reset time portions for accurate date comparison
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    selected.setHours(0, 0, 0, 0);
+    
+    return selected >= start && selected <= end;
+  };
+
+  const filteredProjects = useMemo(() => {
+    console.log('Filtering projects with date:', selectedDate);
+    
+    return projects.filter(project => {
+      console.log('Checking project:', {
+        id: project.id,
+        name: project.job_name,
+        startDate: project.start_date,
+        endDate: project.end_date
+      });
+
+      const inRange = isDateInRange(project.start_date, project.end_date, selectedDate);
+      console.log(`Project ${project.id} in range: ${inRange}`);
+      return inRange;
+    });
+  }, [projects, selectedDate]);
+
   const memoizedProjects = useMemo(() => {
-    // Sort projects by display_order, then by other criteria
-    return projects
+    console.log('Filtered projects count:', filteredProjects.length);
+    
+    return filteredProjects
       .slice()
       .sort((a, b) => {
-        // First sort by display_order
         if (a.display_order !== null && b.display_order !== null) {
           return a.display_order - b.display_order;
         }
         if (a.display_order === null) return 1;
         if (b.display_order === null) return -1;
-
-        // Then by employee count if display_order is the same
-        const aEmployees = a.employees?.length || 0;
-        const bEmployees = b.employees?.length || 0;
-        if (aEmployees === 0 && bEmployees > 0) return 1;
-        if (aEmployees > 0 && bEmployees === 0) return -1;
         
-        // Finally by ID if everything else is equal
         return a.id - b.id;
       })
       .map(project => ({
         ...project,
         employees: allEmployees.filter(emp => emp.job_id === project.id)
       }));
-  }, [projects, allEmployees]);
+  }, [filteredProjects, allEmployees]);
 
   const totalAssignedEmployees = useMemo(() => {
-    return memoizedProjects.reduce((total, project) => total + project.employees.length, 0);
+    return memoizedProjects.reduce((total, project) => 
+      total + (project.employees?.length || 0), 0);
   }, [memoizedProjects]);
+
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  const handleDateChange = useCallback((event) => {
+    const newDate = event.target.value;
+    console.log('Date changed to:', newDate);
+    setSelectedDate(newDate);
+  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -102,16 +138,32 @@ const Scheduling = () => {
 
   return (
     <div className="scheduling-container">
-      <h2 className="total-employees">Total Employees: {totalAssignedEmployees}</h2>
-      <div>
-        {!memoizedProjects || memoizedProjects.length === 0 ? (
-          <table className="no-jobs-table">
-            <tbody>
-              <tr>
-                <td colSpan="7">YOU HAVE NO JOBS</td>
-              </tr>
-            </tbody>
-          </table>
+      <div className="scheduling-header">
+        <h2 className="total-employees">Total Assigned Employees: {totalAssignedEmployees}</h2>
+        <div className="scheduling-controls">
+          <div className="date-selector">
+            <label htmlFor="schedule-date">Schedule Date: </label>
+            <input
+              type="date"
+              id="schedule-date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              className="date-input"
+            />
+          </div>
+          <button onClick={handlePrint} className="print-button">
+            Print Schedule
+          </button>
+        </div>
+      </div>
+
+      <div className="schedule-content">
+        {memoizedProjects.length === 0 ? (
+          <div className="no-jobs-message">
+            {selectedDate 
+              ? `No projects active on ${new Date(selectedDate).toLocaleDateString()}` 
+              : "No active projects available"}
+          </div>
         ) : (
           <div className="jobs-container">
             {memoizedProjects.map((project, index) => (
@@ -121,7 +173,6 @@ const Scheduling = () => {
                 index={index}
                 moveJob={moveJob}
                 moveEmployee={moveEmployee}
-                employees={project.employees}
               />
             ))}
           </div>

@@ -1,8 +1,3 @@
-const express = require('express');
-const pool = require('../modules/pool');
-const router = express.Router();
-const { rejectUnauthenticated } = require('../modules/authentication-middleware');
-
 router.get('/withEmployees', async (req, res) => {
     try {
         const sqlText = `
@@ -11,6 +6,9 @@ router.get('/withEmployees', async (req, res) => {
             jobs.job_name AS job_name, 
             jobs.status AS job_status,
             jobs.display_order,
+            jobs.start_date,
+            jobs.end_date,
+            jobs.location,
             add_employee.id AS employee_id, 
             add_employee.first_name AS employee_first_name,
             add_employee.last_name AS employee_last_name,
@@ -26,10 +24,13 @@ router.get('/withEmployees', async (req, res) => {
         LEFT JOIN add_employee ON jobs.job_id = add_employee.job_id
         LEFT JOIN unions ON add_employee.union_id = unions.id
         WHERE jobs.status = 'Active'
-        ORDER BY jobs.display_order NULLS LAST, jobs.job_id, add_employee.display_order NULLS LAST, add_employee.id
+        ORDER BY jobs.display_order NULLS LAST, jobs.job_id, 
+                add_employee.display_order NULLS LAST, add_employee.id;
         `;
         
+        console.log('Executing SQL query...');
         const result = await pool.query(sqlText);
+        console.log('Raw database results:', result.rows[0]); // Log the first row
         
         const jobs = {};
         
@@ -39,8 +40,12 @@ router.get('/withEmployees', async (req, res) => {
                     id: row.job_id,
                     job_name: row.job_name,
                     display_order: row.display_order,
+                    start_date: row.start_date,
+                    end_date: row.end_date,
+                    location: row.location,
                     employees: []
                 };
+                console.log('Created job object:', jobs[row.job_id]); // Log each job as it's created
             }
   
             if (row.employee_id && row.employee_status === true) {
@@ -60,72 +65,16 @@ router.get('/withEmployees', async (req, res) => {
             }
         });
         
-        // Convert to array and sort by display_order before sending
         const orderedJobs = Object.values(jobs).sort((a, b) => {
             if (a.display_order === null) return 1;
             if (b.display_order === null) return -1;
             return a.display_order - b.display_order;
         });
         
+        console.log('Final response data:', orderedJobs); // Log the final response
         res.send(orderedJobs);
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
-
-// Update employee order endpoint
-router.put('/updateOrder', async (req, res) => {
-    try {
-        const { projectId, orderedEmployeeIds } = req.body;
-        
-        // Start a transaction
-        await pool.query('BEGIN');
-        
-        // Update each employee's display_order
-        for (let i = 0; i < orderedEmployeeIds.length; i++) {
-            await pool.query(
-                `UPDATE "add_employee" 
-                 SET "display_order" = $1 
-                 WHERE "id" = $2 AND "job_id" = $3`,
-                [i, orderedEmployeeIds[i], projectId]
-            );
-        }
-        
-        await pool.query('COMMIT');
-        res.sendStatus(200);
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('Error updating employee order:', error);
-        res.status(500).send('Error updating employee order');
-    }
-});
-
-// New endpoint to update project order
-router.put('/updateProjectOrder', async (req, res) => {
-    try {
-        const { orderedProjectIds } = req.body;
-        
-        // Start a transaction
-        await pool.query('BEGIN');
-        
-        // Update each project's display_order
-        for (let i = 0; i < orderedProjectIds.length; i++) {
-            await pool.query(
-                `UPDATE "jobs" 
-                 SET "display_order" = $1 
-                 WHERE "job_id" = $2`,
-                [i, orderedProjectIds[i]]
-            );
-        }
-        
-        await pool.query('COMMIT');
-        res.sendStatus(200);
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('Error updating project order:', error);
-        res.status(500).send('Error updating project order');
-    }
-});
-
-module.exports = router;

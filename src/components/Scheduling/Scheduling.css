@@ -5,6 +5,50 @@
   width: 120%;
 }
 
+.scheduling-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.scheduling-controls {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.date-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-selector label {
+  font-weight: 600;
+}
+
+.date-selector input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.print-button {
+  padding: 8px 16px;
+  background-color: #396a54;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.print-button:hover {
+  background-color: #2c5142;
+}
+
 .jobs-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -44,16 +88,54 @@
   border-radius: 4px;
 }
 
+.total-employees {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 0;
+  font-size: 14px;
+}
+
 @media (max-width: 480px) {
   .jobs-container {
     grid-template-columns: 1fr;
   }
+  
+  .scheduling-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .scheduling-controls {
+    flex-direction: column;
+    width: 100%;
+  }
 }
 
-.total-employees{
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 25px;
-  font-size: 14px;
+@media print {
+  .scheduling-container {
+    width: 100%;
+    padding: 0;
+  }
 
+  .scheduling-controls {
+    display: none;
+  }
+
+  .jobs-container {
+    gap: 10px;
+    page-break-inside: avoid;
+  }
+
+  .draggable-job-box {
+    break-inside: avoid;
+  }
+
+  .total-employees {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .print-button {
+    display: none;
+  }
 }
