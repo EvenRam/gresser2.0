@@ -96,13 +96,26 @@ const Scheduling = () => {
     return memoizedProjects.reduce((total, project) => total + project.employees.length, 0);
   }, [memoizedProjects]);
 
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
     <div className="scheduling-container">
-      <h2 className="total-employees">Total Employees: {totalAssignedEmployees}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2 className="total-employees">Total Employees: {totalAssignedEmployees}</h2>
+        <button 
+          onClick={handlePrint}
+          className="btn"
+          style={{ marginLeft: 'auto' }}
+        >
+          Print Schedule
+        </button>
+      </div>
       <div>
         {!memoizedProjects || memoizedProjects.length === 0 ? (
           <table className="no-jobs-table">
