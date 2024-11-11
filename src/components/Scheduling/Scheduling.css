@@ -55,5 +55,49 @@
   font-weight: 600;
   margin-bottom: 25px;
   font-size: 14px;
+}
 
+/* Print styles */
+@media print {
+  .scheduling-container {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .jobs-container {
+    gap: 10px !important;
+    page-break-inside: avoid;
+  }
+
+  /* Force background colors and text colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Preserve union colors */
+  [style*="color: red"] { color: red !important; }
+  [style*="color: green"] { color: green !important; }
+  [style*="color: black"] { color: black !important; }
+  [style*="color: purple"] { color: purple !important; }
+  [style*="color: blue"] { color: blue !important; }
+  [style*="color: pink"] { color: pink !important; }
+  [style*="color: orange"] { color: orange !important; }
+
+  /* Preserve project box styles */
+  .projectboxname {
+    background-color: #396a54 !important;
+    color: white !important;
+  }
+
+  .employee-count {
+    background-color: rgb(79, 76, 76) !important;
+    color: white !important;
+  }
+
+  /* Hide print button when printing */
+  button {
+    display: none !important;
+  }
 }
