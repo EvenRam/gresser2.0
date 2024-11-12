@@ -23,13 +23,14 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     console.log('Dropped item:', item);
     console.log('Current project box ID:', id);
     
-    // If the item is coming from a union, we want to highlight it
-    const isFromUnion = item.current_location === 'union';
+    // If the item is coming from a different project or union
+    const isExternalMove = item.current_location === 'union' || 
+                          (item.current_location === 'project' && item.projectId !== id);
     
     moveEmployee(item.id, id, item.union_id);
     
-    // Highlight if coming from union
-    if (isFromUnion) {
+    // Highlight if it's an external move from either union or another project
+    if (isExternalMove) {
       dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: item.id, isHighlighted: true } });
     }
   }, [id, moveEmployee, dispatch]);
