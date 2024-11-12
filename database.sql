@@ -95,3 +95,6 @@ FROM (
   FROM jobs
 ) sub
 WHERE jobs.job_id = sub.job_id;
+
+ALTER TABLE "add_employee" 
+ADD COLUMN "is_highlighted" BOOLEAN DEFAULT false;

@@ -1,12 +1,25 @@
 const initialState = {
   employees: [],
-  highlightedEmployees: JSON.parse(localStorage.getItem('highlightedEmployees') || '{}')
+  highlightedEmployees: {}
 };
 
 const employeeReducer = (state = initialState, action) => {
   switch (action.type) {
-    case 'SET_EMPLOYEE_INFO':
-      return { ...state, employees: action.payload };
+    case 'SET_EMPLOYEE_INFO': {
+      // Convert the highlighted status from the database into our state format
+      const highlightedEmployees = action.payload.reduce((acc, emp) => {
+        if (emp.is_highlighted) {
+          acc[emp.id] = true;
+        }
+        return acc;
+      }, {});
+      
+      return { 
+        ...state, 
+        employees: action.payload,
+        highlightedEmployees
+      };
+    }
 
     case 'MOVE_EMPLOYEE': {
       const { employeeId, targetProjectId, targetUnionId } = action.payload;
@@ -44,16 +57,62 @@ const employeeReducer = (state = initialState, action) => {
       return { ...state, employees: updatedEmployees };
     }
 
-    case 'SET_HIGHLIGHTED_EMPLOYEE':
+    case 'SET_HIGHLIGHTED_EMPLOYEE': {
+      const { id, isHighlighted } = action.payload;
+      
+      // Make API call to update the database
+      fetch(`/api/addemployee/${id}/highlight`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isHighlighted }),
+        credentials: 'include' // Important for handling authentication
+      }).catch(error => {
+        console.error('Error updating highlight status:', error);
+      });
+
+      // Update local state
       const newHighlightedEmployees = {
         ...state.highlightedEmployees,
-        [action.payload.id]: action.payload.isHighlighted
+        [id]: isHighlighted
       };
-      localStorage.setItem('highlightedEmployees', JSON.stringify(newHighlightedEmployees));
+
+      // If highlighted is false, remove the key entirely
+      if (!isHighlighted) {
+        delete newHighlightedEmployees[id];
+      }
+
       return {
         ...state,
-        highlightedEmployees: newHighlightedEmployees
+        highlightedEmployees: newHighlightedEmployees,
+        employees: state.employees.map(emp => {
+          if (emp.id === id) {
+            return {
+              ...emp,
+              is_highlighted: isHighlighted
+            };
+          }
+          return emp;
+        })
       };
+    }
+
+    case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
+      // Optionally add this case if you want to clear all highlights
+      return {
+        ...state,
+        highlightedEmployees: {},
+        employees: state.employees.map(emp => ({
+          ...emp,
+          is_highlighted: false
+        }))
+      };
+    }
+
+    case 'RESET_EMPLOYEE_STATE': {
+      return initialState;
+    }
 
     default:
       return state;

@@ -3,20 +3,18 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-
 router.get('/', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());
         console.log("Current user is: ", req.user.username);
         
         const sqlText = `
-        SELECT ae.*, u.union_name
+        SELECT ae.*, u.union_name, ae.is_highlighted
         FROM "add_employee" ae
         LEFT JOIN "unions" u ON ae."union_id" = u."id"
         ORDER BY ae."last_name" ASC, ae."first_name" ASC;
     `;
     
-        
         try {
             const result = await pool.query(sqlText);
             console.log(`GET from database addemployee`, result);
@@ -29,7 +27,6 @@ router.get('/', async (req, res) => {
         res.sendStatus(401);
     }
 });
-
 
 router.get('/union', async (req, res) => {
     if (req.isAuthenticated()) {
@@ -55,7 +52,6 @@ router.get('/union', async (req, res) => {
     }
 });
 
-
 router.get('/withunions', async (req, res) => {
     try {
         const sqlText = `
@@ -71,6 +67,7 @@ router.get('/withunions', async (req, res) => {
                 add_employee.address AS employee_address,
                 add_employee.current_location AS employee_current_location, 
                 add_employee.union_id AS employee_union_id,
+                add_employee.is_highlighted AS employee_is_highlighted,
                 unions.union_name AS employee_union_name
             FROM unions
             LEFT JOIN add_employee ON unions.id = add_employee.union_id
@@ -102,7 +99,8 @@ router.get('/withunions', async (req, res) => {
                     address: row.employee_address,
                     current_location: row.employee_current_location, 
                     union_id: row.employee_union_id,
-                    union_name: row.employee_union_name
+                    union_name: row.employee_union_name,
+                    is_highlighted: row.employee_is_highlighted
                 });
             }
         });
@@ -114,7 +112,6 @@ router.get('/withunions', async (req, res) => {
     }
 });
 
-
 router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('User is authenticated?:', req.isAuthenticated());
     console.log('Current user is:', req.user.username);
@@ -123,26 +120,24 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
 
     try {
-        // Check if the union already exists by union_name
         const checkUnionQuery = `
             SELECT "id" FROM "unions" WHERE "union_name" = $1
         `;
         const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
         
         let unionId;
-
-        // If the union exists, use its ID; if not, return an error
         if (unionCheckResult.rows.length > 0) {
             unionId = unionCheckResult.rows[0].id;
         } else {
             return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
         }
 
-        // Insert employee with the existing union_id and current_location set to "union"
         const insertEmployeeQuery = `
             INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id", "current_location"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union')
+                "first_name", "last_name", "employee_number", "employee_status", 
+                "phone_number", "email", "address", "job_id", "union_id", 
+                "current_location", "is_highlighted"
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union', false)
             RETURNING "id"
         `;
 
@@ -178,24 +173,20 @@ router.put('/:id', async (req, res) => {
     } = req.body;
 
     try {
-         let unionId; 
+        let unionId; 
         if (union_name) {
-            // Query to check if the provided union_name exists in the "unions" table
             const checkUnionQuery = `
                 SELECT "id" FROM "unions" WHERE "union_name" = $1;
             `;
-            // Execute the query with the union_name provided by the user
             const unionResult = await pool.query(checkUnionQuery, [union_name]);
             
             if (unionResult.rows.length > 0) {
-                // If the union_name exists, get the existing union_id
                 unionId = unionResult.rows[0].id;
             } else {
                 return res.status(400).json({ error: 'Union does not exist' });
             }
         }
 
-        // Check if only employee status is being updated, and handle accordingly
         if (employee_status !== undefined &&
             !first_name &&
             !last_name &&
@@ -229,7 +220,6 @@ router.put('/:id', async (req, res) => {
             await pool.query(queryText, queryParams);
             res.sendStatus(204); 
         } else {
-            // Update other fields including union_id
             const queryText = `
                 UPDATE "add_employee"
                 SET
@@ -257,8 +247,6 @@ router.put('/:id', async (req, res) => {
                 employeeId
             ];
 
-            
-
             const result = await pool.query(queryText, queryParams);
             if (result.rowCount > 0) {
                 res.sendStatus(204); 
@@ -268,6 +256,25 @@ router.put('/:id', async (req, res) => {
         }
     } catch (error) {
         console.error('Error updating employee with union:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// New endpoint for handling highlight status
+router.put('/:id/highlight', async (req, res) => {
+    const employeeId = req.params.id;
+    const { isHighlighted } = req.body;
+
+    try {
+        const queryText = `
+            UPDATE "add_employee"
+            SET "is_highlighted" = $1
+            WHERE "id" = $2
+        `;
+        await pool.query(queryText, [isHighlighted, employeeId]);
+        res.sendStatus(204);
+    } catch (error) {
+        console.error('Error updating highlight status:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

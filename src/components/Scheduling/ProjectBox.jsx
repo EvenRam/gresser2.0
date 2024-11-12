@@ -29,8 +29,8 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     
     moveEmployee(item.id, id, item.union_id);
     
-    // Only highlight if it's an external move
-    if (isExternalMove && item.current_location === 'project') {
+    // Highlight if it's an external move from either union or another project
+    if (isExternalMove) {
       dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: item.id, isHighlighted: true } });
     }
   }, [id, moveEmployee, dispatch]);
@@ -43,10 +43,14 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     }),
   }), [handleDrop]);
 
-  const handleEmployeeClick = useCallback((employeeId, isHighlighted) => {
-    if (isHighlighted) {
-      dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: employeeId, isHighlighted: false } });
-    }
+  const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
+    dispatch({ 
+      type: 'SET_HIGHLIGHTED_EMPLOYEE', 
+      payload: { 
+        id: employeeId, 
+        isHighlighted: !currentHighlightState 
+      }
+    });
   }, [dispatch]);
 
   const handleReorder = useCallback(async (fromIndex, toIndex) => {
@@ -102,21 +106,18 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       ) : (
         orderedEmployees
           .filter(employee => employee.employee_status === true) 
-          .map((employee, index) => {
-            const isHighlighted = !!highlightedEmployees[employee.id];
-            return (
-              <Employee
-                key={employee.id}
-                {...employee}
-                projectId={id} // Pass project ID to the Employee component
-                index={index}
-                name={`${employee.first_name} ${employee.last_name}`}
-                isHighlighted={isHighlighted}
-                onClick={handleEmployeeClick}
-                onReorder={handleReorder}
-              />
-            );
-          })
+          .map((employee, index) => (
+            <Employee
+              key={employee.id}
+              {...employee}
+              projectId={id}
+              index={index}
+              name={`${employee.first_name} ${employee.last_name}`}
+              isHighlighted={!!highlightedEmployees[employee.id]}
+              onClick={() => handleEmployeeClick(employee.id, !!highlightedEmployees[employee.id])}
+              onReorder={handleReorder}
+            />
+          ))
       )}
       <h6 className='employee-count'>
         Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
