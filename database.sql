@@ -98,3 +98,11 @@ WHERE jobs.job_id = sub.job_id;
 
 ALTER TABLE "add_employee" 
 ADD COLUMN "is_highlighted" BOOLEAN DEFAULT false;
+
+
+-- Update unions table with new categories
+INSERT INTO unions (id, union_name) VALUES
+    (26, '26 - Supervisors'),
+    (27, '27 - Trucking'),
+    (28, '28 - Shop'),
+    (29, '29 - Non-Union');
