@@ -19,10 +19,7 @@ useEffect(() => {
     }
 }, [dispatch, date]);
 
-const handleSaveSchedule = (scheduleData) => {
-    console.log("saving schedule:", scheduleData,date);
-    dispatch({ type: 'SAVE_SCHEDULE', payload: {...scheduleData, date}})
-};
+
 
 return(
 <div className='date-schedule'>

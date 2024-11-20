@@ -16,15 +16,6 @@ function* fetchEmployees(action){
     }
 }
 
-function* saveSchedule(action){
-    try{
-        yield call(axios.post, '/api/schedule', action.payload);
-        yield put({ type: 'FETCH_SCHEDULES', payload: {date: action.payload.date}});
-    } catch (error) {
-        console.error( 'error saving schedule', error);
-    
-    }
-}
 
 // function* fetchUnionsWithEmployees(action) {
 //     try {
@@ -42,7 +33,6 @@ function* saveSchedule(action){
 
 export default function* scheduleSaga(){
     yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
-    yield takeLatest('SAVE_SCHEDULE', saveSchedule);
     // yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
 
 }

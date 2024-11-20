@@ -112,6 +112,7 @@ router.get('/withunions', async (req, res) => {
     }
 });
 
+// POST route to only manage posting employees to the employee table in the addemployee page
 router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('User is authenticated?:', req.isAuthenticated());
     console.log('Current user is:', req.user.username);
@@ -147,7 +148,7 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-
+// should have a separate post route for schedule.router.js 
 // router.post('/', rejectUnauthenticated, async (req, res) => {
 //     console.log('User is authenticated?:', req.isAuthenticated());
 //     console.log('Current user is:', req.user.username);
@@ -296,23 +297,25 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// New endpoint for handling highlight status
-// router.put('/:id/highlight', async (req, res) => {
-//     const employeeId = req.params.id;
-//     const { isHighlighted } = req.body;
 
-//     try {
-//         const queryText = `
-//             UPDATE "add_employee"
-//             SET "is_highlighted" = $1
-//             WHERE "id" = $2
-//         `;
-//         await pool.query(queryText, [isHighlighted, employeeId]);
-//         res.sendStatus(204);
-//     } catch (error) {
-//         console.error('Error updating highlight status:', error);
-//         res.status(500).json({ error: 'Internal server error' });
-//     }
-// });
+// Need to change to schedule router and join schedule table???
+//New endpoint for handling highlight status
+router.put('/:id/highlight', async (req, res) => {
+    const employeeId = req.params.id;
+    const { isHighlighted } = req.body;
+
+    try {
+        const queryText = `
+            UPDATE "add_employee"
+            SET "is_highlighted" = $1
+            WHERE "id" = $2
+        `;
+        await pool.query(queryText, [isHighlighted, employeeId]);
+        res.sendStatus(204);
+    } catch (error) {
+        console.error('Error updating highlight status:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 module.exports = router;
