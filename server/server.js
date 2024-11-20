@@ -9,11 +9,12 @@ const passport = require('./strategies/user.strategy');
 
 // Route Includes
 const userRouter = require('./routes/user.router');
-const addRouter = require('./routes/addemployee.router')
-const jobsRouter = require('./routes/jobs.router')
+const addRouter = require('./routes/addemployee.router');
+const jobsRouter = require('./routes/jobs.router');
 const jobsHistoryRouter = require('./routes/jobshistory.router');
-const projectRouter = require('./routes/project.router')
-const moveRouter = require('./routes/moveemployee.router')
+const projectRouter = require('./routes/project.router');
+const moveRouter = require('./routes/moveemployee.router');
+const scheduleRouter = require('./routes/schedule.router');
 
 
 
@@ -36,7 +37,8 @@ app.use('/api/addemployee', addRouter)
 app.use('/api/jobs', jobsRouter)
 app.use('/api/jobhistory', jobsHistoryRouter);
 app.use('/api/project', projectRouter)
-app.use('/api/moveemployee', moveRouter)
+app.use('/api/moveemployee', moveRouter);
+app.use('/api/schedule', scheduleRouter);
 
 
 

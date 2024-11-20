@@ -120,41 +120,77 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
 
     try {
-        const checkUnionQuery = `
-            SELECT "id" FROM "unions" WHERE "union_name" = $1
-        `;
-        const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
         
-        let unionId;
-        if (unionCheckResult.rows.length > 0) {
-            unionId = unionCheckResult.rows[0].id;
-        } else {
-            return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
-        }
-
-        const insertEmployeeQuery = `
-            INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", 
-                "phone_number", "email", "address", "job_id", "union_id", 
-                "current_location", "is_highlighted"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union', false)
+        const insertUnionQuery = `
+            INSERT INTO "unions" ("union_name")
+            VALUES ($1)
             RETURNING "id"
         `;
+        const unionValues = [union_name];
+        const unionResult = await pool.query(insertUnionQuery, unionValues);
+        const unionId = unionResult.rows[0].id;
 
-        const employeeValues = [
-            first_name, last_name, employee_number, employee_status, 
-            phone_number, email, address, job_id, unionId
-        ];
-
+      
+        const insertEmployeeQuery = `
+            INSERT INTO "add_employee" (
+                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id"
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING "id"
+        `;
+        const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, job_id, unionId];
         await pool.query(insertEmployeeQuery, employeeValues);
 
-        res.status(201).send({ message: 'Employee added successfully with existing union.' });
-        
+        res.status(201).send({ message: 'Employee and union record created successfully' });
     } catch (error) {
         console.error('Error making POST insert for add_employee and unions:', error);
         res.sendStatus(500);
     }
 });
+
+
+// router.post('/', rejectUnauthenticated, async (req, res) => {
+//     console.log('User is authenticated?:', req.isAuthenticated());
+//     console.log('Current user is:', req.user.username);
+//     console.log('Current request body is:', req.body);
+
+//     const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
+
+//     try {
+//         const checkUnionQuery = `
+//             SELECT "id" FROM "unions" WHERE "union_name" = $1
+//         `;
+//         const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
+        
+//         let unionId;
+//         if (unionCheckResult.rows.length > 0) {
+//             unionId = unionCheckResult.rows[0].id;
+//         } else {
+//             return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
+//         }
+
+//         const insertEmployeeQuery = `
+//             INSERT INTO "add_employee" (
+//                 "first_name", "last_name", "employee_number", "employee_status", 
+//                 "phone_number", "email", "address", "job_id", "union_id", 
+//                 "current_location", "is_highlighted"
+//             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union', false)
+//             RETURNING "id"
+//         `;
+
+//         const employeeValues = [
+//             first_name, last_name, employee_number, employee_status, 
+//             phone_number, email, address, job_id, unionId
+//         ];
+
+//         await pool.query(insertEmployeeQuery, employeeValues);
+
+//         res.status(201).send({ message: 'Employee added successfully with existing union.' });
+        
+//     } catch (error) {
+//         console.error('Error making POST insert for add_employee and unions:', error);
+//         res.sendStatus(500);
+//     }
+// });
 
 router.put('/:id', async (req, res) => {
     const employeeId = req.params.id;
@@ -261,22 +297,22 @@ router.put('/:id', async (req, res) => {
 });
 
 // New endpoint for handling highlight status
-router.put('/:id/highlight', async (req, res) => {
-    const employeeId = req.params.id;
-    const { isHighlighted } = req.body;
+// router.put('/:id/highlight', async (req, res) => {
+//     const employeeId = req.params.id;
+//     const { isHighlighted } = req.body;
 
-    try {
-        const queryText = `
-            UPDATE "add_employee"
-            SET "is_highlighted" = $1
-            WHERE "id" = $2
-        `;
-        await pool.query(queryText, [isHighlighted, employeeId]);
-        res.sendStatus(204);
-    } catch (error) {
-        console.error('Error updating highlight status:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+//     try {
+//         const queryText = `
+//             UPDATE "add_employee"
+//             SET "is_highlighted" = $1
+//             WHERE "id" = $2
+//         `;
+//         await pool.query(queryText, [isHighlighted, employeeId]);
+//         res.sendStatus(204);
+//     } catch (error) {
+//         console.error('Error updating highlight status:', error);
+//         res.status(500).json({ error: 'Internal server error' });
+//     }
+// });
 
 module.exports = router;

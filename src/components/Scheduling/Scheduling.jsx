@@ -4,6 +4,8 @@ import axios from 'axios';
 import DraggableJobBox from './DraggableJobBox';
 import './EmployeeStyles.css';
 import './Scheduling.css';
+import scheduleDate from './DateSchedule';
+import DateSchedule from './DateSchedule';
 
 const Scheduling = () => {
   const dispatch = useDispatch();
@@ -107,7 +109,9 @@ const Scheduling = () => {
   return (
     <div className="scheduling-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 className="total-employees">Total Employees: {totalAssignedEmployees}</h2>
+        <span className="total-employees">Total Employees: {totalAssignedEmployees}</span>
+        
+        <DateSchedule/>
         <button 
           onClick={handlePrint}
           className="btn"

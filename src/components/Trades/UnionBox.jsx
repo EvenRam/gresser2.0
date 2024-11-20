@@ -8,12 +8,12 @@ const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
   const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
-  console.log(`UnionBox Render - ${union_name} (id: ${id})`);
-  console.log('All Employees from Redux:', allEmployees);
+  // console.log(`UnionBox Render - ${union_name} (id: ${id})`);
+  // console.log('All Employees from Redux:', allEmployees);
 
   const employees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
 
-  console.log(`UnionBox ${union_name} (id: ${id}) - Current employees:`, employees);
+  // console.log(`UnionBox ${union_name} (id: ${id}) - Current employees:`, employees);
 
   const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId) => {
     console.log('moveEmployee called with:', { employeeId, targetProjectId, sourceUnionId, targetUnionId });
@@ -26,12 +26,12 @@ const UnionBox = ({ id, union_name, color }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: (item, monitor) => {
-      console.log(`Drop detected in ${union_name} (id: ${id})`);
-      console.log('Dropped item:', item);
+      // console.log(`Drop detected in ${union_name} (id: ${id})`);
+      // console.log('Dropped item:', item);
       
       const didDrop = monitor.didDrop();
       if (didDrop) {
-        console.log('Item was already dropped in a child component');
+        // console.log('Item was already dropped in a child component');
         return;
       }
       
@@ -39,7 +39,7 @@ const UnionBox = ({ id, union_name, color }) => {
         console.log(`Moving employee ${item.id} to union ${id}`);
         dispatch(moveEmployee(item.id, null, item.union_id, id));
       } else {
-        console.log(`Employee ${item.id} is already in this union. No action taken.`);
+        // console.log(`Employee ${item.id} is already in this union. No action taken.`);
       }
     },
     collect: (monitor) => ({
@@ -68,7 +68,7 @@ const UnionBox = ({ id, union_name, color }) => {
         employees
           .filter(employee => employee.employee_status === true)
           .map(employee => {
-            console.log(`Employee in UnionBox - ${employee.first_name} ${employee.last_name}:`, employee);
+            // console.log(`Employee in UnionBox - ${employee.first_name} ${employee.last_name}:`, employee);
             return (
               <Employee
                 key={employee.id}
