@@ -1,26 +1,61 @@
 .employee-item {
-    padding: 10px;
-    margin: 5px;
-    border-radius: 5px;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 5px;
+}
+
+.employee-item.carpenter { color: blue; }
+.employee-item.bricklayer { color: red; }
+.employee-item.cement-mason { color: green; }
+.employee-item.laborer { color: black; }
+.employee-item.operator { color: purple; }
+.employee-item.superintendent { color: pink; }
+.employee-item.shop-trucking { color: orange; }
+.employee-item.default { color: #333; }
+
+.draggable-job-box {
+  transition: background-color 0.2s ease;
+}
+
+.job-over {
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.draggable-job-box:hover {
+  z-index: 1;
+}
+
+@media print {
+  .employee-item {
+      padding: 1px;
+      margin: 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      font-size: 7pt;
   }
-  
-  .employee-item.carpenter { color: blue; }
-  .employee-item.bricklayer { color: red; }
-  .employee-item.cement-mason { color: green; }
-  .employee-item.laborer { color: black; }
-  .employee-item.operator { color: purple; }
-  .employee-item.superintendent { color: pink; }
-  .employee-item.shop-trucking { color: orange; }
-  .employee-item.default { color: #333; }
 
   .draggable-job-box {
-    transition: background-color 0.2s ease;
+      transition: none;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin: 0;
+      padding: 1px;
   }
-  
+
   .job-over {
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      box-shadow: none;
   }
-  
-  .draggable-job-box:hover {
-    z-index: 1;
+
+  /* Ensure colors print */
+  .employee-item.carpenter,
+  .employee-item.bricklayer,
+  .employee-item.cement-mason,
+  .employee-item.laborer,
+  .employee-item.operator,
+  .employee-item.superintendent,
+  .employee-item.shop-trucking,
+  .employee-item.default {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
   }
+}

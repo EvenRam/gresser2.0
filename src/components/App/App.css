@@ -191,3 +191,20 @@ li {
     padding: 0;
   }
 }
+
+@media print {
+  .parent-container {
+    display: flex;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    transform: scale(0.85);
+    transform-origin: top left;
+    gap: 0;
+  }
+
+  @page {
+    size: landscape;
+    margin: 0.15in;
+  }
+}
