@@ -24,7 +24,7 @@ const Scheduling = () => {
         // Fetch projects and employees for the selected date
         // await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
         if (selectedDate) {
-          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate } }); 
+          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate, employees:allEmployees} }); 
       }      } catch (error) {
         console.error('Error fetching data:', error);
       } finally {

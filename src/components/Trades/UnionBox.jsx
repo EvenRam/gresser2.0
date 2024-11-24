@@ -7,7 +7,7 @@ import './Box.css';
 const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
 
-  const selectedDate = useSelector((state) => state.dateReducer); 
+  const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate); 
   const allEmployees = useSelector((state) =>
     state.employeeReducer.employeesByDate?.[selectedDate] || []
   );

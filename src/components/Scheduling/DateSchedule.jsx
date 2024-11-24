@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 const DateSchedule = () => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
-    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
+    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate)
     console.log("Schedule Reducer State:", { selectedDate, employeesByDate });
 
     const [date, setDate] = useState(selectedDate);
