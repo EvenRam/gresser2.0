@@ -13,7 +13,6 @@ function* fetchEmployeeInfo() {
     yield put({ type: 'FETCH_ERROR', payload: 'Failed to fetch employee information.' });
   }
 }
-
 function* addEmployeeInfo(action) {
   try {
     console.log('Payload to server:', action.payload); // Log payload here
@@ -90,15 +89,15 @@ function* fetchUnion() {
   }
 }
 
-function* fetchUnionsWithEmployees() {
-  try {
-    const response = yield call(axios.get, '/api/addemployee/withunions');
-    console.log("Response for fetchUnionsWithEmployees", response.data);
-    yield put({ type: 'SET_EMPLOYEE_WITH_UNION', payload: response.data });
-  } catch (error) {
-    console.error('Error fetching unions with employees:', error);
-  }
-}
+// function* fetchUnionsWithEmployees() {
+//   try {
+//     const response = yield call(axios.get, '/api/addemployee/withunions');
+//     console.log("Response for fetchUnionsWithEmployees", response.data);
+//     yield put({ type: 'SET_EMPLOYEE_WITH_UNION', payload: response.data });
+//   } catch (error) {
+//     console.error('Error fetching unions with employees:', error);
+//   }
+// }
 
 export default function* rootSaga() {
   yield takeLatest('FETCH_EMPLOYEE_INFO', fetchEmployeeInfo);
@@ -108,5 +107,5 @@ export default function* rootSaga() {
   yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
   yield takeLatest('EMPLOYEE_TOGGLE_STATUS', statusToggle);
   yield takeLatest('FETCH_UNION', fetchUnion);
-  yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
+  // yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
 }

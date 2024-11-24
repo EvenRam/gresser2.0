@@ -1,15 +1,14 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-//import axios from 'axios';
 
 const DateSchedule = () => {
-const dispatch = useDispatch();
+    const dispatch = useDispatch();
+    const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
+    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
+    console.log("Schedule Reducer State:", { selectedDate, employeesByDate });
 
-const schedules = useSelector((state)=> state.scheduleReducer)
-console.log("schedule Reducer", schedules)
-  let [date, setDate]= useState(() => new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(selectedDate);
 
-  console.log("schedules reducer", schedules)
 
 
 useEffect(() => {
@@ -19,16 +18,22 @@ useEffect(() => {
     }
 }, [dispatch, date]);
 
+const handleDateChange = (event) => {
+    const newDate = event.target.value;
+    setDate(newDate);
+    console.log("Selected new date:", newDate);
+    dispatch({ type: 'SET_SELECTED_DATE', payload: newDate });
+};
 
 
 return(
 <div className='date-schedule'>
     <input 
-    className='date-schedule'
+    className='date-schedule-input'
     id='date'
     type='date'
     value={date}
-    onChange={(event) => setDate(event.target.value)}
+    onChange={handleDateChange}
     />
 
 

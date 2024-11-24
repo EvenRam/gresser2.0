@@ -4,29 +4,38 @@ import axios from 'axios';
 import DraggableJobBox from './DraggableJobBox';
 import './EmployeeStyles.css';
 import './Scheduling.css';
-import scheduleDate from './DateSchedule';
 import DateSchedule from './DateSchedule';
 
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const projects = useSelector((state) => state.projectReducer);
-  const allEmployees = useSelector((state) => state.employeeReducer.employees);
+  const allEmployees = useSelector((state) => state.employeeReducer.employeesByDate);
+  console.log("employees and details:", allEmployees)
+
+  const selectedDate = useSelector((state) => state.scheduleReducer);
+  console.log("date and details:", selectedDate)
+
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
-        await dispatch({ type: 'FETCH_EMPLOYEE_INFO' });
-      } catch (error) {
+        // Fetch projects and employees for the selected date
+        // await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
+        if (selectedDate) {
+          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate } }); 
+      }      } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchData();
-  }, [dispatch]);
+    if (selectedDate) {
+      fetchData();
+    }
+  }, [dispatch, selectedDate]);
+
 
   const moveEmployee = useCallback((employeeId, targetProjectId, sourceUnionId, sourceProjectId) => {
     dispatch({

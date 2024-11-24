@@ -41,67 +41,135 @@ router.get('/employees', async (req, res) => {
 
 
 // GET route to fetch all employee details and their schedules for a selected date
-// router.get('/', rejectUnauthenticated, async (req, res) => {
-//     const selectedDate = req.query.date;
+router.get('/', rejectUnauthenticated, async (req, res) => {
+    const selectedDate = req.query.date;
 
-//     console.log("Selected date in query:", selectedDate);
+    console.log("Selected date in query:", selectedDate);
 
-//     const sqlText = `
-//         WITH selected_schedule AS (
-//             SELECT s.job_id, s.employee_id
-//             FROM "schedule" s
-//             WHERE s.date = CAST($1 AS DATE)
-//         ),
-//         latest_schedule AS (
-//             SELECT s.job_id, s.employee_id
-//             FROM "schedule" s
-//             WHERE s.date < CAST($1 AS DATE)
-//             ORDER BY s.date DESC
-//             LIMIT 1
-//         )
-//         SELECT 
-//             j.job_id AS job_id,
-//             j.job_name AS job_name,
-//             j.location AS job_location,
-//             j.status AS job_status,
-//             ae.id AS employee_id,               
-//             ae.first_name AS employee_first_name,
-//             ae.last_name AS employee_last_name,
-//             ae.employee_number AS employee_number,
-//             ae.employee_status AS employee_status,
-//             ae.phone_number AS employee_phone_number,
-//             ae.email AS employee_email,
-//             ae.address AS employee_address,
-//             ae.current_location AS employee_current_location,
-//             ae.job_id AS employee_job_id,
-//             ae.union_id AS employee_union_id,
-//             ae.is_highlighted AS employee_is_highlighted,
-//             ae.display_order AS employee_display_order,
-//             u.union_name AS union_name
-//         FROM "jobs" j
-//         LEFT JOIN "add_employee" ae ON j.job_id = ae.job_id
-//         LEFT JOIN "unions" u ON ae.union_id = u.id
-//         WHERE j.status = 'active'
-//           AND ae.employee_status = TRUE
-//           AND (
-//               EXISTS (SELECT 1 FROM selected_schedule ss WHERE ss.job_id = j.job_id AND ss.employee_id = ae.id)
-//               OR
-//               NOT EXISTS (SELECT 1 FROM selected_schedule)
-//               AND EXISTS (SELECT 1 FROM latest_schedule ls WHERE ls.job_id = j.job_id AND ls.employee_id = ae.id)
-//           );
-//     `;
+    const sqlText = `
+        WITH selected_schedule AS (
+            SELECT s.job_id, s.employee_id
+            FROM "schedule" s
+            WHERE s.date = CAST($1 AS DATE)
+        ),
+        latest_schedule AS (
+            SELECT s.job_id, s.employee_id
+            FROM "schedule" s
+            WHERE s.date < CAST($1 AS DATE)
+            ORDER BY s.date DESC
+            LIMIT 1
+        )
+        SELECT 
+            j.job_id AS job_id,
+            j.job_name AS job_name,
+            j.location AS job_location,
+            j.status AS job_status,
+            ae.id AS employee_id,               
+            ae.first_name AS employee_first_name,
+            ae.last_name AS employee_last_name,
+            ae.employee_number AS employee_number,
+            ae.employee_status AS employee_status,
+            ae.phone_number AS employee_phone_number,
+            ae.email AS employee_email,
+            ae.address AS employee_address,
+            ae.current_location AS employee_current_location,
+            ae.job_id AS employee_job_id,
+            ae.union_id AS employee_union_id,
+            ae.is_highlighted AS employee_is_highlighted,
+            ae.display_order AS employee_display_order,
+            u.union_name AS union_name
+        FROM "jobs" j
+        LEFT JOIN "add_employee" ae ON j.job_id = ae.job_id
+        LEFT JOIN "unions" u ON ae.union_id = u.id
+        WHERE j.status = 'active'
+          AND ae.employee_status = TRUE
+          AND (
+              EXISTS (SELECT 1 FROM selected_schedule ss WHERE ss.job_id = j.job_id AND ss.employee_id = ae.id)
+              OR
+              NOT EXISTS (SELECT 1 FROM selected_schedule)
+              AND EXISTS (SELECT 1 FROM latest_schedule ls WHERE ls.job_id = j.job_id AND ls.employee_id = ae.id)
+          );
+    `;
 
-//     console.log("SQL Query:", sqlText);
+    console.log("SQL Query:", sqlText);
 
-//     try {
-//         const result = await pool.query(sqlText, [selectedDate]);
-//         console.log('Active jobs and employees for date retrieved:', result.rows);
-//         res.send(result.rows);
-//     } catch (error) {
-//         console.error('Error fetching active jobs and employees:', error);
-//         res.status(500).send('Error fetching active jobs and employees');
-//     }
-// });
+    try {
+        const result = await pool.query(sqlText, [selectedDate]);
+        console.log('Active jobs and employees for date retrieved:', result.rows);
+        res.send(result.rows);
+    } catch (error) {
+        console.error('Error fetching active jobs and employees:', error);
+        res.status(500).send('Error fetching active jobs and employees');
+    }
+});
+
+
+router.get('/withunions', async (req, res) => {
+    const selectedDate = req.query.date; 
+    console.log("Selected date in query for withunions:", selectedDate);
+    try {
+        const sqlText = `
+            WITH selected_schedule AS (
+                SELECT s.job_id, s.employee_id
+                FROM "schedule" s
+                WHERE s.date = CAST($1 AS DATE)
+            )
+            SELECT 
+                u.id AS union_id,
+                u.union_name AS union_name,
+                ae.id AS employee_id,
+                ae.first_name AS employee_first_name,
+                ae.last_name AS employee_last_name,
+                ae.phone_number AS employee_phone_number,
+                ae.employee_status AS employee_status,
+                ae.email AS employee_email,
+                ae.address AS employee_address,
+                ae.current_location AS employee_current_location,
+                ae.is_highlighted AS employee_is_highlighted,
+                s.job_id AS scheduled_job_id
+            FROM "unions" u
+            LEFT JOIN "add_employee" ae ON u.id = ae.union_id
+            LEFT JOIN selected_schedule s ON ae.id = s.employee_id
+            WHERE ae.employee_status = TRUE
+        `;
+        
+        const result = await pool.query(sqlText, [selectedDate]);
+        const unions = {};
+        result.rows.forEach(row => {
+            if (!unions[row.union_id]) {
+                unions[row.union_id] = {
+                    id: row.union_id,
+                    union_name: row.union_name,
+                    employees: []
+                };
+            }
+            if (row.employee_id) {
+                unions[row.union_id].employees.push({
+                    id: row.employee_id,
+                    first_name: row.employee_first_name,
+                    last_name: row.employee_last_name,
+                    phone_number: row.employee_phone_number,
+                    employee_status: row.employee_status,
+                    email: row.employee_email,
+                    address: row.employee_address,
+                    current_location: row.employee_current_location,
+                    is_highlighted: row.employee_is_highlighted,
+                    scheduled_job_id: row.scheduled_job_id
+                });
+            }
+        });
+     // Send the selected date in the response
+        res.send({
+            date: selectedDate,
+            unions: Object.values(unions)
+        });
+    } catch (error) {
+        console.error('Error fetching unions with employees and schedule:', error);
+        res.status(500).send('Error fetching unions with employees and schedule');
+    }
+});
+
+
 
 
 

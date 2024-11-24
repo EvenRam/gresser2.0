@@ -6,20 +6,28 @@ import './Box.css';
 
 const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
-  const allEmployees = useSelector((state) => state.employeeReducer.employees);
 
-  // console.log(`UnionBox Render - ${union_name} (id: ${id})`);
-  // console.log('All Employees from Redux:', allEmployees);
+  const selectedDate = useSelector((state) => state.dateReducer); 
+  const allEmployees = useSelector((state) =>
+    state.employeeReducer.employeesByDate?.[selectedDate] || []
+  );
 
-  const employees = allEmployees.filter(emp => emp.current_location === 'union' && emp.union_id === id);
+  if (!allEmployees) {
+    console.warn('No employees data found for the selected date:', selectedDate);
+  }
 
-  // console.log(`UnionBox ${union_name} (id: ${id}) - Current employees:`, employees);
+  const employees = allEmployees.filter(
+    (emp) => emp.current_location === 'union' && emp.union_id === id
+  );
 
-  const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId) => {
-    console.log('moveEmployee called with:', { employeeId, targetProjectId, sourceUnionId, targetUnionId });
+  console.log(`UnionBox Render - ${union_name} (id: ${id})`);
+  console.log('Filtered Employees:', employees);
+
+  const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId, date) => {
+    console.log('moveEmployee called with:', { employeeId, targetProjectId, sourceUnionId, targetUnionId, date });
     return {
       type: 'MOVE_EMPLOYEE',
-      payload: { employeeId, targetProjectId, sourceUnionId, targetUnionId }
+      payload: { employeeId, targetProjectId, sourceUnionId, targetUnionId, date }
     };
   };
 
@@ -36,10 +44,10 @@ const UnionBox = ({ id, union_name, color }) => {
       }
       
       if (item.union_id !== id || item.current_location !== 'union') {
-        console.log(`Moving employee ${item.id} to union ${id}`);
-        dispatch(moveEmployee(item.id, null, item.union_id, id));
+        console.log(`Moving employee ${item.id} to union ${id} for date ${selectedDate}`);
+        dispatch(moveEmployee(item.id, null, item.union_id, id, selectedDate));
       } else {
-        // console.log(`Employee ${item.id} is already in this union. No action taken.`);
+        console.log(`Employee ${item.id} is already in this union. No action taken.`);
       }
     },
     collect: (monitor) => ({
