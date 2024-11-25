@@ -7,14 +7,18 @@ const { rejectUnauthenticated } = require('../modules/authentication-middleware'
 router.get('/employees', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user.username);
-        
-        // Get the date from the request query, or use the current date
-        const selectedDate = req.query.date ? req.query.date : new Date().toISOString().split('T')[0];
+        console.log("Current user is: ", req.user?.username || 'undefined');
 
-        console.log("Selected or current date:", selectedDate);
+        // Ensure selectedDate is a string
+        let selectedDate = req.query.date;
+        if (typeof selectedDate === 'object') {
+            selectedDate = selectedDate.selectedDate || new Date().toISOString().split('T')[0];
+        }
+        selectedDate = String(selectedDate);
 
-        // SQL query to retrieve employee data with schedule information
+        console.log("Selected date (type):", typeof selectedDate, "Value:", selectedDate);
+
+        // SQL query
         const sqlText = `
             SELECT ae.*, u.union_name, ae.is_highlighted, s.date AS schedule_date, s.job_id
             FROM "add_employee" ae
@@ -24,7 +28,8 @@ router.get('/employees', async (req, res) => {
 
         try {
             const result = await pool.query(sqlText, [selectedDate]);
-            console.log(`GET from database add_employee with schedule`, result.rows);
+            console.log(`Query results for date ${selectedDate}:`);
+          
 
             res.send({
                 date: selectedDate,
