@@ -1,61 +1,24 @@
+
+/* For the union name */
 .small-text {
   font-size: 16px;
-  margin-bottom: 5px;
+  margin-bottom: 5px;  
+  /* text-align: center;   */
+
 }
 
+/* For the separator */
 .separator {
   border-bottom: 1px solid black;
-  margin: -5px 0;
+  margin: -5px 0;  
   margin-bottom: 15px;
-  width: 100%;
+  width: 100%;  /* Full width */
 }
 
-@media print {
-  .small-text {
-    font-size: 8pt;
-    margin: 0;
-    padding: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
 
-  .separator {
-    margin: 2px 0;
-    margin-bottom: 3px;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .union_box {
-    font-size: 8pt;
-    margin: 0;
-    padding: 1px;
-    display: flex;
-    flex-direction: column;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .employee-name {
-    font-size: 7pt;
-    margin: 0;
-    padding: 1px;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .primary {
-    margin: 1px 0;
-    padding: 0;
-    line-height: 1.2;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
+/* .union_box,.employee-name {
+  font-size: 16px;
+  text-align: center;  
+  display: block;     
+  margin-top: 5px;
+} */
