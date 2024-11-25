@@ -23,11 +23,13 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     console.log('Dropped item:', item);
     console.log('Current project box ID:', id);
     
+    // If the item is coming from a different project or union
     const isExternalMove = item.current_location === 'union' || 
                           (item.current_location === 'project' && item.projectId !== id);
     
     moveEmployee(item.id, id, item.union_id);
     
+    // Highlight if it's an external move from either union or another project
     if (isExternalMove) {
       dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: item.id, isHighlighted: true } });
     }
@@ -80,42 +82,27 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     }
   }, [orderedEmployees, id, dispatch, employees]);
 
-  const boxStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    border: '1px solid gray',
-    width: '170px',
-    minHeight: '100px',
-    margin: '-5px',
-    padding: '5px',
-    backgroundColor: isOver ? 'lightgray' : 'white',
-    '@media print': {
-      width: 'calc(20% - 4px)',
-      minHeight: '80px',
-      margin: '0',
-      padding: '2px',
-      breakInside: 'avoid',
-      pageBreakInside: 'avoid'
-    }
-  };
-
   return (
-    <div ref={drop} style={boxStyles}>
+    <div
+      ref={drop}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        border: '1px solid gray',
+        width: '170px',
+        minHeight: '100px',
+        margin: '-5px',
+        padding: '5px',
+        backgroundColor: isOver ? 'lightgray' : 'white',
+      }}
+    >
       <h4 className='projectboxname' 
-        style={{ 
-          backgroundColor: '#396a54', 
-          color: 'white', 
-          padding: '5px', 
-          fontSize: window.matchMedia('print').matches ? '8pt' : '16px',
-          margin: window.matchMedia('print').matches ? '0' : undefined
-        }}>
+        style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px' }}>
         {job_name}
       </h4>
       {orderedEmployees.length === 0 ? (
-        <p style={{ fontSize: window.matchMedia('print').matches ? '7pt' : 'inherit', margin: '2px' }}>
-          No employees assigned
-        </p>
+        <p>No employees assigned</p>
       ) : (
         orderedEmployees
           .filter(employee => employee.employee_status === true) 
@@ -132,11 +119,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             />
           ))
       )}
-      <h6 className='employee-count' style={{ 
-        fontSize: window.matchMedia('print').matches ? '7pt' : 'inherit',
-        margin: window.matchMedia('print').matches ? '1px 0' : undefined,
-        padding: window.matchMedia('print').matches ? '1px' : undefined
-      }}>
+      <h6 className='employee-count'>
         Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
       </h6>
     </div>

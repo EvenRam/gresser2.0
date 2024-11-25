@@ -57,20 +57,4 @@ img,.websitelogo{
 
 }
 
-@media print {
-  .nav {
-    display: none !important;
-  }
-  
-  /* Also hide any potential margin/padding space the nav might leave */
-  body {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-  }
 
-  /* Ensure content starts at the very top */
-  #react-root {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
-}

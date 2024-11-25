@@ -11,54 +11,18 @@
   flex-wrap: wrap;
   justify-content: flex-start;
   max-width: 100%;
-  margin-left: 20px;
-  margin-top: 18px;
+  margin-left: 20px;margin-top: 18px;
+  
 }
 
 .union-box {
-  flex: 0 0 180px;
+  flex: 0 0 5%;
   box-sizing: border-box;
   padding: 6px;
   margin: 2px;
+  
 }
 
-.union-title {
+.union-title{
   margin-left: 20px;
-}
-
-@media print {
-  .trades-container {
-    width: 45%;
-    padding: 0;
-    margin: 0;
-    display: inline-block;
-    vertical-align: top;
-    transform: scale(0.85);
-    transform-origin: top left;
-  }
-
-  .unions-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-    max-height: 100vh;
-    overflow: hidden;
-  }
-
-  .union-box {
-    flex: 0 0 150px;
-    padding: 2px;
-    margin: 1px;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    font-size: 8pt;
-  }
-
-  .union-title {
-    margin: 0;
-    font-size: 8pt !important;
-    padding: 2px !important;
-  }
 }

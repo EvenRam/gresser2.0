@@ -1,70 +1,26 @@
 .employee-item {
-  padding: 10px;
-  margin: 5px;
-  border-radius: 5px;
-  line-height: 1.4; /* Added for better spacing */
-  display: block; /* Added to ensure consistent spacing */
-}
-
-.employee-item.carpenter { color: blue; }
-.employee-item.bricklayer { color: red; }
-.employee-item.cement-mason { color: green; }
-.employee-item.laborer { color: black; }
-.employee-item.operator { color: purple; }
-.employee-item.superintendent { color: pink; }
-.employee-item.shop-trucking { color: orange; }
-.employee-item.default { color: #333; }
-
-.draggable-job-box {
-  transition: background-color 0.2s ease;
-}
-
-.job-over {
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
-}
-
-.draggable-job-box:hover {
-  z-index: 1;
-}
-
-@media print {
-  .employee-item {
-    padding: 1px;
-    margin: 1px 0; /* Added vertical margin */
-    break-inside: avoid;
-    page-break-inside: avoid;
-    font-size: 7pt;
-    line-height: 1.3; /* Adjusted for print */
-    display: block;
-    min-height: 12pt; /* Added to ensure minimum spacing */
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
   }
-
-  .employee-item:not(:last-child) {
-    margin-bottom: 2px; /* Space between employees */
-  }
+  
+  .employee-item.carpenter { color: blue; }
+  .employee-item.bricklayer { color: red; }
+  .employee-item.cement-mason { color: green; }
+  .employee-item.laborer { color: black; }
+  .employee-item.operator { color: purple; }
+  .employee-item.superintendent { color: pink; }
+  .employee-item.shop-trucking { color: orange; }
+  .employee-item.default { color: #333; }
 
   .draggable-job-box {
-    transition: none;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    margin: 0;
-    padding: 2px;
+    transition: background-color 0.2s ease;
   }
-
+  
   .job-over {
-    box-shadow: none;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
   }
-
-  /* Ensure colors print */
-  .employee-item.carpenter,
-  .employee-item.bricklayer,
-  .employee-item.cement-mason,
-  .employee-item.laborer,
-  .employee-item.operator,
-  .employee-item.superintendent,
-  .employee-item.shop-trucking,
-  .employee-item.default {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  
+  .draggable-job-box:hover {
+    z-index: 1;
   }
-}
