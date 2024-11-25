@@ -71,8 +71,9 @@ const Employee = ({
 
   const containerStyles = {
     opacity: isDragging ? 0.5 : 1,
-    padding: isPrinting ? '0px' : '1px',
-    margin: isPrinting ? '0' : '-8px 0 0 2px',
+    padding: isPrinting ? '3px 0' : '1px',
+    margin: isPrinting ? '2px 0' : '-8px 0 0 2px',
+    marginTop: index === 0 ? (isPrinting ? '6px' : '4px') : undefined, // Add margin to first employee
     cursor: 'move',
     borderRadius: '4px',
     whiteSpace: 'nowrap',
@@ -81,16 +82,23 @@ const Employee = ({
     backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
     breakInside: 'avoid',
     pageBreakInside: 'avoid',
+    minHeight: isPrinting ? '14pt' : 'auto',
+    display: 'block',
+    position: 'relative',
+    marginBottom: isPrinting ? '3px' : undefined
   };
 
   const nameStyles = {
     color: unionColor,
-    margin: isPrinting ? '0' : undefined,
-    padding: isPrinting ? '1px' : undefined,
+    margin: isPrinting ? '3px 0' : undefined,
+    padding: isPrinting ? '2px 0' : undefined,
     fontSize: isPrinting ? '7pt' : undefined,
-    lineHeight: isPrinting ? '1.1' : undefined,
+    lineHeight: isPrinting ? '1.5' : undefined,  // Increased line height
+    display: 'block',
+    minHeight: isPrinting ? '12pt' : 'auto',  // Increased minimum height
+    position: 'relative'  // Added
   };
-
+  
   return (
     <div
       ref={drag}
