@@ -90,30 +90,32 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     margin: '-5px',
     padding: '5px',
     backgroundColor: isOver ? 'lightgray' : 'white',
-    '@media print': {
-      width: 'calc(20% - 4px)',
-      minHeight: '80px',
-      margin: '0',
-      padding: '2px',
-      breakInside: 'avoid',
-      pageBreakInside: 'avoid'
-    }
+  };
+
+  const headerStyles = {
+    backgroundColor: '#396a54',
+    color: 'white',
+    padding: '5px',
+    fontSize: '16px',
+    margin: '0',
+  };
+
+  const noEmployeesStyles = {
+    margin: '2px',
+  };
+
+  const employeeCountStyles = {
+    margin: '1px 0',
+    padding: '1px',
   };
 
   return (
-    <div ref={drop} style={boxStyles}>
-      <h4 className='projectboxname' 
-        style={{ 
-          backgroundColor: '#396a54', 
-          color: 'white', 
-          padding: '5px', 
-          fontSize: window.matchMedia('print').matches ? '8pt' : '16px',
-          margin: window.matchMedia('print').matches ? '0' : undefined
-        }}>
+    <div ref={drop} className="project-box" style={boxStyles}>
+      <h4 className='projectboxname print-adjust' style={headerStyles}>
         {job_name}
       </h4>
       {orderedEmployees.length === 0 ? (
-        <p style={{ fontSize: window.matchMedia('print').matches ? '7pt' : 'inherit', margin: '2px' }}>
+        <p className="no-employees print-adjust" style={noEmployeesStyles}>
           No employees assigned
         </p>
       ) : (
@@ -132,11 +134,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
             />
           ))
       )}
-      <h6 className='employee-count' style={{ 
-        fontSize: window.matchMedia('print').matches ? '7pt' : 'inherit',
-        margin: window.matchMedia('print').matches ? '1px 0' : undefined,
-        padding: window.matchMedia('print').matches ? '1px' : undefined
-      }}>
+      <h6 className='employee-count print-adjust' style={employeeCountStyles}>
         Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
       </h6>
     </div>
