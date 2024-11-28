@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import axios from 'axios';
@@ -9,6 +9,8 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   const dispatch = useDispatch();
   const highlightedEmployees = useSelector(state => state.employeeReducer.highlightedEmployees);
   const [orderedEmployees, setOrderedEmployees] = useState([]);
+  const [insertPosition, setInsertPosition] = useState(null);
+  const boxRef = useRef(null);
 
   useEffect(() => {
     const sorted = [...employees].sort((a, b) => {
@@ -23,25 +25,51 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     console.log('Dropped item:', item);
     console.log('Current project box ID:', id);
     
-    // If the item is coming from a different project or union
     const isExternalMove = item.current_location === 'union' || 
                           (item.current_location === 'project' && item.projectId !== id);
     
     moveEmployee(item.id, id, item.union_id);
     
-    // Highlight if it's an external move from either union or another project
     if (isExternalMove) {
       dispatch({ type: 'SET_HIGHLIGHTED_EMPLOYEE', payload: { id: item.id, isHighlighted: true } });
     }
+    setInsertPosition(null);
   }, [id, moveEmployee, dispatch]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    drop: handleDrop,
+    hover: (item, monitor) => {
+      if (!boxRef.current) return;
+
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+
+      const boxRect = boxRef.current.getBoundingClientRect();
+      const boxTop = boxRect.top + 40; // Account for header
+      const mouseY = clientOffset.y - boxTop;
+      
+      const filteredEmployees = orderedEmployees.filter(emp => emp.employee_status === true);
+      const employeeHeight = 24; // Approximate height of each employee item
+      
+      let newPosition = Math.floor((mouseY + employeeHeight / 2) / employeeHeight);
+      newPosition = Math.max(0, Math.min(newPosition, filteredEmployees.length));
+      
+      setInsertPosition(newPosition);
+    },
+    drop: (item) => {
+      handleDrop(item);
+      setInsertPosition(null);
+    },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
-  }), [handleDrop]);
+  }), [handleDrop, orderedEmployees]);
+
+  // Combine refs
+  const combinedRef = (element) => {
+    boxRef.current = element;
+    drop(element);
+  };
 
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     dispatch({ 
@@ -82,9 +110,11 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     }
   }, [orderedEmployees, id, dispatch, employees]);
 
+  const activeEmployees = orderedEmployees.filter(employee => employee.employee_status === true);
+
   return (
     <div
-      ref={drop}
+      ref={combinedRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -94,33 +124,63 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
         minHeight: '100px',
         margin: '-5px',
         padding: '5px',
-        backgroundColor: isOver ? 'lightgray' : 'white',
+        backgroundColor: isOver ? 'rgba(57, 106, 84, 0.1)' : 'white',
+        position: 'relative'
       }}
     >
       <h4 className='projectboxname' 
         style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px' }}>
         {job_name}
       </h4>
-      {orderedEmployees.length === 0 ? (
-        <p>No employees assigned</p>
-      ) : (
-        orderedEmployees
-          .filter(employee => employee.employee_status === true) 
-          .map((employee, index) => (
-            <Employee
-              key={employee.id}
-              {...employee}
-              projectId={id}
-              index={index}
-              name={`${employee.first_name} ${employee.last_name}`}
-              isHighlighted={!!highlightedEmployees[employee.id]}
-              onClick={() => handleEmployeeClick(employee.id, !!highlightedEmployees[employee.id])}
-              onReorder={handleReorder}
-            />
+      
+      <div style={{ position: 'relative', minHeight: '50px' }}>
+        {activeEmployees.length === 0 ? (
+          <p>No employees assigned</p>
+        ) : (
+          activeEmployees.map((employee, index) => (
+            <React.Fragment key={employee.id}>
+              {isOver && insertPosition === index && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '0',
+                    right: '0',
+                    height: '3px',
+                    backgroundColor: '#396a54',
+                    transform: 'translateY(-2px)',
+                    zIndex: 1
+                  }}
+                />
+              )}
+              <Employee
+                {...employee}
+                projectId={id}
+                index={index}
+                name={`${employee.first_name} ${employee.last_name}`}
+                isHighlighted={!!highlightedEmployees[employee.id]}
+                onClick={() => handleEmployeeClick(employee.id, !!highlightedEmployees[employee.id])}
+                onReorder={handleReorder}
+              />
+            </React.Fragment>
           ))
-      )}
+        )}
+        {isOver && insertPosition === activeEmployees.length && (
+          <div
+            style={{
+              position: 'absolute',
+              left: '0',
+              right: '0',
+              bottom: '0',
+              height: '3px',
+              backgroundColor: '#396a54',
+              zIndex: 1
+            }}
+          />
+        )}
+      </div>
+
       <h6 className='employee-count'>
-        Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
+        Employees: {activeEmployees.length}
       </h6>
     </div>
   );
