@@ -6,96 +6,85 @@ import './EmployeeStyles.css';
 import './Scheduling.css';
 import DateSchedule from './DateSchedule';
 
+
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
-  const projects = useSelector((state) => state.projectReducer);
-  const allEmployees = useSelector((state) => state.employeeReducer.employeesByDate);
-  console.log("employees and details:", allEmployees)
 
-  const selectedDate = useSelector((state) => state.scheduleReducer);
-  console.log("date and details:", selectedDate)
+  // Redux state selectors
+  const projects = useSelector((state) => state.projectReducer.projects);
+  const allEmployees = useSelector((state) => state.employeeReducer.employeesByDate);
+  const selectedDate = useSelector((state) => state.scheduleReducer.date);
+  console.log('Projects:', projects);
+  console.log('All Employees:', allEmployees);
+  console.log('Selected Date:', selectedDate);
 
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch projects and employees for the selected date
-        // await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
         if (selectedDate) {
-          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate, employees:allEmployees} }); 
-      }      } catch (error) {
+          // Dispatch actions to fetch projects and employees for the selected date
+          await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
+          
+          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate } });
+        }
+      } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    if (selectedDate) {
-      fetchData();
-    }
+
+    fetchData();
   }, [dispatch, selectedDate]);
 
-
-  const moveEmployee = useCallback((employeeId, targetProjectId, sourceUnionId, sourceProjectId) => {
+  const moveEmployee = useCallback((employeeId, targetProjectId, sourceProjectId) => {
     dispatch({
       type: 'MOVE_EMPLOYEE',
-      payload: { employeeId, targetProjectId, sourceUnionId }
+      payload: {
+        employeeId,
+        targetProjectId,
+        sourceProjectId,
+        date: selectedDate
+      }
     });
-  }, [dispatch]);
+  }, [dispatch, selectedDate]);
 
   const moveJob = useCallback(async (sourceIndex, targetIndex) => {
     try {
-      // Update state first for immediate feedback
+      // Immediate UI update
       dispatch({
         type: 'REORDER_PROJECTS',
-        payload: { sourceIndex, targetIndex }
+        payload: { sourceIndex, targetIndex, date: selectedDate }
       });
 
-      // Get the updated order of project IDs
+      // Prepare the updated order of project IDs
       const orderedProjectIds = projects
-        .slice() // Create a copy of the array
-        .sort((a, b) => {
-          if (a.display_order === null) return 1;
-          if (b.display_order === null) return -1;
-          return a.display_order - b.display_order;
-        })
+        .slice()
+        .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
         .map(project => project.id);
 
       // Move the project in the ordered array
       const [movedId] = orderedProjectIds.splice(sourceIndex, 1);
       orderedProjectIds.splice(targetIndex, 0, movedId);
 
-      // Persist the new order to the database
-      await axios.put('/api/project/updateProjectOrder', {
-        orderedProjectIds
-      });
+      // Persist to the backend
+      await axios.put('/api/project/updateProjectOrder', { orderedProjectIds });
     } catch (error) {
       console.error('Error updating project order:', error);
-      // You might want to add error handling here, such as reverting the order in the UI
     }
-  }, [dispatch, projects]);
+  }, [dispatch, projects, selectedDate]);
 
   const memoizedProjects = useMemo(() => {
-    // Sort projects by display_order, then by other criteria
     return projects
       .slice()
       .sort((a, b) => {
-        // First sort by display_order
         if (a.display_order !== null && b.display_order !== null) {
           return a.display_order - b.display_order;
         }
-        if (a.display_order === null) return 1;
-        if (b.display_order === null) return -1;
-
-        // Then by employee count if display_order is the same
-        const aEmployees = a.employees?.length || 0;
-        const bEmployees = b.employees?.length || 0;
-        if (aEmployees === 0 && bEmployees > 0) return 1;
-        if (aEmployees > 0 && bEmployees === 0) return -1;
-        
-        // Finally by ID if everything else is equal
-        return a.id - b.id;
+        return a.display_order === null ? 1 : -1;
       })
       .map(project => ({
         ...project,
@@ -104,7 +93,7 @@ const Scheduling = () => {
   }, [projects, allEmployees]);
 
   const totalAssignedEmployees = useMemo(() => {
-    return memoizedProjects.reduce((total, project) => total + project.employees.length, 0);
+    return memoizedProjects.reduce((total, project) => total + (project.employees?.length || 0), 0);
   }, [memoizedProjects]);
 
   const handlePrint = useCallback(() => {
@@ -119,9 +108,8 @@ const Scheduling = () => {
     <div className="scheduling-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <span className="total-employees">Total Employees: {totalAssignedEmployees}</span>
-        
-        <DateSchedule/>
-        <button 
+        <DateSchedule />
+        <button
           onClick={handlePrint}
           className="btn"
           style={{ marginLeft: 'auto' }}

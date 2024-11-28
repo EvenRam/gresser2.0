@@ -30,19 +30,31 @@ function* fetchUnionsWithEmployees(action) {
     }
   }
 
-// function* fetchUnionsWithEmployees(action) {
-//     try {
-//       const response = yield call(axios.get, '/api/schedule/withunions', {
-//         params: { date: action.payload.date }
-//     })
-//       console.log("Response for fetchUnionsWithEmployees", action.payload.date);
-//       yield put({ type: 'SET_EMPLOYEE_WITH_UNION', payload: response.data });
-//         console.log("API response data:", response.data)
-//     } catch (error) {
-//       console.error('Error fetching unions with employees:', error);
-//       yield put({ type: 'FETCH_UNIONS_FAILED', error: error.message });
-//     }
-//   }
+// Saga to fetch projects with employees for a selected date
+function* fetchProjectsWithEmployees(action) {
+    try {
+      // The `action.payload` should include the selected date if provided
+      const selectedDate = action.payload?.date || new Date().toISOString().split('T')[0];
+  
+      // Make a GET request with the selected date as a query parameter
+      const response = yield call(axios.get, '/api/project/withEmployees', {
+        params: { date: selectedDate }
+      });
+  
+      console.log("Response for fetchProjectsWithEmployees:", response.data);
+  
+      // Dispatch the results to the reducer with the date and jobs payload
+      yield put({
+        type: 'SET_PROJECTS_WITH_EMPLOYEES',
+        payload: {
+          date: response.data.date, // Ensure the date is tracked
+          jobs: response.data.jobs // Jobs data with nested employees
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching projects with employees:', error);
+    }
+  }
 
 
   function* addEmployeeSchedule(action) {
@@ -63,6 +75,7 @@ function* fetchUnionsWithEmployees(action) {
 export default function* scheduleSaga(){
     yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
     yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
-    yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule)
+    yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule);
+    yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
 
 }

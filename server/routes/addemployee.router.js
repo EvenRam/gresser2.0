@@ -52,65 +52,7 @@ router.get('/union', async (req, res) => {
     }
 });
 
-// router.get('/withunions', async (req, res) => {
-//     try {
-//         const sqlText = `
-//             SELECT 
-//                 unions.id AS union_id,
-//                 unions.union_name AS union_name,
-//                 add_employee.id AS employee_id,
-//                 add_employee.first_name AS employee_first_name,
-//                 add_employee.last_name AS employee_last_name,
-//                 add_employee.phone_number AS employee_phone_number,
-//                 add_employee.employee_status AS employee_status,
-//                 add_employee.email AS employee_email,
-//                 add_employee.address AS employee_address,
-//                 add_employee.current_location AS employee_current_location, 
-//                 add_employee.union_id AS employee_union_id,
-//                 add_employee.is_highlighted AS employee_is_highlighted,
-//                 unions.union_name AS employee_union_name
-//             FROM unions
-//             LEFT JOIN add_employee ON unions.id = add_employee.union_id
-//             WHERE add_employee.employee_status = TRUE
-//             ORDER BY unions.union_name, add_employee.id;
-//         `;
-        
-//         const result = await pool.query(sqlText);
-        
-//         const unions = {};
-        
-//         result.rows.forEach(row => {
-//             if (!unions[row.union_id]) {
-//                 unions[row.union_id] = {
-//                     id: row.union_id,
-//                     union_name: row.union_name,
-//                     employees: []
-//                 };
-//             }
 
-//             if (row.employee_id) {
-//                 unions[row.union_id].employees.push({
-//                     id: row.employee_id,
-//                     first_name: row.employee_first_name,
-//                     last_name: row.employee_last_name,
-//                     phone_number: row.employee_phone_number,
-//                     employee_status: row.employee_status,
-//                     email: row.employee_email,
-//                     address: row.employee_address,
-//                     current_location: row.employee_current_location, 
-//                     union_id: row.employee_union_id,
-//                     union_name: row.employee_union_name,
-//                     is_highlighted: row.employee_is_highlighted
-//                 });
-//             }
-//         });
-        
-//         res.send(Object.values(unions));
-//     } catch (error) {
-//         console.error('Error fetching unions with employees:', error);
-//         res.status(500).send('Error fetching unions with employees');
-//     }
-// });
 
 // POST route to only manage posting employees to the employee table in the addemployee page
 router.post('/', rejectUnauthenticated, async (req, res) => {

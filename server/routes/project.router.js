@@ -3,69 +3,61 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
+// Updated GET route to include 'schedule' table
 router.get('/withEmployees', async (req, res) => {
     try {
+        const selectedDate = req.query.date || new Date().toISOString().split('T')[0];
+        console.log("Selected Date for Project Get Route:", selectedDate);
+
         const sqlText = `
+        WITH scheduled_jobs AS (
+            SELECT s.job_id, s.employee_id, s.date AS schedule_date
+            FROM schedule s
+            WHERE s.date = $1
+        )
         SELECT 
             jobs.job_id AS job_id, 
             jobs.job_name AS job_name, 
             jobs.status AS job_status,
-            add_employee.id AS employee_id, 
-            add_employee.first_name AS employee_first_name,
-            add_employee.last_name AS employee_last_name,
-            add_employee.employee_status AS employee_status,
-            add_employee.phone_number AS employee_phone_number,
-            add_employee.email AS employee_email,
-            add_employee.address AS employee_address,
-            add_employee.current_location AS current_location,
-            add_employee.union_id AS union_id,
-            add_employee.is_highlighted AS is_highlighted,
-            add_employee.display_order AS display_order,
-            unions.union_name AS union_name
+            json_agg(
+                json_build_object(
+                    'id', add_employee.id,
+                    'first_name', add_employee.first_name,
+                    'last_name', add_employee.last_name,
+                    'employee_status', add_employee.employee_status,
+                    'phone_number', add_employee.phone_number,
+                    'email', add_employee.email,
+                    'address', add_employee.address,
+                    'current_location', add_employee.current_location,
+                    'union_id', add_employee.union_id,
+                    'union_name', unions.union_name,
+                    'is_highlighted', add_employee.is_highlighted,
+                    'display_order', add_employee.display_order,
+                    'schedule_date', sj.schedule_date,
+                    'is_scheduled', CASE WHEN sj.job_id IS NOT NULL THEN TRUE ELSE FALSE END
+                )
+            ) AS employees
         FROM jobs
-        LEFT JOIN add_employee ON jobs.job_id = add_employee.job_id
+        LEFT JOIN add_employee ON jobs.job_id = add_employee.job_id AND add_employee.employee_status = TRUE
         LEFT JOIN unions ON add_employee.union_id = unions.id
+        LEFT JOIN scheduled_jobs sj ON add_employee.id = sj.employee_id
         WHERE jobs.status = 'Active'
-        ORDER BY jobs.job_id, add_employee.display_order NULLS LAST, add_employee.id
+        GROUP BY jobs.job_id, jobs.job_name, jobs.status
+        ORDER BY jobs.job_id;
         `;
-        
-        const result = await pool.query(sqlText);
-        
-        const jobs = {};
-        
-        result.rows.forEach(row => {
-            if (!jobs[row.job_id]) {
-                jobs[row.job_id] = {
-                    id: row.job_id,
-                    job_name: row.job_name,
-                    employees: []
-                };
-            }
-  
-            if (row.employee_id && row.employee_status === true) {
-                jobs[row.job_id].employees.push({
-                    id: row.employee_id,
-                    first_name: row.employee_first_name,
-                    last_name: row.employee_last_name,
-                    employee_status: row.employee_status,
-                    phone_number: row.phone_number,
-                    email: row.email,
-                    address: row.address,
-                    current_location: row.current_location,
-                    union_id: row.union_id,
-                    union_name: row.union_name,
-                    is_highlighted: row.is_highlighted,
-                    display_order: row.display_order
-                });
-            }
+
+        const result = await pool.query(sqlText, [selectedDate]);
+
+        res.send({
+            date: selectedDate,
+            jobs: result.rows
         });
-        
-        res.send(Object.values(jobs));
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
+
 
 router.put('/updateOrder', async (req, res) => {
     try {

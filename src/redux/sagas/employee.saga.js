@@ -24,24 +24,6 @@ function* addEmployeeInfo(action) {
   }
 }
 
-// function* fetchEmployeeCard() {
-//   try {
-//     const response = yield call(axios.get, '/api/addemployee/employeecard');
-//     yield put({ type: 'SET_EMPLOYEE_CARD', payload: response.data });
-//   } catch (error) {
-//     console.error('Error fetching employee information:', error);
-//   }
-// }
-
-function* fetchProjectsWithEmployees() {
-  try {
-    const response = yield call(axios.get, '/api/project/withEmployees');
-    console.log("Response for fetchProjectsWithEmployees", response.data);
-    yield put({ type: 'SET_PROJECTS_WITH_EMPLOYEES', payload: response.data });
-  } catch (error) {
-    console.error('Error fetching projects with employees:', error);
-  }
-}
 
 function* handleMoveEmployee(action) {
   try {
@@ -89,23 +71,12 @@ function* fetchUnion() {
   }
 }
 
-// function* fetchUnionsWithEmployees() {
-//   try {
-//     const response = yield call(axios.get, '/api/addemployee/withunions');
-//     console.log("Response for fetchUnionsWithEmployees", response.data);
-//     yield put({ type: 'SET_EMPLOYEE_WITH_UNION', payload: response.data });
-//   } catch (error) {
-//     console.error('Error fetching unions with employees:', error);
-//   }
-// }
+
 
 export default function* rootSaga() {
   yield takeLatest('FETCH_EMPLOYEE_INFO', fetchEmployeeInfo);
   yield takeLatest('ADD_EMPLOYEE_INFO', addEmployeeInfo);
-  // yield takeLatest('FETCH_EMPLOYEE_CARD', fetchEmployeeCard);
-  yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
   yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
   yield takeLatest('EMPLOYEE_TOGGLE_STATUS', statusToggle);
   yield takeLatest('FETCH_UNION', fetchUnion);
-  // yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
 }

@@ -16,7 +16,7 @@ router.get('/employees', async (req, res) => {
         }
         selectedDate = String(selectedDate);
 
-        console.log("Selected date (type):", typeof selectedDate, "Value:", selectedDate);
+        console.log("Selected date type in schedule router/get/employees:", typeof selectedDate, "Value:", selectedDate);
 
         // SQL query
         const sqlText = `
@@ -46,72 +46,84 @@ router.get('/employees', async (req, res) => {
 
 
 // GET route to fetch all employee details and their schedules for a selected date
-router.get('/', rejectUnauthenticated, async (req, res) => {
-    const selectedDate = req.query.date;
+// router.get('/', rejectUnauthenticated, async (req, res) => {
+//     const selectedDate = req.query.date;
 
-    console.log("Selected date in query:", selectedDate);
+//     console.log("Selected date in query:", selectedDate);
 
-    const sqlText = `
-        WITH selected_schedule AS (
-            SELECT s.job_id, s.employee_id
-            FROM "schedule" s
-            WHERE s.date = CAST($1 AS DATE)
-        ),
-        latest_schedule AS (
-            SELECT s.job_id, s.employee_id
-            FROM "schedule" s
-            WHERE s.date < CAST($1 AS DATE)
-            ORDER BY s.date DESC
-            LIMIT 1
-        )
-        SELECT 
-            j.job_id AS job_id,
-            j.job_name AS job_name,
-            j.location AS job_location,
-            j.status AS job_status,
-            ae.id AS employee_id,               
-            ae.first_name AS employee_first_name,
-            ae.last_name AS employee_last_name,
-            ae.employee_number AS employee_number,
-            ae.employee_status AS employee_status,
-            ae.phone_number AS employee_phone_number,
-            ae.email AS employee_email,
-            ae.address AS employee_address,
-            ae.current_location AS employee_current_location,
-            ae.job_id AS employee_job_id,
-            ae.union_id AS employee_union_id,
-            ae.is_highlighted AS employee_is_highlighted,
-            ae.display_order AS employee_display_order,
-            u.union_name AS union_name
-        FROM "jobs" j
-        LEFT JOIN "add_employee" ae ON j.job_id = ae.job_id
-        LEFT JOIN "unions" u ON ae.union_id = u.id
-        WHERE j.status = 'active'
-          AND ae.employee_status = TRUE
-          AND (
-              EXISTS (SELECT 1 FROM selected_schedule ss WHERE ss.job_id = j.job_id AND ss.employee_id = ae.id)
-              OR
-              NOT EXISTS (SELECT 1 FROM selected_schedule)
-              AND EXISTS (SELECT 1 FROM latest_schedule ls WHERE ls.job_id = j.job_id AND ls.employee_id = ae.id)
-          );
-    `;
+//     const sqlText = `
+//         WITH selected_schedule AS (
+//             SELECT s.job_id, s.employee_id
+//             FROM "schedule" s
+//             WHERE s.date = CAST($1 AS DATE)
+//         ),
+//         latest_schedule AS (
+//             SELECT s.job_id, s.employee_id
+//             FROM "schedule" s
+//             WHERE s.date < CAST($1 AS DATE)
+//             ORDER BY s.date DESC
+//             LIMIT 1
+//         )
+//         SELECT 
+//             j.job_id AS job_id,
+//             j.job_name AS job_name,
+//             j.location AS job_location,
+//             j.status AS job_status,
+//             ae.id AS employee_id,               
+//             ae.first_name AS employee_first_name,
+//             ae.last_name AS employee_last_name,
+//             ae.employee_number AS employee_number,
+//             ae.employee_status AS employee_status,
+//             ae.phone_number AS employee_phone_number,
+//             ae.email AS employee_email,
+//             ae.address AS employee_address,
+//             ae.current_location AS employee_current_location,
+//             ae.job_id AS employee_job_id,
+//             ae.union_id AS employee_union_id,
+//             ae.is_highlighted AS employee_is_highlighted,
+//             ae.display_order AS employee_display_order,
+//             u.union_name AS union_name
+//         FROM "jobs" j
+//         LEFT JOIN "add_employee" ae ON j.job_id = ae.job_id
+//         LEFT JOIN "unions" u ON ae.union_id = u.id
+//         WHERE j.status = 'active'
+//           AND ae.employee_status = TRUE
+//           AND (
+//               EXISTS (SELECT 1 FROM selected_schedule ss WHERE ss.job_id = j.job_id AND ss.employee_id = ae.id)
+//               OR
+//               NOT EXISTS (SELECT 1 FROM selected_schedule)
+//               AND EXISTS (SELECT 1 FROM latest_schedule ls WHERE ls.job_id = j.job_id AND ls.employee_id = ae.id)
+//           );
+//     `;
 
-    console.log("SQL Query:", sqlText);
+//     console.log("SQL Query:", sqlText);
 
-    try {
-        const result = await pool.query(sqlText, [selectedDate]);
-        console.log('Active jobs and employees for date retrieved:', result.rows);
-        res.send(result.rows);
-    } catch (error) {
-        console.error('Error fetching active jobs and employees:', error);
-        res.status(500).send('Error fetching active jobs and employees');
-    }
-});
-
+//     try {
+//         const result = await pool.query(sqlText, [selectedDate]);
+//         console.log('Active jobs and employees for date retrieved:', result.rows);
+//         res.send(result.rows);
+//     } catch (error) {
+//         console.error('Error fetching active jobs and employees:', error);
+//         res.status(500).send('Error fetching active jobs and employees');
+//     }
+// });
 
 router.get('/withunions', async (req, res) => {
-    const selectedDate = req.query.date; 
-    console.log("Selected date in query for withunions:", selectedDate);
+    if (!req.isAuthenticated()) {
+        return res.status(401).send('Unauthorized');
+    }
+
+    console.log('User is authenticated?:', req.isAuthenticated());
+    console.log("Current user is: ", req.user?.username || 'undefined');
+
+    // Ensure selectedDate is a string and fallback to today's date if not provided
+    let selectedDate = req.query.date;
+    if (!selectedDate || typeof selectedDate === 'object') {
+        selectedDate = selectedDate?.selectedDate || new Date().toISOString().split('T')[0];
+    }
+
+    console.log("Selected date withunions:", typeof selectedDate, "Value:", selectedDate);
+
     try {
         const sqlText = `
             WITH selected_schedule AS (
@@ -137,7 +149,7 @@ router.get('/withunions', async (req, res) => {
             LEFT JOIN selected_schedule s ON ae.id = s.employee_id
             WHERE ae.employee_status = TRUE
         `;
-        
+
         const result = await pool.query(sqlText, [selectedDate]);
         const unions = {};
         result.rows.forEach(row => {
@@ -163,20 +175,19 @@ router.get('/withunions', async (req, res) => {
                 });
             }
         });
-     // Send the selected date in the response
+
         res.send({
             date: selectedDate,
             unions: Object.values(unions)
         });
     } catch (error) {
-        console.error('Error fetching unions with employees and schedule:', error);
+        console.error(
+            `Error fetching unions with employees and schedule. Date: ${selectedDate}. User: ${req.user?.username || 'unknown'}`,
+            error
+        );
         res.status(500).send('Error fetching unions with employees and schedule');
     }
 });
-
-
-
-
 
 
 router.post('/', rejectUnauthenticated, async (req, res) => {
