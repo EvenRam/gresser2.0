@@ -16,6 +16,7 @@ import Footer from '../Footer/Footer';
 
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute';
 
+// Currently commented out but will be used again
 import RegisterPage from '../RegisterPage/RegisterPage';
 
 import AboutPage from '../AboutPage/AboutPage';
@@ -30,6 +31,7 @@ import JobHistory from '../JobHistory/JobHistory';
 import DragDrop from '../SaveDrag/SaveDrag';
 import Scheduling from '../Scheduling/Scheduling';
 import Trades from '../Trades/Trades';
+import PrintLayout from '../layouts/PrintLayout';
 
 import './App.css';
 
@@ -68,6 +70,7 @@ function App() {
                 <Scheduling />
                 <Trades />
               </div>
+              <PrintLayout />
             </DndProvider>
           </ProtectedRoute>
 
@@ -79,7 +82,9 @@ function App() {
             {user.id ? <Redirect to="/user" /> : <LoginPage />}
           </Route>
 
-          <Route exact path="/registration">  {user.id ? <Redirect to="/user" /> : <RegisterPage />}  </Route>
+          <Route exact path="/registration">  
+            {user.id ? <Redirect to="/user" /> : <RegisterPage />}  
+          </Route>
           
           <Route exact path="/home">
             {user.id ? <Redirect to="/user" /> : <LoginPage />}
@@ -114,6 +119,7 @@ function App() {
                 <Scheduling />
                 <Trades />
               </div>
+              <PrintLayout />
             </DndProvider>
           </ProtectedRoute>
 

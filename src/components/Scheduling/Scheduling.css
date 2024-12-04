@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   padding: 2px;
-  width: 120%;
+  width: 100%;
 }
 
 .jobs-container {
@@ -17,13 +17,13 @@
   margin-bottom: 20px;
 }
 
-.draggable-job-box:active {
-  cursor: grabbing;
-}
-
 .projectboxname {
   margin-top: 0;
   margin-bottom: 10px;
+  background-color: #396a54;
+  color: white;
+  padding: 5px;
+  font-size: 16px;
 }
 
 .employee-count {
@@ -37,67 +37,42 @@
   font-size: small;
 }
 
-.empty-job-box {
-  width: 170px;
-  height: 100px;
-  border: 1px dashed #ccc;
-  border-radius: 4px;
-}
-
-@media (max-width: 480px) {
-  .jobs-container {
-    grid-template-columns: 1fr;
-  }
-}
-
-.total-employees{
-  text-align: center;
-  font-weight: 600;
-  margin-bottom: 25px;
-  font-size: 14px;
-}
-
 /* Print styles */
 @media print {
-  .scheduling-container {
-    width: 100% !important;
-    padding: 0 !important;
+  /* Only show in print-page-1 */
+  .scheduling-container:not(.print-page-1 .scheduling-container) {
+    display: none !important;
   }
 
-  .jobs-container {
-    gap: 10px !important;
+  .print-page-1 .scheduling-container {
+    width: 100% !important;
+    padding: 0.25in !important;
+    margin: 0 !important;
+  }
+
+  .print-page-1 .jobs-container {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 4px !important;
+    margin: 0 !important;
+  }
+
+  .print-page-1 .draggable-job-box {
+    transform: scale(0.95);
+    margin: 0 !important;
     page-break-inside: avoid;
   }
 
-  /* Force background colors and text colors to print */
+  /* Force colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  /* Preserve union colors */
-  [style*="color: red"] { color: red !important; }
-  [style*="color: green"] { color: green !important; }
-  [style*="color: black"] { color: black !important; }
-  [style*="color: purple"] { color: purple !important; }
-  [style*="color: blue"] { color: blue !important; }
-  [style*="color: pink"] { color: pink !important; }
-  [style*="color: orange"] { color: orange !important; }
-
-  /* Preserve project box styles */
-  .projectboxname {
-    background-color: #396a54 !important;
-    color: white !important;
-  }
-
-  .employee-count {
-    background-color: rgb(79, 76, 76) !important;
-    color: white !important;
-  }
-
-  /* Hide print button when printing */
-  button {
+  .screen-only,
+  button,
+  .modal {
     display: none !important;
   }
 }

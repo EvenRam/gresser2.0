@@ -181,3 +181,70 @@ li{
   margin-bottom: 25px;
 }
 
+/* Add these styles to your existing App.css */
+
+.parent-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+/* Print Layout Styles */
+@media screen {
+  .print-layout {
+    display: none;
+  }
+}
+
+@media print {
+  /* Hide regular layout */
+  .parent-container {
+    display: none !important;
+  }
+
+  /* Show print layout */
+  .print-layout {
+    display: block !important;
+  }
+
+  /* Hide navigation and footer */
+  .nav,
+  .footer,
+  [role="banner"],
+  [role="contentinfo"] {
+    display: none !important;
+  }
+
+  /* First page - Projects */
+  .print-page-1 {
+    page-break-after: always;
+  }
+
+  /* Second page - Unions */
+  .print-page-2 {
+    page-break-before: always;
+    page-break-after: avoid;
+  }
+
+  /* Remove default margins */
+  @page {
+    margin: 0.25in;
+    size: portrait;
+  }
+
+  /* Hide all footers and copyright notices */
+  .footer,
+  .copyright,
+  [alt="Gresser"] {
+    display: none !important;
+  }
+
+  /* Force background colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
+
