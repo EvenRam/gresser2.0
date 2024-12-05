@@ -248,3 +248,36 @@ li{
   }
 }
 
+@media print {
+  /* Hide all footer-related content */
+  footer, 
+  .footer,
+  .copyright,
+  [alt="Gresser"],
+  [role="contentinfo"] {
+    display: none !important;
+    height: 0 !important;
+    visibility: hidden !important;
+  }
+
+  /* Force page count to 2 */
+  @page {
+    margin: 0.25in;
+  }
+
+  /* Hide third page content */
+  .print-page:nth-child(n+3) {
+    display: none !important;
+  }
+
+  /* Remove any content that might cause extra pages */
+  body::after {
+    content: none !important;
+  }
+
+  /* Ensure content fits within 2 pages */
+  .parent-container {
+    max-height: calc(2 * 11in - 1in);
+    overflow: hidden;
+  }
+}
