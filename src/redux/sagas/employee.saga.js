@@ -25,26 +25,26 @@ function* addEmployeeInfo(action) {
 }
 
 
-function* handleMoveEmployee(action) {
-  try {
-    const { employeeId, targetProjectId, sourceUnionId } = action.payload;
+// function* handleMoveEmployee(action) {
+//   try {
+//     const { employeeId, targetProjectId, sourceUnionId } = action.payload;
 
-    // Make an API call to move the employee
-    yield call(axios.post, '/api/moveemployee', { 
-      employeeId, 
-      targetProjectId,
-      sourceUnionId
-    });
+//     // Make an API call to move the employee
+//     yield call(axios.post, '/api/moveemployee', { 
+//       employeeId, 
+//       targetProjectId,
+//       sourceUnionId
+//     });
 
-    // Fetch updated projects and employee information 
-    yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
-    yield put({ type: 'FETCH_EMPLOYEE_INFO' });
-    yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
-  } catch (error) {
-    console.error('Error moving employee:', error);
-    yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });
-  }
-}
+//     // Fetch updated projects and employee information 
+//     yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
+//     yield put({ type: 'FETCH_EMPLOYEE_INFO' });
+//     yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
+//   } catch (error) {
+//     console.error('Error moving employee:', error);
+//     yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });
+//   }
+// }
 
 function* statusToggle(action) {
   try {
@@ -76,7 +76,7 @@ function* fetchUnion() {
 export default function* rootSaga() {
   yield takeLatest('FETCH_EMPLOYEE_INFO', fetchEmployeeInfo);
   yield takeLatest('ADD_EMPLOYEE_INFO', addEmployeeInfo);
-  yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
+  // yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
   yield takeLatest('EMPLOYEE_TOGGLE_STATUS', statusToggle);
   yield takeLatest('FETCH_UNION', fetchUnion);
 }

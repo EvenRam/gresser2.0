@@ -6,29 +6,28 @@ import './EmployeeStyles.css';
 import './Scheduling.css';
 import DateSchedule from './DateSchedule';
 
-
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
-
   // Redux state selectors
   const projects = useSelector((state) => state.projectReducer.projects);
-  const allEmployees = useSelector((state) => state.employeeReducer.employeesByDate);
-  const selectedDate = useSelector((state) => state.scheduleReducer.date);
-  console.log('Projects:', projects);
-  console.log('All Employees:', allEmployees);
-  console.log('Selected Date:', selectedDate);
-
-
+  const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
+  const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
+  // Get employees for the selected date
+  const allEmployees = employeesByDate[selectedDate] || [];
+  
+  console.log('Projects in projectReducer:', projects);
+  console.log('All Employees', allEmployees);
+  console.log('Selected Date from scheduleReducer:', selectedDate);
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
+        console.log('Fetched projects');
         if (selectedDate) {
-          // Dispatch actions to fetch projects and employees for the selected date
-          await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
-          
-          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate } });
+          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate, employees: allEmployees } });
+          console.log('Fetched employees for date:', selectedDate, allEmployees);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -36,10 +35,8 @@ const Scheduling = () => {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, [dispatch, selectedDate]);
-
   const moveEmployee = useCallback((employeeId, targetProjectId, sourceProjectId) => {
     dispatch({
       type: 'MOVE_EMPLOYEE',
@@ -47,37 +44,34 @@ const Scheduling = () => {
         employeeId,
         targetProjectId,
         sourceProjectId,
-        date: selectedDate
-      }
+        date: selectedDate,
+      },
     });
   }, [dispatch, selectedDate]);
-
   const moveJob = useCallback(async (sourceIndex, targetIndex) => {
     try {
       // Immediate UI update
       dispatch({
         type: 'REORDER_PROJECTS',
-        payload: { sourceIndex, targetIndex, date: selectedDate }
+        payload: { sourceIndex, targetIndex, date: selectedDate },
       });
-
       // Prepare the updated order of project IDs
       const orderedProjectIds = projects
         .slice()
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
-        .map(project => project.id);
-
+        .map((project) => project.id);
       // Move the project in the ordered array
       const [movedId] = orderedProjectIds.splice(sourceIndex, 1);
       orderedProjectIds.splice(targetIndex, 0, movedId);
-
       // Persist to the backend
       await axios.put('/api/project/updateProjectOrder', { orderedProjectIds });
     } catch (error) {
       console.error('Error updating project order:', error);
     }
   }, [dispatch, projects, selectedDate]);
-
   const memoizedProjects = useMemo(() => {
+    console.log('Creating memoizedProjects with:', { projects, allEmployees });
+    
     return projects
       .slice()
       .sort((a, b) => {
@@ -86,24 +80,28 @@ const Scheduling = () => {
         }
         return a.display_order === null ? 1 : -1;
       })
-      .map(project => ({
-        ...project,
-        employees: allEmployees.filter(emp => emp.job_id === project.id)
-      }));
+      .map((project) => {
+        const projectEmployees = project.employees || [];
+        console.log(`Project ${project.job_id} employees:`, projectEmployees);
+        
+        return {
+          ...project,
+          employees: projectEmployees,
+        };
+      });
   }, [projects, allEmployees]);
-
   const totalAssignedEmployees = useMemo(() => {
-    return memoizedProjects.reduce((total, project) => total + (project.employees?.length || 0), 0);
+    return memoizedProjects.reduce(
+      (total, project) => total + (project.employees?.length || 0),
+      0
+    );
   }, [memoizedProjects]);
-
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
-
   return (
     <div className="scheduling-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -130,7 +128,7 @@ const Scheduling = () => {
           <div className="jobs-container">
             {memoizedProjects.map((project, index) => (
               <DraggableJobBox
-                key={project.id}
+                key={project.job_id}
                 job={project}
                 index={index}
                 moveJob={moveJob}
@@ -144,5 +142,4 @@ const Scheduling = () => {
     </div>
   );
 };
-
 export default React.memo(Scheduling);

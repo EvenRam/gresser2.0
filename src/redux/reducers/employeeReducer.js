@@ -1,59 +1,59 @@
 const initialState = {
-  employeesByDate: {}, // Store employees keyed by date
-  highlightedEmployees: {}, // Store highlighted employees keyed by their IDs
+  employeesByDate: {},
+  highlightedEmployees: {},
 };
-
 const employeeReducer = (state = initialState, action) => {
   switch (action.type) {
     case 'SET_EMPLOYEES': {
-      const { date, employees } = action.payload; // Ensure payload contains date and employees
-
-      // Extract highlighted employees from the payload
-      const highlightedEmployees = employees.reduce((acc, emp) => {
-        if (emp.is_highlighted) {
-          acc[emp.id] = true;
-        }
-        return acc;
-      }, {});
-
+      const { date, employees } = action.payload;
+      
+      if (!Array.isArray(employees)) {
+        console.warn('SET_EMPLOYEES received invalid employees data:', employees);
+        return state;
+      }
       return {
         ...state,
         employeesByDate: {
           ...state.employeesByDate,
-          [date]: employees, // Store employees for the specified date
-        },
-        highlightedEmployees: {
-          ...state.highlightedEmployees,
-          ...highlightedEmployees, // Merge highlighted employees
-        },
+          [date]: employees
+        }
       };
     }
-
+    case 'INITIALIZE_HIGHLIGHTED_EMPLOYEES': {
+      return {
+        ...state,
+        highlightedEmployees: action.payload
+      };
+    }
     case 'MOVE_EMPLOYEE': {
       const { employeeId, targetProjectId, targetUnionId, date } = action.payload;
-
       const updatedEmployeesByDate = { ...state.employeesByDate };
-      for (const date in updatedEmployeesByDate) {
-        updatedEmployeesByDate[date] = updatedEmployeesByDate[date].map((emp) => {
-          if (emp.id === employeeId) {
-            return {
-              ...emp,
-              current_location: targetProjectId ? 'project' : 'union',
-              job_id: targetProjectId || null,
-              union_id: targetUnionId || emp.union_id,
-              display_order: null, // Reset display_order when moving to a new project
-            };
-          }
-          return emp;
-        });
+      for (const dateKey in updatedEmployeesByDate) {
+        if (updatedEmployeesByDate[dateKey]) {
+          updatedEmployeesByDate[dateKey] = updatedEmployeesByDate[dateKey].map((emp) => {
+            if (emp.id === employeeId) {
+              return {
+                ...emp,
+                current_location: targetProjectId ? 'project' : 'union',
+                job_id: targetProjectId || null,
+                union_id: targetUnionId || emp.union_id,
+                display_order: null,
+              };
+            }
+            return emp;
+          });
+        }
       }
-
-      return { ...state, employeesByDate: updatedEmployeesByDate };
+      return { 
+        ...state, 
+        employeesByDate: updatedEmployeesByDate 
+      };
     }
-
     case 'UPDATE_EMPLOYEE_ORDER': {
       const { projectId, employees, date } = action.payload;
-
+      if (!date || !state.employeesByDate[date]) {
+        return state;
+      }
       const updatedEmployeesByDate = {
         ...state.employeesByDate,
         [date]: state.employeesByDate[date].map((emp) => {
@@ -67,13 +67,10 @@ const employeeReducer = (state = initialState, action) => {
           return emp;
         }),
       };
-
       return { ...state, employeesByDate: updatedEmployeesByDate };
     }
-
     case 'SET_HIGHLIGHTED_EMPLOYEE': {
       const { id, isHighlighted } = action.payload;
-
       // Make API call to update the database
       fetch(`/api/addemployee/${id}/highlight`, {
         method: 'PUT',
@@ -81,59 +78,57 @@ const employeeReducer = (state = initialState, action) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ isHighlighted }),
-        credentials: 'include', // Important for handling authentication
+        credentials: 'include',
       }).catch((error) => {
         console.error('Error updating highlight status:', error);
       });
-
-      // Update local state
-      const newHighlightedEmployees = { ...state.highlightedEmployees, [id]: isHighlighted };
-
-      // If highlighted is false, remove the key entirely
-      if (!isHighlighted) {
+      const newHighlightedEmployees = { ...state.highlightedEmployees };
+      if (isHighlighted) {
+        newHighlightedEmployees[id] = true;
+      } else {
         delete newHighlightedEmployees[id];
       }
-
       const updatedEmployeesByDate = { ...state.employeesByDate };
       for (const date in updatedEmployeesByDate) {
-        updatedEmployeesByDate[date] = updatedEmployeesByDate[date].map((emp) => {
-          if (emp.id === id) {
-            return { ...emp, is_highlighted: isHighlighted };
-          }
-          return emp;
-        });
+        if (updatedEmployeesByDate[date]) {
+          updatedEmployeesByDate[date] = updatedEmployeesByDate[date].map((emp) => {
+            if (emp.id === id) {
+              return { ...emp, is_highlighted: isHighlighted };
+            }
+            return emp;
+          });
+        }
       }
-
       return {
         ...state,
         highlightedEmployees: newHighlightedEmployees,
         employeesByDate: updatedEmployeesByDate,
       };
     }
-
     case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
       const clearedEmployeesByDate = { ...state.employeesByDate };
       for (const date in clearedEmployeesByDate) {
-        clearedEmployeesByDate[date] = clearedEmployeesByDate[date].map((emp) => ({
-          ...emp,
-          is_highlighted: false,
-        }));
+        if (clearedEmployeesByDate[date]) {
+          clearedEmployeesByDate[date] = clearedEmployeesByDate[date].map((emp) => ({
+            ...emp,
+            is_highlighted: false,
+          }));
+        }
       }
-
       return {
         ...state,
         highlightedEmployees: {},
         employeesByDate: clearedEmployeesByDate,
       };
     }
-
     case 'RESET_EMPLOYEE_STATE': {
       return initialState;
     }
-
     default:
       return state;
   }
 };
-
 export default employeeReducer;
+
+
+

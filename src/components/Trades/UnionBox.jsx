@@ -3,26 +3,20 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import Employee from '../Scheduling/Employee';
 import './Box.css';
-
 const UnionBox = ({ id, union_name, color }) => {
   const dispatch = useDispatch();
-
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate); 
   const allEmployees = useSelector((state) =>
     state.employeeReducer.employeesByDate?.[selectedDate] || []
   );
-
   if (!allEmployees) {
     console.warn('No employees data found for the selected date:', selectedDate);
   }
-
   const employees = allEmployees.filter(
     (emp) => emp.current_location === 'union' && emp.union_id === id
   );
-
   console.log(`UnionBox Render - ${union_name} (id: ${id})`);
   console.log('Filtered Employees:', employees);
-
   const moveEmployee = (employeeId, targetProjectId, sourceUnionId, targetUnionId, date) => {
     console.log('moveEmployee called with:', { employeeId, targetProjectId, sourceUnionId, targetUnionId, date });
     return {
@@ -30,16 +24,11 @@ const UnionBox = ({ id, union_name, color }) => {
       payload: { employeeId, targetProjectId, sourceUnionId, targetUnionId, date }
     };
   };
-
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: (item, monitor) => {
-      // console.log(`Drop detected in ${union_name} (id: ${id})`);
-      // console.log('Dropped item:', item);
-      
       const didDrop = monitor.didDrop();
       if (didDrop) {
-        // console.log('Item was already dropped in a child component');
         return;
       }
       
@@ -54,7 +43,6 @@ const UnionBox = ({ id, union_name, color }) => {
       isOver: !!monitor.isOver(),
     }),
   }), [id, union_name, dispatch, allEmployees]);
-
   return (
     <div 
       ref={drop}
@@ -75,25 +63,23 @@ const UnionBox = ({ id, union_name, color }) => {
       ) : (
         employees
           .filter(employee => employee.employee_status === true)
-          .map(employee => {
-            // console.log(`Employee in UnionBox - ${employee.first_name} ${employee.last_name}:`, employee);
-            return (
-              <Employee
-                key={employee.id}
-                {...employee}
-                className="employee-name" name={`${employee.first_name} ${employee.last_name}`}
-                union_id={id}
-                union_name={union_name}
-                current_location="union"
-               
-
-              />
-            );
-          })
+          .map((employee, index) => (
+            <Employee
+              key={employee.id}
+              {...employee}
+              className="employee-name"
+              name={`${employee.first_name} ${employee.last_name}`}
+              union_id={id}
+              union_name={union_name}
+              current_location="union"
+              index={index}
+            />
+          ))
       )}
       </div>
     </div>
   );
 };
-
 export default React.memo(UnionBox);
+
+

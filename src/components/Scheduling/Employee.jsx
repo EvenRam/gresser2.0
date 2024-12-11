@@ -1,7 +1,6 @@
 import React, { useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
-
 const Employee = ({
   id,
   name,
@@ -15,10 +14,9 @@ const Employee = ({
   onClick,
   index,
   onReorder,
-  projectId // Add projectId to props
+  projectId
 }) => {
   const unionColor = unionColors[union_name] || 'black';
-
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: { 
@@ -27,60 +25,50 @@ const Employee = ({
       union_name, 
       current_location, 
       index,
-      projectId // Include projectId in the drag item
+      projectId
     },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }), [id, union_id, union_name, current_location, index, projectId]);
-
-  const handleDragStart = (e) => {
+  const handleDragStart = useCallback((e) => {
+    if (typeof index === 'number') {
+      e.dataTransfer.setData('text/plain', index.toString());
+    }
     e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
+  }, [index]);
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
     return false;
-  };
-
-  const handleDragEnter = (e) => {
+  }, []);
+  const handleDragEnter = useCallback((e) => {
     e.preventDefault();
-  };
-
-  const handleDrop = (e) => {
+  }, []);
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
+    if (typeof onReorder !== 'function') return;
+    
     const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    if (draggedIndex !== index) {
+    if (!isNaN(draggedIndex) && draggedIndex !== index) {
       onReorder(draggedIndex, index);
     }
-  };
-
-  const handleDragEnd = () => {
-    // Clean up if needed
-  };
-
+  }, [index, onReorder]);
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
-    if (isHighlighted) {
+    if (isHighlighted && typeof onClick === 'function') {
       onClick(id, isHighlighted);
     }
   }, [id, isHighlighted, onClick]);
-
   const modalId = `employee-modal-${id}`;
-
   return (
     <div
       ref={drag}
       draggable
       onContextMenu={handleContextMenu}
-      onDragStart={(e) => {
-        handleDragStart(e);
-        e.dataTransfer.setData('text/plain', index.toString());
-      }}
+      onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDrop={handleDrop}
-      onDragEnd={handleDragEnd}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -101,7 +89,6 @@ const Employee = ({
       >
         {name}
       </h6>
-
       <div className="modal fade" id={modalId} tabIndex="-1" role="dialog" aria-labelledby={`${modalId}-label`} aria-hidden="true">
         <div className="modal-dialog" role="document">
           <div className="modal-content">
@@ -126,5 +113,4 @@ const Employee = ({
     </div>
   );
 };
-
 export default React.memo(Employee);

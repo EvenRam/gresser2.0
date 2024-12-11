@@ -2,45 +2,52 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
-
-
+// Updated GET route to include 'schedule' table
 router.get('/employees', async (req, res) => {
-    if (req.isAuthenticated()) {
-        console.log('User is authenticated?:', req.isAuthenticated());
-        console.log("Current user is: ", req.user?.username || 'undefined');
-
-        // Ensure selectedDate is a string
-        let selectedDate = req.query.date;
-        if (typeof selectedDate === 'object') {
-            selectedDate = selectedDate.selectedDate || new Date().toISOString().split('T')[0];
-        }
-        selectedDate = String(selectedDate);
-
-        console.log("Selected date type in schedule router/get/employees:", typeof selectedDate, "Value:", selectedDate);
-
-        // SQL query
+    try {
+        // Get the selected date or default to today's date
+        const selectedDate = req.query.date || new Date().toISOString().split('T')[0];
+        console.log("Selected Date for Schedule Get Route:", selectedDate);
         const sqlText = `
-            SELECT ae.*, u.union_name, ae.is_highlighted, s.date AS schedule_date, s.job_id
-            FROM "add_employee" ae
-            LEFT JOIN "unions" u ON ae."union_id" = u."id"
-            LEFT JOIN "schedule" s ON ae."id" = s."employee_id" AND s."date" = $1
+        WITH scheduled_employees AS (
+            SELECT 
+                s.employee_id, 
+                s.job_id, 
+                s.date AS schedule_date
+            FROM schedule s
+            WHERE s.date = $1
+        )
+        SELECT 
+            ae.id AS employee_id,
+            ae.first_name,
+            ae.last_name,
+            ae.employee_status,
+            ae.phone_number,
+            ae.email,
+            ae.address,
+            ae.current_location,
+            ae.union_id,
+            u.union_name,
+            ae.is_highlighted,
+            ae.display_order,
+            se.schedule_date,
+            se.job_id,
+            CASE WHEN se.job_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_scheduled
+        FROM add_employee ae
+        LEFT JOIN unions u ON ae.union_id = u.id
+        LEFT JOIN scheduled_employees se ON ae.id = se.employee_id
+        WHERE ae.employee_status = TRUE
+        ORDER BY ae.first_name, ae.last_name;
         `;
-
-        try {
-            const result = await pool.query(sqlText, [selectedDate]);
-            console.log(`Query results for date ${selectedDate}:`);
-          
-
-            res.send({
-                date: selectedDate,
-                employees: result.rows,
-            });
-        } catch (error) {
-            console.error(`Error making database query ${sqlText}`, error);
-            res.sendStatus(500);
-        }
-    } else {
-        res.sendStatus(401);
+        const result = await pool.query(sqlText, [selectedDate]);
+        // Structure response to include the date and fetched employees
+        res.send({
+            date: selectedDate,
+            employees: result.rows,
+        });
+    } catch (error) {
+        console.error('Error fetching scheduled employees:', error);
+        res.status(500).send('Error fetching scheduled employees');
     }
 });
 
@@ -48,9 +55,7 @@ router.get('/employees', async (req, res) => {
 // GET route to fetch all employee details and their schedules for a selected date
 // router.get('/', rejectUnauthenticated, async (req, res) => {
 //     const selectedDate = req.query.date;
-
 //     console.log("Selected date in query:", selectedDate);
-
 //     const sqlText = `
 //         WITH selected_schedule AS (
 //             SELECT s.job_id, s.employee_id
@@ -95,9 +100,7 @@ router.get('/employees', async (req, res) => {
 //               AND EXISTS (SELECT 1 FROM latest_schedule ls WHERE ls.job_id = j.job_id AND ls.employee_id = ae.id)
 //           );
 //     `;
-
 //     console.log("SQL Query:", sqlText);
-
 //     try {
 //         const result = await pool.query(sqlText, [selectedDate]);
 //         console.log('Active jobs and employees for date retrieved:', result.rows);
@@ -107,23 +110,18 @@ router.get('/employees', async (req, res) => {
 //         res.status(500).send('Error fetching active jobs and employees');
 //     }
 // });
-
 router.get('/withunions', async (req, res) => {
     if (!req.isAuthenticated()) {
         return res.status(401).send('Unauthorized');
     }
-
     console.log('User is authenticated?:', req.isAuthenticated());
     console.log("Current user is: ", req.user?.username || 'undefined');
-
     // Ensure selectedDate is a string and fallback to today's date if not provided
     let selectedDate = req.query.date;
     if (!selectedDate || typeof selectedDate === 'object') {
         selectedDate = selectedDate?.selectedDate || new Date().toISOString().split('T')[0];
     }
-
     console.log("Selected date withunions:", typeof selectedDate, "Value:", selectedDate);
-
     try {
         const sqlText = `
             WITH selected_schedule AS (
@@ -149,7 +147,6 @@ router.get('/withunions', async (req, res) => {
             LEFT JOIN selected_schedule s ON ae.id = s.employee_id
             WHERE ae.employee_status = TRUE
         `;
-
         const result = await pool.query(sqlText, [selectedDate]);
         const unions = {};
         result.rows.forEach(row => {
@@ -175,7 +172,6 @@ router.get('/withunions', async (req, res) => {
                 });
             }
         });
-
         res.send({
             date: selectedDate,
             unions: Object.values(unions)
@@ -189,27 +185,21 @@ router.get('/withunions', async (req, res) => {
     }
 });
 
-
 router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('User is authenticated?:', req.isAuthenticated());
     console.log('Current user is:', req.user.username);
     console.log('Current request body is:', req.body);
-
     const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id, selected_date } = req.body;
-
     try {
         // Validate and fetch the union ID
         const checkUnionQuery = `
             SELECT "id" FROM "unions" WHERE "union_name" = $1
         `;
         const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
-
         if (unionCheckResult.rows.length === 0) {
             return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
         }
-
         const unionId = unionCheckResult.rows[0].id;
-
         // Insert or update the employee record
         const insertEmployeeQuery = `
             INSERT INTO "add_employee" (
@@ -229,25 +219,20 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
                 union_id = EXCLUDED.union_id;
             RETURNING id;
         `;
-
         const employeeValues = [
             first_name, last_name, employee_number, employee_status, 
             phone_number, email, address, job_id, unionId
         ];
-
         const employeeResult = await pool.query(insertEmployeeQuery, employeeValues);
         const employeeId = employeeResult.rows[0].id;
-
         // Handle the date for the schedule entry: Default to current date or use selected_date
         let currentDate = selected_date || new Date().toISOString().slice(0, 10);  // default to current date if not provided
         const providedDate = new Date(currentDate);
         const today = new Date();
-
         // Ensure the selected date is not in the past
         if (providedDate < today) {
             return res.status(400).json({ error: 'Cannot schedule for past dates.' });
         }
-
         // Insert or update the schedule entry for the employee
         const scheduleQuery = `
             INSERT INTO "schedule" (date, job_id, employee_id)
@@ -255,27 +240,22 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
             ON CONFLICT (date, job_id, employee_id)
             DO UPDATE SET job_id = EXCLUDED.job_id, employee_id = EXCLUDED.employee_id;
         `;
-
         const scheduleValues = [currentDate, job_id, employeeId];
         await pool.query(scheduleQuery, scheduleValues);
-
         res.status(201).send({ 
             message: 'Employee and schedule updated successfully.', 
             employee_id: employeeId 
         });
-
     } catch (error) {
         console.error('Error updating employee and schedule:', error);
         res.sendStatus(500);
     }
 });
-
   //have not connected to saga or front end!!!!!!!!!!!
 // PUT endpoint to update the highlight status of an employee for a specific day
 router.put('/:id/highlight', async (req, res) => {
     const employeeId = req.params.id; // Employee ID from route parameter
     const { isHighlighted, date } = req.body; // Extract isHighlighted and date from request body
-
     try {
         // SQL query to update the `is_highlighted` field in the `schedule` table
         const queryText = `
@@ -285,19 +265,15 @@ router.put('/:id/highlight', async (req, res) => {
         `;
         // Execute the query with the provided values
         const result = await pool.query(queryText, [isHighlighted, employeeId, date]);
-
         // If no rows are updated, the combination of employee_id and date might not exist
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'No schedule entry found for this employee on the given date' });
         }
-
         res.sendStatus(204); // Send a 'No Content' response on successful update
     } catch (error) {
         console.error('Error updating highlight status for schedule:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
   
-
 module.exports = router;
