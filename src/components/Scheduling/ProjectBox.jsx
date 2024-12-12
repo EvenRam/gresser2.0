@@ -5,6 +5,7 @@ import { useDrop } from 'react-dnd';
 import axios from 'axios';
 import Employee from './Employee';
 import '../Trades/Box.css'
+
 const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   const dispatch = useDispatch();
   
@@ -82,6 +83,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       });
     }
   }, [id, moveEmployee, dispatch]);
+
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: handleDrop,
@@ -89,6 +91,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       isOver: !!monitor.isOver(),
     }),
   }), [handleDrop]);
+
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     dispatch({ 
       type: 'SET_HIGHLIGHTED_EMPLOYEE', 
@@ -98,6 +101,7 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       }
     });
   }, [dispatch]);
+  
   const handleReorder = useCallback(async (fromIndex, toIndex) => {
     const newOrder = [...orderedEmployees];
     const [moved] = newOrder.splice(fromIndex, 1);

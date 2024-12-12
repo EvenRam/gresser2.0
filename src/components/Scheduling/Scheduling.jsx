@@ -16,18 +16,25 @@ const Scheduling = () => {
   // Get employees for the selected date
   const allEmployees = employeesByDate[selectedDate] || [];
   
-  console.log('Projects in projectReducer:', projects);
+  console.log('Projects in projectReducer:', projects , projects.job_id);
   console.log('All Employees', allEmployees);
   console.log('Selected Date from scheduleReducer:', selectedDate);
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        await dispatch({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES', payload: { date: selectedDate } });
-        console.log('Fetched projects');
+        // Change this
+        await dispatch({ 
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
+            payload: selectedDate  // Send just the date string
+        });
+        
         if (selectedDate) {
-          await dispatch({ type: 'FETCH_EMPLOYEES', payload: { date: selectedDate, employees: allEmployees } });
-          console.log('Fetched employees for date:', selectedDate, allEmployees);
+          await dispatch({ 
+              type: 'FETCH_EMPLOYEES', 
+              payload: { date: selectedDate } // Just need the date
+          });
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -36,7 +43,9 @@ const Scheduling = () => {
       }
     };
     fetchData();
-  }, [dispatch, selectedDate]);
+}, [dispatch, selectedDate]);
+
+
   const moveEmployee = useCallback((employeeId, targetProjectId, sourceProjectId) => {
     dispatch({
       type: 'MOVE_EMPLOYEE',
