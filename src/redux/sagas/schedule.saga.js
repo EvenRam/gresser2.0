@@ -109,7 +109,7 @@ function* addEmployeeSchedule(action) {
           payload: { date: action.payload.selected_date } 
       });
       yield put({ 
-          type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
+          type: 'SET_PROJECTS_WITH_EMPLOYEES', 
           payload: { date: action.payload.selected_date } 
       });
   } catch (error) {
@@ -122,26 +122,45 @@ function* addEmployeeSchedule(action) {
 }
 
 // Handle moving employee between projects/unions
+// schedule.saga.js
 function* handleMoveEmployee(action) {
   try {
       const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
-      console.log("Moving employee:", action.payload);
+      const selectedDate = date || new Date().toISOString().split('T')[0];
 
+      // Make API call to move the employee with date
       yield call(
           axios.post, 
-          '/api/schedule/move',
-          { employeeId, targetProjectId, date }
+          '/api/moveemployee', 
+          { 
+              employeeId, 
+              targetProjectId,
+              date: selectedDate
+          }
       );
 
-      // Refresh all data for the date
+      // Update local state immediately
+      yield put({ 
+          type: 'MOVE_EMPLOYEE', 
+          payload: { 
+              employeeId, 
+              targetProjectId, 
+              sourceUnionId,
+              date: selectedDate 
+          } 
+      });
+
+      // Fetch fresh data for the selected date
       yield put({ 
           type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
-          payload: { date } 
+          payload: { date: selectedDate } 
       });
+
       yield put({ 
           type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
-          payload: { date } 
+          payload: { date: selectedDate } 
       });
+
   } catch (error) {
       console.error('Error moving employee:', error);
       yield put({ 
@@ -151,27 +170,27 @@ function* handleMoveEmployee(action) {
   }
 }
 
-// Handle updating employee highlight status
-function* updateEmployeeHighlight(action) {
-  try {
-      const { id, isHighlighted, date } = action.payload;
-      console.log("Updating employee highlight:", action.payload);
+// // Handle updating employee highlight status
+// function* updateEmployeeHighlight(action) {
+//   try {
+//       const { id, isHighlighted, date } = action.payload;
+//       console.log("Updating employee highlight:", action.payload);
 
-      yield call(
-          axios.put,
-          `/api/schedule/${id}/highlight`,
-          { isHighlighted, date }
-      );
+//       yield call(
+//           axios.put,
+//           `/api/schedule/${id}/highlight`,
+//           { isHighlighted, date }
+//       );
 
-      // No need to refresh all data, the reducer handles the UI update
-  } catch (error) {
-      console.error('Error updating employee highlight:', error);
-      yield put({ 
-          type: 'HIGHLIGHT_UPDATE_FAILED', 
-          payload: error.response?.data || 'Failed to update highlight status' 
-      });
-  }
-}
+//       // No need to refresh all data, the reducer handles the UI update
+//   } catch (error) {
+//       console.error('Error updating employee highlight:', error);
+//       yield put({ 
+//           type: 'HIGHLIGHT_UPDATE_FAILED', 
+//           payload: error.response?.data || 'Failed to update highlight status' 
+//       });
+//   }
+// }
 
 export default function* scheduleSaga() {
   yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
@@ -179,5 +198,5 @@ export default function* scheduleSaga() {
   yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
   yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule);
   yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
-  yield takeLatest('UPDATE_EMPLOYEE_HIGHLIGHT', updateEmployeeHighlight);
+  // yield takeLatest('UPDATE_EMPLOYEE_HIGHLIGHT', updateEmployeeHighlight);
 }

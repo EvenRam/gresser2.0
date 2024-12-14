@@ -8,25 +8,28 @@ const Trades = () => {
     const dispatch = useDispatch();
     const unions = useSelector((state) => state.unionReducer);
     const unionBox = useSelector((state) => state.unionBoxReducer);
-    const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate); // Get just the date string
-    console.log("selectedDate in Trades:", selectedDate);
+    const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
 
     useEffect(() => {
         dispatch({ type: 'FETCH_EMPLOYEE_UNION' });
-        // Send just the date string
         dispatch({ 
-            type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
-            payload: selectedDate 
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
+            payload: { date: selectedDate }
         });
     }, [dispatch, selectedDate]);
 
     const moveEmployee = (employeeId, targetProjectId, sourceUnionId) => {
         dispatch({ 
             type: 'MOVE_EMPLOYEE', 
-            payload: { employeeId, targetProjectId, sourceUnionId }
+            payload: { 
+                employeeId, 
+                targetProjectId, 
+                sourceUnionId,
+                date: selectedDate
+            }
         });
     };
-
+    
     return (
         <div className="trades-container">
             <div className="unions-container">

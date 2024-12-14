@@ -16,7 +16,7 @@ const Scheduling = () => {
   // Get employees for the selected date
   const allEmployees = employeesByDate[selectedDate] || [];
   
-  console.log('Projects in projectReducer:', projects , projects.job_id);
+  console.log('Projects in projectReducer:', projects , projects.project_id);
   console.log('All Employees', allEmployees);
   console.log('Selected Date from scheduleReducer:', selectedDate);
 

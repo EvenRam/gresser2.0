@@ -1,8 +1,9 @@
 import React, { useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
+
 const Employee = ({
-  id,
+  employee_id,
   name,
   phone_number,
   email,
@@ -19,8 +20,8 @@ const Employee = ({
   const unionColor = unionColors[union_name] || 'black';
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { 
-      id, 
+    item: {  
+      employee_id,
       union_id, 
       union_name, 
       current_location, 
@@ -30,7 +31,8 @@ const Employee = ({
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [id, union_id, union_name, current_location, index, projectId]);
+  }), [employee_id, union_id, union_name, current_location, index, projectId]);
+  
   const handleDragStart = useCallback((e) => {
     if (typeof index === 'number') {
       e.dataTransfer.setData('text/plain', index.toString());
@@ -56,10 +58,10 @@ const Employee = ({
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (isHighlighted && typeof onClick === 'function') {
-      onClick(id, isHighlighted);
+      onClick(employee_id, isHighlighted);
     }
-  }, [id, isHighlighted, onClick]);
-  const modalId = `employee-modal-${id}`;
+  }, [employee_id, isHighlighted, onClick]);
+  const modalId = `employee-modal-${employee_id}`;
   return (
     <div
       ref={drag}

@@ -3,6 +3,8 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
+//schedule.router.js
+// GET all employees with schedule status for a specific date
 // GET all employees with schedule status for a specific date
 router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
     try {
@@ -10,7 +12,13 @@ router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
 
         const sqlText = `
             WITH scheduled_employees AS (
-                SELECT employee_id, job_id, date
+                SELECT 
+                    employee_id, 
+                    job_id,
+                    current_location,
+                    is_highlighted,
+                    employee_display_order,
+                    date
                 FROM schedule
                 WHERE date = $1
             )
@@ -24,18 +32,15 @@ router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
                 ae.address,
                 ae.union_id,
                 u.union_name,
-                ae.display_order,
-                CASE 
-                    WHEN se.job_id IS NOT NULL THEN 'project'
-                    ELSE 'union'
-                END AS current_location,
+                se.employee_display_order AS display_order,
+                COALESCE(se.current_location, 'union') AS current_location,
                 se.job_id AS scheduled_job_id,
-                ae.is_highlighted
+                COALESCE(se.is_highlighted, false) AS is_highlighted
             FROM add_employee ae
             LEFT JOIN unions u ON ae.union_id = u.id
             LEFT JOIN scheduled_employees se ON ae.id = se.employee_id
             WHERE ae.employee_status = TRUE
-            ORDER BY ae.display_order NULLS LAST, ae.first_name, ae.last_name;
+            ORDER BY se.employee_display_order NULLS LAST, ae.first_name, ae.last_name;
         `;
 
         const result = await pool.query(sqlText, [date]);
@@ -50,7 +55,7 @@ router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-// GET employees grouped by unions for a specific date
+// GET employees grouped by unions
 router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
     try {
         const date = req.params.date;
@@ -60,7 +65,12 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
 
         const sqlText = `
             WITH scheduled_employees AS (
-                SELECT employee_id, job_id
+                SELECT 
+                    employee_id, 
+                    job_id,
+                    current_location,
+                    is_highlighted,
+                    employee_display_order
                 FROM schedule
                 WHERE date = $1
             )
@@ -74,22 +84,20 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
                 ae.employee_status,
                 ae.email,
                 ae.address,
-                CASE 
-                    WHEN se.job_id IS NOT NULL THEN 'project'
-                    ELSE 'union'
-                END AS current_location,
+                COALESCE(se.current_location, 'union') AS current_location,
                 ae.union_id AS employee_union_id,
-                ae.is_highlighted,
-                ae.display_order,
+                COALESCE(se.is_highlighted, false) AS is_highlighted,
+                se.employee_display_order AS display_order,
                 se.job_id AS scheduled_job_id
             FROM unions u
             LEFT JOIN add_employee ae ON u.id = ae.union_id
             LEFT JOIN scheduled_employees se ON ae.id = se.employee_id
             WHERE ae.employee_status = TRUE
-            ORDER BY u.union_name, ae.display_order NULLS LAST, ae.id;
+            ORDER BY u.union_name, se.employee_display_order NULLS LAST, ae.id;
         `;
         
         const result = await pool.query(sqlText, [date]);
+        // Rest of the function remains the same
         const unions = {};
         
         result.rows.forEach(row => {
@@ -113,7 +121,7 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
                     current_location: row.current_location,
                     union_id: row.employee_union_id,
                     is_highlighted: row.is_highlighted,
-                    display_order: row.display_order,
+                    display_order: row.employee_display_order,
                     scheduled_job_id: row.scheduled_job_id
                 });
             }
@@ -131,10 +139,6 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
 
 // POST endpoint for adding/updating employee with schedule
 router.post('/', rejectUnauthenticated, async (req, res) => {
-    console.log('User is authenticated?:', req.isAuthenticated());
-    console.log('Current user is:', req.user.username);
-    console.log('Current request body is:', req.body);
-    
     const { 
         first_name, 
         last_name, 
@@ -151,7 +155,7 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     try {
         await pool.query('BEGIN');
 
-        // Validate and fetch the union ID
+        // Validate union (unchanged)
         const unionCheckResult = await pool.query(
             'SELECT "id" FROM "unions" WHERE "union_name" = $1',
             [union_name]
@@ -166,13 +170,12 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
 
         const unionId = unionCheckResult.rows[0].id;
 
-        // Insert or update employee
+        // Insert or update employee basic info
         const employeeResult = await pool.query(
             `INSERT INTO "add_employee" (
                 "first_name", "last_name", "employee_number", "employee_status", 
-                "phone_number", "email", "address", "union_id", 
-                "current_location", "is_highlighted"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'union', false)
+                "phone_number", "email", "address", "union_id"
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (employee_number) 
             DO UPDATE SET 
                 first_name = EXCLUDED.first_name, 
@@ -183,42 +186,39 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
                 address = EXCLUDED.address, 
                 union_id = EXCLUDED.union_id
             RETURNING id;`,
-            [
-                first_name, last_name, employee_number, employee_status, 
-                phone_number, email, address, unionId
-            ]
+            [first_name, last_name, employee_number, employee_status, 
+             phone_number, email, address, unionId]
         );
 
         const employeeId = employeeResult.rows[0].id;
-
-        // Handle schedule entry
         const currentDate = selected_date || new Date().toISOString().split('T')[0];
-        const providedDate = new Date(currentDate);
-        const today = new Date();
 
-        // Validate date
-        if (providedDate < today) {
-            await pool.query('ROLLBACK');
-            return res.status(400).json({ 
-                error: 'Cannot schedule for past dates.' 
-            });
-        }
-
-        // Add schedule entry if job_id is provided
+        // Create initial schedule entry
         if (job_id) {
             await pool.query(
-                `INSERT INTO "schedule" (date, job_id, employee_id)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (date, job_id, employee_id)
+                `INSERT INTO schedule 
+                    (date, employee_id, job_id, current_location, is_highlighted)
+                VALUES 
+                    ($1, $2, $3, 'project', false)
+                ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
-                    job_id = EXCLUDED.job_id, 
-                    employee_id = EXCLUDED.employee_id;`,
-                [currentDate, job_id, employeeId]
+                    job_id = EXCLUDED.job_id,
+                    current_location = 'project'`,
+                [currentDate, employeeId, job_id]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO schedule 
+                    (date, employee_id, current_location, is_highlighted)
+                VALUES 
+                    ($1, $2, 'union', false)
+                ON CONFLICT (date, employee_id) 
+                DO NOTHING`,
+                [currentDate, employeeId]
             );
         }
 
         await pool.query('COMMIT');
-
         res.status(201).send({ 
             message: 'Employee and schedule updated successfully.', 
             employee_id: employeeId,
@@ -231,7 +231,6 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-
 // PUT endpoint for updating highlight status
 router.put('/:id/highlight', rejectUnauthenticated, async (req, res) => {
     const employeeId = req.params.id;
@@ -240,12 +239,18 @@ router.put('/:id/highlight', rejectUnauthenticated, async (req, res) => {
     try {
         await pool.query('BEGIN');
 
-        const updateQuery = `
-            UPDATE add_employee
-            SET is_highlighted = $1
-            WHERE id = $2;
-        `;
-        await pool.query(updateQuery, [isHighlighted, employeeId]);
+        await pool.query(
+            `INSERT INTO schedule 
+                (date, employee_id, is_highlighted, current_location)
+            VALUES 
+                ($1, $2, $3, COALESCE(
+                    (SELECT current_location FROM schedule WHERE date = $1 AND employee_id = $2),
+                    'union'
+                ))
+            ON CONFLICT (date, employee_id) 
+            DO UPDATE SET is_highlighted = $3`,
+            [date, employeeId, isHighlighted]
+        );
 
         await pool.query('COMMIT');
         res.sendStatus(204);
@@ -270,16 +275,21 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
                 s.date,
                 s.job_id,
                 s.employee_id,
+                s.current_location,
+                s.is_highlighted,
+                s.employee_display_order,
+                s.project_display_order,
                 ae.first_name,
                 ae.last_name,
                 j.job_name,
                 u.union_name
             FROM schedule s
             JOIN add_employee ae ON s.employee_id = ae.id
-            JOIN jobs j ON s.job_id = j.job_id
+            LEFT JOIN jobs j ON s.job_id = j.job_id
             LEFT JOIN unions u ON ae.union_id = u.id
             WHERE s.date BETWEEN $1 AND $2
-            ORDER BY s.date, j.job_name, ae.last_name, ae.first_name;
+            ORDER BY s.date, s.project_display_order NULLS LAST, j.job_name, 
+                     s.employee_display_order NULLS LAST, ae.last_name, ae.first_name;
         `, [startDate, endDate]);
         
         res.send({
@@ -292,5 +302,4 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
-
 module.exports = router;

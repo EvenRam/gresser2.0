@@ -1,15 +1,14 @@
 const unionBoxReducer = (state = [], action) => {
     switch (action.type) {
         case 'SET_EMPLOYEE_WITH_UNION': {
-            const { date, unions } = action.payload; // Destructure the payload
+            const { date, unions } = action.payload;
             return unions.map(union => ({
                 ...union,
-                date, // Add date to union data
+                date,
             }));
         }
 
-
-        case 'MOVE_EMPLOYEE':
+        case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, sourceUnionId, targetUnionId, date } = action.payload;
 
             // If moving to a project, remove the employee from their union
@@ -30,7 +29,6 @@ const unionBoxReducer = (state = [], action) => {
             if (sourceUnionId && targetUnionId) {
                 return state.map(union => {
                     if (union.id === sourceUnionId) {
-                        // Remove employee from source union
                         return {
                             ...union,
                             employees: union.employees.filter(emp => emp.id !== employeeId),
@@ -38,7 +36,6 @@ const unionBoxReducer = (state = [], action) => {
                         };
                     }
                     if (union.id === targetUnionId) {
-                        // Add employee to target union
                         const employeeToMove = state
                             .find(u => u.id === sourceUnionId)
                             ?.employees.find(emp => emp.id === employeeId);
@@ -55,8 +52,8 @@ const unionBoxReducer = (state = [], action) => {
                 });
             }
 
-            // If neither moving to a project nor between unions, return state unchanged
             return state;
+        }
 
         default:
             return state;

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
@@ -8,6 +7,7 @@ import '../Trades/Box.css'
 
 const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   const dispatch = useDispatch();
+  const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
   
   console.log('ProjectBox rendering with props:', { 
     id, 
@@ -19,7 +19,9 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   useEffect(() => {
     console.log('ProjectBox employees changed:', employees);
   }, [employees]);
+
   const [orderedEmployees, setOrderedEmployees] = useState([]);
+
   useEffect(() => {
     if (!Array.isArray(employees)) {
       console.warn('Employees prop is not an array:', employees);
@@ -36,10 +38,11 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     console.log('Sorted employees:', sorted);
     setOrderedEmployees(sorted);
   }, [employees]);
+
   const highlightedEmployees = useSelector(state => {
     return state.employeeReducer.highlightedEmployees || {};
   });
-  // Early return if no id
+
   if (!id) {
     console.warn('ProjectBox rendered without an id prop');
     return null;
@@ -47,42 +50,44 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   
   console.log('highlightedEmployees:', highlightedEmployees);
   
-  useEffect(() => {
-    console.log('employees prop changed:', employees);
-    const sorted = [...employees].sort((a, b) => {
-      if (a.display_order === null) return 1;
-      if (b.display_order === null) return -1;
-      return a.display_order - b.display_order;
-    });
-    setOrderedEmployees(sorted);
-    console.log('sorted employees:', sorted);
-  }, [employees]);
   const handleDrop = useCallback((item) => {
-    if (!item || !item.id) {
-      console.warn('Invalid drop item:', item);
-      return;
+    console.log('Drop item received:', item);
+    
+    if (!item) {
+        console.warn('No item received in drop');
+        return;
+    }
+    
+    // Update this line to check for employee_id as well
+    const employeeId = item.id || item.employeeId || item.employee_id;
+    if (!employeeId) {
+        console.warn('No valid employee ID found in drop item:', item);
+        return;
     }
   
-    console.log('Dropped item:', item);
-    console.log('Current project box ID:', id);
+    console.log('Processing drop:', { 
+        employeeId,
+        projectId: id,
+        unionId: item.union_id,
+        currentLocation: item.current_location
+    });
     
-    // If the item is coming from a different project or union
     const isExternalMove = item.current_location === 'union' || 
                         (item.current_location === 'project' && item.projectId !== id);
     
-    moveEmployee(item.id, id, item.union_id);
+    moveEmployee(employeeId, id, item.union_id, selectedDate);
     
-    // Highlight if it's an external move from either union or another project
     if (isExternalMove) {
-      dispatch({ 
-        type: 'SET_HIGHLIGHTED_EMPLOYEE', 
-        payload: { 
-          id: item.id, 
-          isHighlighted: true 
-        } 
-      });
+        dispatch({ 
+            type: 'SET_HIGHLIGHTED_EMPLOYEE', 
+            payload: { 
+                id: employeeId, 
+                isHighlighted: true,
+                date: selectedDate
+            } 
+        });
     }
-  }, [id, moveEmployee, dispatch]);
+}, [id, moveEmployee, dispatch, selectedDate]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
@@ -97,36 +102,43 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
       type: 'SET_HIGHLIGHTED_EMPLOYEE', 
       payload: { 
         id: employeeId, 
-        isHighlighted: !currentHighlightState 
+        isHighlighted: !currentHighlightState,
+        date: selectedDate
       }
     });
-  }, [dispatch]);
+  }, [dispatch, selectedDate]);
   
   const handleReorder = useCallback(async (fromIndex, toIndex) => {
     const newOrder = [...orderedEmployees];
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
     setOrderedEmployees(newOrder);
+
     try {
       const orderedEmployeeIds = newOrder
         .filter(emp => emp.employee_status === true)
         .map(emp => emp.id);
+
       await axios.put('/api/project/updateOrder', {
         projectId: id,
-        orderedEmployeeIds
+        orderedEmployeeIds,
+        date: selectedDate
       });
+
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
           projectId: id,
-          employees: newOrder
+          employees: newOrder,
+          date: selectedDate
         }
       });
     } catch (error) {
       console.error('Error updating employee order:', error);
       setOrderedEmployees(employees);
     }
-  }, [orderedEmployees, id, dispatch, employees]);
+  }, [orderedEmployees, id, dispatch, employees, selectedDate]);
+
   return (
     <div
       ref={drop}
@@ -170,5 +182,5 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
     </div>
   );
 };
-export default React.memo(ProjectBox);
 
+export default React.memo(ProjectBox);

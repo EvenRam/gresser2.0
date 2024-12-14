@@ -1,28 +1,33 @@
 
 const initialState = {
-    selectedDate: new Date().toISOString().split('T')[0], // Default to today's date
-    employeesByDate: {}, // Object where keys are dates, and values are arrays of employees
+    selectedDate: new Date().toISOString().split('T')[0],
+    employeesByDate: {},
 };
+
 function scheduleReducer(state = initialState, action) {
     switch (action.type) {
         case 'SET_SELECTED_DATE':
             return {
                 ...state,
-                selectedDate: action.payload, // Set the selected date
+                selectedDate: action.payload,
             };
-        case 'SET_EMPLOYEES':
-            const {employees } = action.payload;
+
+        case 'SET_EMPLOYEES': {
+            const { date, employees } = action.payload;
             return {
                 ...state,
                 employeesByDate: {
                     ...state.employeesByDate,
-                     employees, // Store employees under the specific date
+                    [date]: employees,
                 },
             };
+        }
+
         default:
             return state;
     }
 }
+
 export default scheduleReducer;
 
 // const initialState = {

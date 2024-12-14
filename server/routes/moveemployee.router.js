@@ -3,52 +3,57 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware'); 
 
-
+//moveemployee.router
 router.post('/', rejectUnauthenticated, async (req, res) => {
-    const { employeeId, targetProjectId, date } = req.body; 
+    const { employeeId, targetProjectId, date } = req.body;
     const selectedDate = date || new Date().toISOString().split('T')[0];
+
     try {
         await pool.query('BEGIN');
+
+        // Verify employee exists and get their union_id
         const employeeResult = await pool.query(
-            'SELECT union_id FROM "add_employee" WHERE "id" = $1',
+            'SELECT id, union_id FROM "add_employee" WHERE "id" = $1',
             [employeeId]
         );
+
         if (employeeResult.rowCount === 0) {
             throw new Error('Employee not found');
         }
-        const { union_id } = employeeResult.rows[0];
-        // Update the employee's location without changing the union_id
-        await pool.query(
-            'UPDATE "add_employee" SET "job_id" = $1, "current_location" = $2 WHERE "id" = $3',
-            [targetProjectId || null, targetProjectId ? 'project' : 'union', employeeId]
-        );
-        // Handle schedule table update
+
+        // We don't update add_employee table anymore since it doesn't have these columns
+        // Instead, we only update the schedule table
+
         if (targetProjectId) {
-            // Check if there's already a schedule entry for this employee on this date
-            const existingSchedule = await pool.query(
-                'SELECT * FROM schedule WHERE employee_id = $1 AND date = $2',
-                [employeeId, selectedDate]
-            );
-            if (existingSchedule.rowCount === 0) {
-                // If no existing schedule, insert new entry
-                await pool.query(
-                    'INSERT INTO schedule (employee_id, job_id, date) VALUES ($1, $2, $3)',
-                    [employeeId, targetProjectId, selectedDate]
-                );
-            } else {
-                // If schedule exists, update it
-                await pool.query(
-                    'UPDATE schedule SET job_id = $1 WHERE employee_id = $2 AND date = $3',
-                    [targetProjectId, employeeId, selectedDate]
-                );
-            }
-        } else {
-            // If moving back to union, remove from schedule
+            // Moving to a project
             await pool.query(
-                'DELETE FROM schedule WHERE employee_id = $1 AND date = $2',
-                [employeeId, selectedDate]
+                `INSERT INTO schedule 
+                    (date, employee_id, job_id, current_location, is_highlighted)
+                VALUES 
+                    ($1, $2, $3, 'project', TRUE)
+                ON CONFLICT (date, employee_id) 
+                DO UPDATE SET 
+                    job_id = EXCLUDED.job_id,
+                    current_location = 'project',
+                    is_highlighted = TRUE`,
+                [selectedDate, employeeId, targetProjectId]
+            );
+        } else {
+            // Moving back to union
+            await pool.query(
+                `INSERT INTO schedule 
+                    (date, employee_id, current_location, is_highlighted)
+                VALUES 
+                    ($1, $2, 'union', FALSE)
+                ON CONFLICT (date, employee_id) 
+                DO UPDATE SET 
+                    job_id = NULL,
+                    current_location = 'union',
+                    is_highlighted = FALSE`,
+                [selectedDate, employeeId]
             );
         }
+
         await pool.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {

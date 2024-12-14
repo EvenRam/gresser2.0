@@ -3,6 +3,8 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
+
+//project.router.js
 // Get projects with employees for a specific date
 router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
     try {
@@ -12,28 +14,25 @@ router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
             j.job_id,
             j.job_name,
             j.status AS job_status,
-            j.display_order,
-            ae.id AS employee_id,
+            s.project_display_order,
+            s.employee_id,
             ae.first_name AS employee_first_name,
             ae.last_name AS employee_last_name,
             ae.employee_status,
             ae.phone_number AS employee_phone_number,
             ae.email AS employee_email,
             ae.address AS employee_address,
-            CASE 
-                WHEN s.employee_id IS NOT NULL THEN 'project'
-                ELSE ae.current_location 
-            END AS current_location,
+            s.current_location,
             ae.union_id,
-            ae.is_highlighted,
-            ae.display_order AS employee_display_order,
+            s.is_highlighted,
+            s.employee_display_order,
             u.union_name
         FROM jobs j
         LEFT JOIN schedule s ON j.job_id = s.job_id AND s.date = $1
         LEFT JOIN add_employee ae ON s.employee_id = ae.id
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
-        ORDER BY j.display_order NULLS LAST, j.job_id, ae.display_order NULLS LAST, ae.id;
+        ORDER BY s.project_display_order NULLS LAST, j.job_id, s.employee_display_order NULLS LAST, ae.id;
         `;
         
         const result = await pool.query(sqlText, [date]);
@@ -45,7 +44,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
                 jobs[row.job_id] = {
                     id: row.job_id,
                     job_name: row.job_name,
-                    display_order: row.display_order,
+                    display_order: row.project_display_order,
                     employees: []
                 };
             }
@@ -84,20 +83,12 @@ router.put('/updateOrder', rejectUnauthenticated, async (req, res) => {
 
         // Update display order in schedule table
         for (let i = 0; i < orderedEmployeeIds.length; i++) {
-            // First ensure the employee is in the schedule for this date
             await pool.query(
-                `INSERT INTO schedule (date, job_id, employee_id)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (date, job_id, employee_id) DO NOTHING;`,
-                [date, projectId, orderedEmployeeIds[i]]
-            );
-
-            // Then update the display order in add_employee
-            await pool.query(
-                `UPDATE add_employee 
-                 SET display_order = $1 
-                 WHERE id = $2`,
-                [i, orderedEmployeeIds[i]]
+                `INSERT INTO schedule (date, job_id, employee_id, employee_display_order)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (date, employee_id) 
+                 DO UPDATE SET employee_display_order = $4;`,
+                [date, projectId, orderedEmployeeIds[i], i]
             );
         }
 
@@ -118,11 +109,13 @@ router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
         await pool.query('BEGIN');
 
         for (let i = 0; i < orderedProjectIds.length; i++) {
+            // Insert or update project display order in schedule table
             await pool.query(
-                `UPDATE jobs 
-                 SET display_order = $1 
-                 WHERE job_id = $2`,
-                [i, orderedProjectIds[i]]
+                `INSERT INTO schedule (date, job_id, project_display_order)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (date, job_id) 
+                 DO UPDATE SET project_display_order = $3;`,
+                [date, orderedProjectIds[i], i]
             );
         }
 
