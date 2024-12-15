@@ -21,7 +21,7 @@ const Employee = ({
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: {  
-      employee_id,
+      id: employee_id,
       union_id, 
       union_name, 
       current_location, 

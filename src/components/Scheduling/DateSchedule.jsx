@@ -1,47 +1,69 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 const DateSchedule = () => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
-    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate)
-    console.log("Schedule Reducer State:", { selectedDate, employeesByDate });
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Only initialize date state once when component mounts
+    const [date, setDate] = useState(selectedDate || today);
 
-    const [date, setDate] = useState(selectedDate);
+    // Check if date is in the future
+    const isDateInFuture = (dateStr) => {
+        const inputDate = new Date(dateStr);
+        inputDate.setHours(0, 0, 0, 0);
+        const currentDate = new Date();
+        currentDate.setHours(0, 0, 0, 0);
+        return inputDate > currentDate;
+    };
 
+    // Initialize with today's date when component mounts
+    useEffect(() => {
+        if (!selectedDate) {
+            dispatch({ type: 'SET_SELECTED_DATE', payload: today });
+        }
+    }, [dispatch, selectedDate, today]);
 
+    const handleDateChange = (event) => {
+        const newDate = event.target.value;
+        
+        // Prevent selecting future dates
+        if (isDateInFuture(newDate)) {
+            alert("Cannot select future dates");
+            return;
+        }
 
-useEffect(() => {
-    if (date){
-        console.log("Dispatching FETCH_SCHEUDLES with date:", date);
-        dispatch({ type: 'FETCH_EMPLOYEES', payload: {date} });
-    }
-}, [dispatch, date]);
+        setDate(newDate);
+        dispatch({ type: 'SET_SELECTED_DATE', payload: newDate });
 
-const handleDateChange = (event) => {
-    const newDate = event.target.value;
-    setDate(newDate);
-    console.log("Selected new date:", newDate);
-    dispatch({ type: 'SET_SELECTED_DATE', payload: newDate });
+        // Fetch data for the new date
+        dispatch({ 
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
+            payload: { date: newDate } 
+        });
+        dispatch({ 
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
+            payload: newDate 
+        });
+        dispatch({ 
+            type: 'FETCH_EMPLOYEES', 
+            payload: { date: newDate } 
+        });
+    };
+
+    return (
+        <div className='date-schedule'>
+            <input 
+                className='date-schedule-input'
+                id='date'
+                type='date'
+                value={date}
+                onChange={handleDateChange}
+                max={today} // Prevent selecting future dates in the datepicker
+            />
+        </div>
+    );
 };
-
-
-return(
-<div className='date-schedule'>
-    <input 
-    className='date-schedule-input'
-    id='date'
-    type='date'
-    value={date}
-    onChange={handleDateChange}
-    />
-
-
-
-</div>
-
-)
-
-}
 
 export default DateSchedule;

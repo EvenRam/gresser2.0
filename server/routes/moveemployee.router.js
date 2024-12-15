@@ -1,12 +1,38 @@
 const express = require('express');
 const pool = require('../modules/pool'); 
 const router = express.Router();
-const { rejectUnauthenticated } = require('../modules/authentication-middleware'); 
+const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-//moveemployee.router
-router.post('/', rejectUnauthenticated, async (req, res) => {
-    const { employeeId, targetProjectId, date } = req.body;
-    const selectedDate = date || new Date().toISOString().split('T')[0];
+//MOVEEMPLOYEE.ROUTER.JS
+// Simple date validation middleware
+const validateDate = (req, res, next) => {
+    const date = req.params.date || req.body.date;
+    if (!date) {
+        return res.status(400).send('Date is required');
+    }
+    
+    try {
+        const requestDate = new Date(date);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        if (isNaN(requestDate.getTime())) {
+            return res.status(400).send('Invalid date format');
+        }
+
+        if (requestDate > today) {
+            return res.status(400).send('Cannot access or modify future dates');
+        }
+
+        next();
+    } catch (error) {
+        return res.status(400).send('Invalid date');
+    }
+};
+
+router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
+    const { employeeId, targetProjectId } = req.body;
+    const date = req.params.date;
 
     try {
         await pool.query('BEGIN');
@@ -21,9 +47,6 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
             throw new Error('Employee not found');
         }
 
-        // We don't update add_employee table anymore since it doesn't have these columns
-        // Instead, we only update the schedule table
-
         if (targetProjectId) {
             // Moving to a project
             await pool.query(
@@ -34,9 +57,9 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
                 ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
                     job_id = EXCLUDED.job_id,
-                    current_location = 'project',
-                    is_highlighted = TRUE`,
-                [selectedDate, employeeId, targetProjectId]
+                    current_location = EXCLUDED.current_location,
+                    is_highlighted = EXCLUDED.is_highlighted`,
+                [date, employeeId, targetProjectId]
             );
         } else {
             // Moving back to union
@@ -48,9 +71,9 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
                 ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
                     job_id = NULL,
-                    current_location = 'union',
-                    is_highlighted = FALSE`,
-                [selectedDate, employeeId]
+                    current_location = EXCLUDED.current_location,
+                    is_highlighted = EXCLUDED.is_highlighted`,
+                [date, employeeId]
             );
         }
 
@@ -62,4 +85,5 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
         res.status(500).send(`Error moving employee: ${error.message}`);
     }
 });
+
 module.exports = router;

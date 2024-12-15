@@ -58,8 +58,9 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
         return;
     }
     
-    // Update this line to check for employee_id as well
-    const employeeId = item.id || item.employeeId || item.employee_id;
+    // Get employeeId directly from id or employee_id
+    const employeeId = item.id || item.employee_id;
+
     if (!employeeId) {
         console.warn('No valid employee ID found in drop item:', item);
         return;

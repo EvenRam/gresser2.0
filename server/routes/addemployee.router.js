@@ -3,21 +3,22 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
+
 router.get('/', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());
         console.log("Current user is: ", req.user.username);
         
         const sqlText = `
-        SELECT ae.*, u.union_name, ae.is_highlighted
-        FROM "add_employee" ae
-        LEFT JOIN "unions" u ON ae."union_id" = u."id"
-        ORDER BY ae."last_name" ASC, ae."first_name" ASC;
-    `;
-    
+            SELECT ae.*, u.union_name 
+            FROM "add_employee" ae
+            LEFT JOIN "unions" u ON ae."union_id" = u."id"
+            ORDER BY ae."last_name" ASC, ae."first_name" ASC;
+        `;
+        
         try {
             const result = await pool.query(sqlText);
-            console.log(`GET from database addemployee`, result);
+            console.log(`GET from database`, result);
             res.send(result.rows);
         } catch (error) {
             console.log(`Error making database query ${sqlText}`, error);
@@ -27,6 +28,9 @@ router.get('/', async (req, res) => {
         res.sendStatus(401);
     }
 });
+
+
+
 
 router.get('/union', async (req, res) => {
     if (req.isAuthenticated()) {
@@ -54,7 +58,6 @@ router.get('/union', async (req, res) => {
 
 
 
-// POST route to only manage posting employees to the employee table in the addemployee page
 router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('User is authenticated?:', req.isAuthenticated());
     console.log('Current user is:', req.user.username);
@@ -90,52 +93,8 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-// should have a separate post route for schedule.router.js 
-// router.post('/', rejectUnauthenticated, async (req, res) => {
-//     console.log('User is authenticated?:', req.isAuthenticated());
-//     console.log('Current user is:', req.user.username);
-//     console.log('Current request body is:', req.body);
 
-//     const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
-
-//     try {
-//         const checkUnionQuery = `
-//             SELECT "id" FROM "unions" WHERE "union_name" = $1
-//         `;
-//         const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
-        
-//         let unionId;
-//         if (unionCheckResult.rows.length > 0) {
-//             unionId = unionCheckResult.rows[0].id;
-//         } else {
-//             return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
-//         }
-
-//         const insertEmployeeQuery = `
-//             INSERT INTO "add_employee" (
-//                 "first_name", "last_name", "employee_number", "employee_status", 
-//                 "phone_number", "email", "address", "job_id", "union_id", 
-//                 "current_location", "is_highlighted"
-//             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'union', false)
-//             RETURNING "id"
-//         `;
-
-//         const employeeValues = [
-//             first_name, last_name, employee_number, employee_status, 
-//             phone_number, email, address, job_id, unionId
-//         ];
-
-//         await pool.query(insertEmployeeQuery, employeeValues);
-
-//         res.status(201).send({ message: 'Employee added successfully with existing union.' });
-        
-//     } catch (error) {
-//         console.error('Error making POST insert for add_employee and unions:', error);
-//         res.sendStatus(500);
-//     }
-// });
-
-router.put('/:id', async (req, res) => {
+router.put('/:id', rejectUnauthenticated, async (req, res) => {
     const employeeId = req.params.id;
     console.log("Employee ID:", employeeId);
 
@@ -147,25 +106,11 @@ router.put('/:id', async (req, res) => {
         phone_number,
         email,
         address,
-        job_id,
-        union_name
+        union_id
     } = req.body;
 
     try {
-        let unionId; 
-        if (union_name) {
-            const checkUnionQuery = `
-                SELECT "id" FROM "unions" WHERE "union_name" = $1;
-            `;
-            const unionResult = await pool.query(checkUnionQuery, [union_name]);
-            
-            if (unionResult.rows.length > 0) {
-                unionId = unionResult.rows[0].id;
-            } else {
-                return res.status(400).json({ error: 'Union does not exist' });
-            }
-        }
-
+        // If only updating employee status
         if (employee_status !== undefined &&
             !first_name &&
             !last_name &&
@@ -173,91 +118,63 @@ router.put('/:id', async (req, res) => {
             !phone_number &&
             !email &&
             !address &&
-            !job_id &&
-            !union_name) {
+            !union_id) {
 
-            let queryText;
-            let queryParams;
-
-            if (employee_status === false) {
-                queryText = `
-                    UPDATE "add_employee"
-                    SET "employee_status" = $1, "job_id" = NULL, "current_location" = 'inactive'
-                    WHERE "id" = $2;
-                `;
-                queryParams = [employee_status, employeeId];
-            } else {
-                queryText = `
-                    UPDATE "add_employee"
-                    SET "employee_status" = $1, "current_location" = 'union'
-                    WHERE "id" = $2;
-                `;
-                queryParams = [employee_status, employeeId];
-            }
-
-            console.log("Updating employee status with query:", queryText, queryParams);
-            await pool.query(queryText, queryParams);
-            res.sendStatus(204); 
-        } else {
             const queryText = `
                 UPDATE "add_employee"
-                SET
-                    "first_name" = $1,
-                    "last_name" = $2,
-                    "employee_number" = $3,
-                    "employee_status" = $4,
-                    "phone_number" = $5,
-                    "email" = $6,
-                    "address" = $7,
-                    "job_id" = $8,
-                    "union_id" = $9
-                WHERE "id" = $10;
+                SET "employee_status" = $1
+                WHERE "id" = $2;
             `;
-            const queryParams = [
-                first_name,
-                last_name,
-                employee_number,
-                employee_status,
-                phone_number,
-                email,
-                address,
-                job_id,
-                unionId, 
-                employeeId
-            ];
-
-            const result = await pool.query(queryText, queryParams);
-            if (result.rowCount > 0) {
-                res.sendStatus(204); 
-            } else {
-                res.sendStatus(404);
-            }
+            await pool.query(queryText, [employee_status, employeeId]);
+            res.sendStatus(200);
+            return;
         }
-    } catch (error) {
-        console.error('Error updating employee with union:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
-
-// Need to change to schedule router and join schedule table???
-//New endpoint for handling highlight status
-router.put('/:id/highlight', async (req, res) => {
-    const employeeId = req.params.id;
-    const { isHighlighted } = req.body;
-
-    try {
+        // For full employee update
         const queryText = `
             UPDATE "add_employee"
-            SET "is_highlighted" = $1
-            WHERE "id" = $2
+            SET
+                "first_name" = COALESCE($1, first_name),
+                "last_name" = COALESCE($2, last_name),
+                "employee_number" = COALESCE($3, employee_number),
+                "employee_status" = COALESCE($4, employee_status),
+                "phone_number" = COALESCE($5, phone_number),
+                "email" = COALESCE($6, email),
+                "address" = COALESCE($7, address),
+                "union_id" = COALESCE($8, union_id)
+            WHERE "id" = $9
+            RETURNING *;
         `;
-        await pool.query(queryText, [isHighlighted, employeeId]);
-        res.sendStatus(204);
+        
+        const queryParams = [
+            first_name,
+            last_name,
+            employee_number,
+            employee_status,
+            phone_number,
+            email,
+            address,
+            union_id,
+            employeeId
+        ];
+
+        const result = await pool.query(queryText, queryParams);
+        
+        if (result.rows.length > 0) {
+            res.status(200).json(result.rows[0]);
+        } else {
+            res.status(404).json({ message: 'Employee not found' });
+        }
+
     } catch (error) {
-        console.error('Error updating highlight status:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error updating employee with union:', error);
+        res.status(500).json({ 
+            message: 'Error updating employee with union',
+            error: error.message 
+        });
     }
 });
+
+
 
 module.exports = router;

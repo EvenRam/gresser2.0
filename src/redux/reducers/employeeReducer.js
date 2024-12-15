@@ -1,163 +1,146 @@
 const initialState = {
-  employeesByDate: {},
-  highlightedEmployees: {},
+    employeesByDate: {},
+    highlightedEmployees: {},
 };
 
 const employeeReducer = (state = initialState, action) => {
-  console.log('Employee Reducer - Action received:', action.type);
+    console.log('Employee Reducer - Action received:', action.type);
 
-  switch (action.type) {
-      case 'SET_EMPLOYEES': {
-          const { date, employees } = action.payload;
-          console.log('Setting employees for date:', date);
-          
-          if (!Array.isArray(employees)) {
-              console.warn('SET_EMPLOYEES received invalid employees data:', employees);
-              return state;
-          }
+    switch (action.type) {
+        case 'SET_EMPLOYEES': {
+            const { date, employees } = action.payload;
+            console.log('Setting employees for date:', date);
+            
+            if (!Array.isArray(employees)) {
+                console.warn('SET_EMPLOYEES received invalid employees data:', employees);
+                return state;
+            }
 
-          return {
-              ...state,
-              employeesByDate: {
-                  ...state.employeesByDate,
-                  [date]: employees
-              }
-          };
-      }
+            return {
+                ...state,
+                employeesByDate: {
+                    ...state.employeesByDate,
+                    [date]: employees
+                }
+            };
+        }
 
-      case 'INITIALIZE_HIGHLIGHTED_EMPLOYEES': {
-          return {
-              ...state,
-              highlightedEmployees: action.payload
-          };
-      }
+        case 'INITIALIZE_HIGHLIGHTED_EMPLOYEES': {
+            return {
+                ...state,
+                highlightedEmployees: action.payload
+            };
+        }
 
-      case 'MOVE_EMPLOYEE': {
-          const { employeeId, targetProjectId, targetUnionId, date } = action.payload;
-          console.log('Moving employee:', { employeeId, targetProjectId, targetUnionId, date });
+        case 'MOVE_EMPLOYEE': {
+            const { employeeId, targetProjectId, targetUnionId, date } = action.payload;
+            console.log('Moving employee:', { employeeId, targetProjectId, targetUnionId, date });
 
-          if (!date || !employeeId) {
-              console.warn('Missing required data for MOVE_EMPLOYEE:', { employeeId, date });
-              return state;
-          }
+            if (!date || !employeeId) {
+                console.warn('Missing required data for MOVE_EMPLOYEE:', { employeeId, date });
+                return state;
+            }
 
-          const updatedEmployeesByDate = { ...state.employeesByDate };
-          for (const dateKey in updatedEmployeesByDate) {
-              if (updatedEmployeesByDate[dateKey]) {
-                  updatedEmployeesByDate[dateKey] = updatedEmployeesByDate[dateKey].map((emp) => {
-                      if (emp.id === employeeId) {
-                          return {
-                              ...emp,
-                              current_location: targetProjectId ? 'project' : 'union',
-                              job_id: targetProjectId || null,
-                              union_id: targetUnionId || emp.union_id,
-                              display_order: null,
-                          };
-                      }
-                      return emp;
-                  });
-              }
-          }
+            // Only update the specific date's employees
+            const updatedEmployees = state.employeesByDate[date]?.map((emp) => {
+                if (emp.id === employeeId) {
+                    return {
+                        ...emp,
+                        current_location: targetProjectId ? 'project' : 'union',
+                        job_id: targetProjectId || null,
+                        union_id: targetUnionId || emp.union_id,
+                        is_highlighted: targetProjectId ? true : false,
+                        display_order: null,
+                    };
+                }
+                return emp;
+            }) || [];
 
-          return { 
-              ...state, 
-              employeesByDate: updatedEmployeesByDate 
-          };
-      }
+            return {
+                ...state,
+                employeesByDate: {
+                    ...state.employeesByDate,
+                    [date]: updatedEmployees
+                }
+            };
+        }
 
-      case 'UPDATE_EMPLOYEE_ORDER': {
-          const { projectId, employees, date } = action.payload;
-          console.log('Updating employee order:', { projectId, employeeCount: employees?.length, date });
+        case 'UPDATE_EMPLOYEE_ORDER': {
+            const { projectId, employees, date } = action.payload;
+            console.log('Updating employee order:', { projectId, employeeCount: employees?.length, date });
 
-          if (!date || !state.employeesByDate[date] || !Array.isArray(employees)) {
-              console.warn('Invalid data for UPDATE_EMPLOYEE_ORDER:', { date, hasEmployees: !!employees });
-              return state;
-          }
+            if (!date || !state.employeesByDate[date] || !Array.isArray(employees)) {
+                console.warn('Invalid data for UPDATE_EMPLOYEE_ORDER:', { date, hasEmployees: !!employees });
+                return state;
+            }
 
-          const updatedEmployeesByDate = {
-              ...state.employeesByDate,
-              [date]: state.employeesByDate[date].map((emp) => {
-                  const updatedEmployee = employees.find((e) => e.id === emp.id);
-                  if (updatedEmployee && emp.job_id === projectId) {
-                      return {
-                          ...emp,
-                          display_order: updatedEmployee.display_order,
-                      };
-                  }
-                  return emp;
-              }),
-          };
+            return {
+                ...state,
+                employeesByDate: {
+                    ...state.employeesByDate,
+                    [date]: state.employeesByDate[date].map((emp) => {
+                        const updatedEmployee = employees.find((e) => e.id === emp.id);
+                        if (updatedEmployee && emp.job_id === projectId) {
+                            return {
+                                ...emp,
+                                display_order: updatedEmployee.display_order,
+                            };
+                        }
+                        return emp;
+                    }),
+                }
+            };
+        }
 
-          return { ...state, employeesByDate: updatedEmployeesByDate };
-      }
+        case 'SET_HIGHLIGHTED_EMPLOYEE': {
+            const { id, isHighlighted, date } = action.payload;
+            console.log('Setting employee highlight:', { id, isHighlighted, date });
 
-      case 'SET_HIGHLIGHTED_EMPLOYEE': {
-          const { id, isHighlighted } = action.payload;
-          console.log('Setting employee highlight:', { id, isHighlighted });
+            // Update local state
+            const newHighlightedEmployees = { ...state.highlightedEmployees };
+            if (isHighlighted) {
+                newHighlightedEmployees[id] = true;
+            } else {
+                delete newHighlightedEmployees[id];
+            }
 
-          // Make API call to update the database
-          fetch(`/api/addemployee/${id}/highlight`, {
-              method: 'PUT',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ isHighlighted }),
-              credentials: 'include',
-          }).catch((error) => {
-              console.error('Error updating highlight status:', error);
-          });
+            // Update employees for only the specific date
+            return {
+                ...state,
+                highlightedEmployees: newHighlightedEmployees,
+                employeesByDate: {
+                    ...state.employeesByDate,
+                    [date]: state.employeesByDate[date]?.map((emp) => 
+                        emp.id === id ? { ...emp, is_highlighted: isHighlighted } : emp
+                    ) || []
+                }
+            };
+        }
 
-          const newHighlightedEmployees = { ...state.highlightedEmployees };
-          if (isHighlighted) {
-              newHighlightedEmployees[id] = true;
-          } else {
-              delete newHighlightedEmployees[id];
-          }
+        case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
+            const updatedEmployeesByDate = {};
+            Object.entries(state.employeesByDate).forEach(([date, employees]) => {
+                updatedEmployeesByDate[date] = employees.map(emp => ({
+                    ...emp,
+                    is_highlighted: false
+                }));
+            });
 
-          const updatedEmployeesByDate = { ...state.employeesByDate };
-          for (const date in updatedEmployeesByDate) {
-              if (updatedEmployeesByDate[date]) {
-                  updatedEmployeesByDate[date] = updatedEmployeesByDate[date].map((emp) => {
-                      if (emp.id === id) {
-                          return { ...emp, is_highlighted: isHighlighted };
-                      }
-                      return emp;
-                  });
-              }
-          }
+            return {
+                ...state,
+                highlightedEmployees: {},
+                employeesByDate: updatedEmployeesByDate
+            };
+        }
 
-          return {
-              ...state,
-              highlightedEmployees: newHighlightedEmployees,
-              employeesByDate: updatedEmployeesByDate,
-          };
-      }
+        case 'RESET_EMPLOYEE_STATE': {
+            return initialState;
+        }
 
-      case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
-          const clearedEmployeesByDate = { ...state.employeesByDate };
-          for (const date in clearedEmployeesByDate) {
-              if (clearedEmployeesByDate[date]) {
-                  clearedEmployeesByDate[date] = clearedEmployeesByDate[date].map((emp) => ({
-                      ...emp,
-                      is_highlighted: false,
-                  }));
-              }
-          }
-
-          return {
-              ...state,
-              highlightedEmployees: {},
-              employeesByDate: clearedEmployeesByDate,
-          };
-      }
-
-      case 'RESET_EMPLOYEE_STATE': {
-          return initialState;
-      }
-
-      default:
-          return state;
-  }
+        default:
+            return state;
+    }
 };
+
 
 export default employeeReducer;

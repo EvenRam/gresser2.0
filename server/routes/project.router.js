@@ -3,12 +3,38 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
+//PROJECT.ROUTER.JS
+// Simple date validation middleware
+const validateDate = (req, res, next) => {
+    const date = req.params.date || req.body.date;
+    if (!date) {
+        return res.status(400).send('Date is required');
+    }
+    
+    try {
+        const requestDate = new Date(date);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        if (isNaN(requestDate.getTime())) {
+            return res.status(400).send('Invalid date format');
+        }
 
-//project.router.js
-// Get projects with employees for a specific date
-router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
+        if (requestDate > today) {
+            return res.status(400).send('Cannot access or modify future dates');
+        }
+
+        next();
+    } catch (error) {
+        return res.status(400).send('Invalid date');
+    }
+};
+
+router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.params.date;
+        console.log('Fetching projects with employees for date:', date);
+
         const sqlText = `
         SELECT 
             j.job_id,
@@ -32,10 +58,12 @@ router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
         LEFT JOIN add_employee ae ON s.employee_id = ae.id
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
-        ORDER BY s.project_display_order NULLS LAST, j.job_id, s.employee_display_order NULLS LAST, ae.id;
+        ORDER BY s.project_display_order NULLS LAST, j.job_id, 
+                 s.employee_display_order NULLS LAST, ae.id;
         `;
         
         const result = await pool.query(sqlText, [date]);
+        console.log('Raw query results:', result.rows);
         
         const jobs = {};
         
@@ -55,9 +83,9 @@ router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
                     first_name: row.employee_first_name,
                     last_name: row.employee_last_name,
                     employee_status: row.employee_status,
-                    phone_number: row.phone_number,
-                    email: row.email,
-                    address: row.address,
+                    phone_number: row.employee_phone_number,
+                    email: row.employee_email,
+                    address: row.employee_address,
                     current_location: row.current_location,
                     union_id: row.union_id,
                     union_name: row.union_name,
@@ -65,17 +93,18 @@ router.get('/withEmployees/:date', rejectUnauthenticated, async (req, res) => {
                     display_order: row.employee_display_order
                 });
             }
-        });
+        }); // Added closing bracket here
         
-        res.send(Object.values(jobs));
+        const finalResponse = Object.values(jobs);
+        console.log('Final response being sent:', finalResponse);
+        res.send(finalResponse);
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
-
 // Update employee order within a project for a specific date
-router.put('/updateOrder', rejectUnauthenticated, async (req, res) => {
+router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const { projectId, orderedEmployeeIds, date } = req.body;
         
@@ -102,7 +131,7 @@ router.put('/updateOrder', rejectUnauthenticated, async (req, res) => {
 });
 
 // Update project display order
-router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
+router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const { orderedProjectIds, date } = req.body;
         

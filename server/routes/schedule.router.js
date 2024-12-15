@@ -3,12 +3,38 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-//schedule.router.js
-// GET all employees with schedule status for a specific date
-// GET all employees with schedule status for a specific date
-router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
+
+//SCHEDULE.ROUTER.JS
+// Simple date validation middleware
+const validateDate = (req, res, next) => {
+    const date = req.params.date || req.body.date;
+    if (!date) {
+        return res.status(400).send('Date is required');
+    }
+    
     try {
-        const date = req.params.date || new Date().toISOString().split('T')[0];
+        const requestDate = new Date(date);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        if (isNaN(requestDate.getTime())) {
+            return res.status(400).send('Invalid date format');
+        }
+
+        if (requestDate > today) {
+            return res.status(400).send('Cannot access or modify future dates');
+        }
+
+        next();
+    } catch (error) {
+        return res.status(400).send('Invalid date');
+    }
+};
+
+// GET all employees with schedule status for a specific date
+router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
+    try {
+        const date = req.params.date;
 
         const sqlText = `
             WITH scheduled_employees AS (
@@ -56,12 +82,9 @@ router.get('/employees/:date', rejectUnauthenticated, async (req, res) => {
 });
 
 // GET employees grouped by unions
-router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
+router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.params.date;
-        if (!date) {
-            throw new Error('Date parameter is required');
-        }
 
         const sqlText = `
             WITH scheduled_employees AS (
@@ -97,7 +120,6 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
         `;
         
         const result = await pool.query(sqlText, [date]);
-        // Rest of the function remains the same
         const unions = {};
         
         result.rows.forEach(row => {
@@ -137,104 +159,11 @@ router.get('/withunions/:date', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-// POST endpoint for adding/updating employee with schedule
-router.post('/', rejectUnauthenticated, async (req, res) => {
-    const { 
-        first_name, 
-        last_name, 
-        employee_number, 
-        union_name, 
-        employee_status, 
-        phone_number, 
-        email, 
-        address, 
-        job_id, 
-        selected_date 
-    } = req.body;
-
-    try {
-        await pool.query('BEGIN');
-
-        // Validate union (unchanged)
-        const unionCheckResult = await pool.query(
-            'SELECT "id" FROM "unions" WHERE "union_name" = $1',
-            [union_name]
-        );
-
-        if (unionCheckResult.rows.length === 0) {
-            await pool.query('ROLLBACK');
-            return res.status(400).json({ 
-                error: 'Union does not exist. Please select a valid union.' 
-            });
-        }
-
-        const unionId = unionCheckResult.rows[0].id;
-
-        // Insert or update employee basic info
-        const employeeResult = await pool.query(
-            `INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", 
-                "phone_number", "email", "address", "union_id"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (employee_number) 
-            DO UPDATE SET 
-                first_name = EXCLUDED.first_name, 
-                last_name = EXCLUDED.last_name, 
-                employee_status = EXCLUDED.employee_status, 
-                phone_number = EXCLUDED.phone_number, 
-                email = EXCLUDED.email, 
-                address = EXCLUDED.address, 
-                union_id = EXCLUDED.union_id
-            RETURNING id;`,
-            [first_name, last_name, employee_number, employee_status, 
-             phone_number, email, address, unionId]
-        );
-
-        const employeeId = employeeResult.rows[0].id;
-        const currentDate = selected_date || new Date().toISOString().split('T')[0];
-
-        // Create initial schedule entry
-        if (job_id) {
-            await pool.query(
-                `INSERT INTO schedule 
-                    (date, employee_id, job_id, current_location, is_highlighted)
-                VALUES 
-                    ($1, $2, $3, 'project', false)
-                ON CONFLICT (date, employee_id) 
-                DO UPDATE SET 
-                    job_id = EXCLUDED.job_id,
-                    current_location = 'project'`,
-                [currentDate, employeeId, job_id]
-            );
-        } else {
-            await pool.query(
-                `INSERT INTO schedule 
-                    (date, employee_id, current_location, is_highlighted)
-                VALUES 
-                    ($1, $2, 'union', false)
-                ON CONFLICT (date, employee_id) 
-                DO NOTHING`,
-                [currentDate, employeeId]
-            );
-        }
-
-        await pool.query('COMMIT');
-        res.status(201).send({ 
-            message: 'Employee and schedule updated successfully.', 
-            employee_id: employeeId,
-            date: currentDate
-        });
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('Error updating employee and schedule:', error);
-        res.status(500).send('Error updating employee and schedule');
-    }
-});
-
 // PUT endpoint for updating highlight status
-router.put('/:id/highlight', rejectUnauthenticated, async (req, res) => {
+router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (req, res) => {
     const employeeId = req.params.id;
-    const { isHighlighted, date } = req.body;
+    const date = req.params.date;
+    const { isHighlighted } = req.body;
 
     try {
         await pool.query('BEGIN');
@@ -260,6 +189,8 @@ router.put('/:id/highlight', rejectUnauthenticated, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
+
+module.exports = router;
 
 // GET endpoint for date range schedule
 router.get('/range', rejectUnauthenticated, async (req, res) => {
