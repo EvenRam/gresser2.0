@@ -61,7 +61,11 @@ const projectReducer = (state = initialState, action) => {
                 if (project.id === targetProjectId && employeeToMove) {
                     return {
                         ...project,
-                        employees: [...project.employees, employeeToMove]
+                        employees: [...project.employees, {
+                            ...employeeToMove,
+                            current_location: 'project',
+                            is_highlighted: true
+                        }]
                     };
                 }
                 return project;
@@ -79,7 +83,6 @@ const projectReducer = (state = initialState, action) => {
 
         case 'UPDATE_EMPLOYEE_ORDER': {
             const { projectId, employees, date } = action.payload;
-            
             if (!date || !projectId) return state;
 
             const currentProjects = state.projectsByDate[date] || state.projects;

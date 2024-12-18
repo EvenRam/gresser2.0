@@ -51,44 +51,30 @@ const ProjectBox = ({ id, employees = [], moveEmployee, job_name }) => {
   console.log('highlightedEmployees:', highlightedEmployees);
   
   const handleDrop = useCallback((item) => {
-    console.log('Drop item received:', item);
-    
-    if (!item) {
-        console.warn('No item received in drop');
-        return;
-    }
-    
-    // Get employeeId directly from id or employee_id
-    const employeeId = item.id || item.employee_id;
-
-    if (!employeeId) {
-        console.warn('No valid employee ID found in drop item:', item);
-        return;
+    if (!item || !item.id) {
+      console.warn('Invalid drop item:', item);
+      return;
     }
   
-    console.log('Processing drop:', { 
-        employeeId,
-        projectId: id,
-        unionId: item.union_id,
-        currentLocation: item.current_location
-    });
+    console.log('Dropped item:', item);
+    console.log('Current project box ID:', id);
     
     const isExternalMove = item.current_location === 'union' || 
                         (item.current_location === 'project' && item.projectId !== id);
     
-    moveEmployee(employeeId, id, item.union_id, selectedDate);
+    moveEmployee(item.id, id, item.union_id, selectedDate);
     
     if (isExternalMove) {
-        dispatch({ 
-            type: 'SET_HIGHLIGHTED_EMPLOYEE', 
-            payload: { 
-                id: employeeId, 
-                isHighlighted: true,
-                date: selectedDate
-            } 
-        });
+      dispatch({ 
+        type: 'SET_HIGHLIGHTED_EMPLOYEE', 
+        payload: { 
+          id: item.id, 
+          isHighlighted: true,
+          date: selectedDate
+        } 
+      });
     }
-}, [id, moveEmployee, dispatch, selectedDate]);
+  }, [id, moveEmployee, dispatch, selectedDate]);
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',

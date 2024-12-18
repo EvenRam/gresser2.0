@@ -3,6 +3,7 @@ import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
 
 const Employee = ({
+  id,
   employee_id,
   name,
   phone_number,
@@ -17,11 +18,14 @@ const Employee = ({
   onReorder,
   projectId
 }) => {
+  const actualId = employee_id || id; // Use employee_id with fallback to id
   const unionColor = unionColors[union_name] || 'black';
+  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: {  
-      id: employee_id,
+      id: actualId,
+      employee_id: actualId,
       union_id, 
       union_name, 
       current_location, 
@@ -31,46 +35,21 @@ const Employee = ({
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [employee_id, union_id, union_name, current_location, index, projectId]);
+  }), [actualId, union_id, union_name, current_location, index, projectId]);
   
-  const handleDragStart = useCallback((e) => {
-    if (typeof index === 'number') {
-      e.dataTransfer.setData('text/plain', index.toString());
-    }
-    e.dataTransfer.effectAllowed = 'move';
-  }, [index]);
-  const handleDragOver = useCallback((e) => {
-    e.preventDefault();
-    return false;
-  }, []);
-  const handleDragEnter = useCallback((e) => {
-    e.preventDefault();
-  }, []);
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    if (typeof onReorder !== 'function') return;
-    
-    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    if (!isNaN(draggedIndex) && draggedIndex !== index) {
-      onReorder(draggedIndex, index);
-    }
-  }, [index, onReorder]);
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (isHighlighted && typeof onClick === 'function') {
-      onClick(employee_id, isHighlighted);
+      onClick(actualId, isHighlighted);
     }
-  }, [employee_id, isHighlighted, onClick]);
-  const modalId = `employee-modal-${employee_id}`;
+  }, [actualId, isHighlighted, onClick]);
+
+  const modalId = `employee-modal-${actualId}`;
+  
   return (
     <div
       ref={drag}
-      draggable
       onContextMenu={handleContextMenu}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDrop={handleDrop}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -115,4 +94,5 @@ const Employee = ({
     </div>
   );
 };
+
 export default React.memo(Employee);

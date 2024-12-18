@@ -129,14 +129,30 @@ function* handleMoveEmployee(action) {
         const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
         const currentDate = date || getDefaultDate();
 
-        // Make the API call
+        console.log('Moving employee:', {
+            employeeId,
+            targetProjectId,
+            sourceUnionId,
+            date: currentDate
+        });
+
+        // Make the API call to move the employee
         yield call(
             axios.post, 
             `/api/moveemployee/${currentDate}`, 
             { employeeId, targetProjectId }
         );
 
-        // Refresh all data for the current date
+        // Store the selected date in localStorage to persist it
+        localStorage.setItem('selectedScheduleDate', currentDate);
+
+        // Update the selected date in the store
+        yield put({
+            type: 'SET_SELECTED_DATE',
+            payload: currentDate
+        });
+
+        // Refresh all data in the correct order
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: currentDate } 
@@ -147,9 +163,12 @@ function* handleMoveEmployee(action) {
             payload: { date: currentDate } 
         });
 
-        // Remove the MOVE_EMPLOYEE dispatch since it's already the action type
-        // that triggered this saga
+        yield put({
+            type: 'FETCH_EMPLOYEES',
+            payload: { date: currentDate }
+        });
 
+        console.log('Employee move completed, all data refreshed');
     } catch (error) {
         console.error('Error moving employee:', error);
         yield put({ 
@@ -158,10 +177,44 @@ function* handleMoveEmployee(action) {
         });
     }
 }
+
+function* initializeScheduleDate() {
+    try {
+        // Get the date from localStorage or default to current date
+        const savedDate = localStorage.getItem('selectedScheduleDate') || getDefaultDate();
+        
+        // Set the date in the store
+        yield put({
+            type: 'SET_SELECTED_DATE',
+            payload: savedDate
+        });
+
+        // Fetch data for the saved date
+        yield put({
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+            payload: { date: savedDate }
+        });
+
+        yield put({
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
+            payload: { date: savedDate }
+        });
+
+        yield put({
+            type: 'FETCH_EMPLOYEES',
+            payload: { date: savedDate }
+        });
+    } catch (error) {
+        console.error('Error initializing schedule date:', error);
+    }
+}
+
 export default function* scheduleSaga() {
     yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
     yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
     yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
     yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule);
     yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
+    yield takeLatest('INITIALIZE_SCHEDULE', initializeScheduleDate);
+
 }

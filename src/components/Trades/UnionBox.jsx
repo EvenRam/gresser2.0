@@ -11,15 +11,10 @@ const UnionBox = ({ id, union_name, color }) => {
         state.employeeReducer.employeesByDate?.[selectedDate] || []
     );
 
-    console.log(`UnionBox Render - ${union_name} (id: ${id})`);
-    console.log('All Employees:', allEmployees);
-
     // Filter employees for this union and current date
     const employees = allEmployees.filter(
         emp => emp.current_location === 'union' && emp.union_id === id
     );
-
-    console.log('Filtered Employees:', employees);
 
     const [{ isOver }, drop] = useDrop(() => ({
         accept: 'EMPLOYEE',
@@ -29,6 +24,13 @@ const UnionBox = ({ id, union_name, color }) => {
                 return;
             }
 
+            // Check if item has necessary properties
+            if (!item || !item.id) {
+                console.error('Invalid drop item:', item);
+                return;
+            }
+
+            // Only proceed if the employee isn't already in this union
             if (item.union_id !== id || item.current_location !== 'union') {
                 console.log(`Moving employee ${item.id} to union ${id} for date ${selectedDate}`);
                 dispatch({
@@ -37,7 +39,6 @@ const UnionBox = ({ id, union_name, color }) => {
                         employeeId: item.id,
                         targetProjectId: null,
                         sourceUnionId: item.union_id,
-                        targetUnionId: id,
                         date: selectedDate
                     }
                 });
@@ -72,6 +73,7 @@ const UnionBox = ({ id, union_name, color }) => {
                             <Employee
                                 key={employee.id}
                                 {...employee}
+                                id={employee.id} // Explicitly pass id
                                 className="employee-name"
                                 name={`${employee.first_name} ${employee.last_name}`}
                                 union_id={id}
@@ -85,6 +87,5 @@ const UnionBox = ({ id, union_name, color }) => {
         </div>
     );
 };
+
 export default React.memo(UnionBox);
-
-

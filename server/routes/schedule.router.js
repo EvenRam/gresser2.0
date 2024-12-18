@@ -3,7 +3,6 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-
 //SCHEDULE.ROUTER.JS
 // Simple date validation middleware
 const validateDate = (req, res, next) => {
@@ -20,22 +19,18 @@ const validateDate = (req, res, next) => {
         if (isNaN(requestDate.getTime())) {
             return res.status(400).send('Invalid date format');
         }
-
         if (requestDate > today) {
             return res.status(400).send('Cannot access or modify future dates');
         }
-
         next();
     } catch (error) {
         return res.status(400).send('Invalid date');
     }
 };
-
 // GET all employees with schedule status for a specific date
 router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.params.date;
-
         const sqlText = `
             WITH scheduled_employees AS (
                 SELECT 
@@ -68,7 +63,6 @@ router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, 
             WHERE ae.employee_status = TRUE
             ORDER BY se.employee_display_order NULLS LAST, ae.first_name, ae.last_name;
         `;
-
         const result = await pool.query(sqlText, [date]);
         
         res.send({
@@ -80,23 +74,13 @@ router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, 
         res.status(500).send(error.message);
     }
 });
-
 // GET employees grouped by unions
 router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.params.date;
+        console.log('Fetching unions with employees for date:', date);
 
         const sqlText = `
-            WITH scheduled_employees AS (
-                SELECT 
-                    employee_id, 
-                    job_id,
-                    current_location,
-                    is_highlighted,
-                    employee_display_order
-                FROM schedule
-                WHERE date = $1
-            )
             SELECT 
                 u.id AS union_id,
                 u.union_name,
@@ -107,16 +91,22 @@ router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req,
                 ae.employee_status,
                 ae.email,
                 ae.address,
-                COALESCE(se.current_location, 'union') AS current_location,
+                COALESCE(s.current_location, 'union') AS current_location,
                 ae.union_id AS employee_union_id,
-                COALESCE(se.is_highlighted, false) AS is_highlighted,
-                se.employee_display_order AS display_order,
-                se.job_id AS scheduled_job_id
+                COALESCE(s.is_highlighted, false) AS is_highlighted,
+                s.employee_display_order AS display_order,
+                s.job_id AS scheduled_job_id
             FROM unions u
             LEFT JOIN add_employee ae ON u.id = ae.union_id
-            LEFT JOIN scheduled_employees se ON ae.id = se.employee_id
+            LEFT JOIN (
+                SELECT * FROM schedule WHERE date = $1
+            ) s ON ae.id = s.employee_id
             WHERE ae.employee_status = TRUE
-            ORDER BY u.union_name, se.employee_display_order NULLS LAST, ae.id;
+            AND (
+                s.employee_id IS NULL  -- Not scheduled for this date
+                OR (s.current_location = 'union')  -- Explicitly in union
+            )
+            ORDER BY u.union_name, s.employee_display_order NULLS LAST, ae.id;
         `;
         
         const result = await pool.query(sqlText, [date]);
@@ -131,7 +121,7 @@ router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req,
                 };
             }
 
-            if (row.employee_id && row.current_location === 'union') {
+            if (row.employee_id) {
                 unions[row.union_id].employees.push({
                     id: row.employee_id,
                     first_name: row.first_name,
@@ -164,10 +154,8 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
     const employeeId = req.params.id;
     const date = req.params.date;
     const { isHighlighted } = req.body;
-
     try {
         await pool.query('BEGIN');
-
         await pool.query(
             `INSERT INTO schedule 
                 (date, employee_id, is_highlighted, current_location)
@@ -180,7 +168,6 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
             DO UPDATE SET is_highlighted = $3`,
             [date, employeeId, isHighlighted]
         );
-
         await pool.query('COMMIT');
         res.sendStatus(204);
     } catch (error) {
@@ -189,9 +176,7 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
         res.status(500).send(error.message);
     }
 });
-
 module.exports = router;
-
 // GET endpoint for date range schedule
 router.get('/range', rejectUnauthenticated, async (req, res) => {
     const { startDate, endDate } = req.query;
@@ -200,7 +185,6 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
         if (!startDate || !endDate) {
             throw new Error('Start date and end date are required');
         }
-
         const result = await pool.query(`
             SELECT 
                 s.date,
@@ -234,3 +218,4 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
     }
 });
 module.exports = router;
+

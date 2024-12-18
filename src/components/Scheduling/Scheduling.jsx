@@ -9,43 +9,66 @@ import DateSchedule from './DateSchedule';
 const Scheduling = () => {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
+  
   // Redux state selectors
   const projects = useSelector((state) => state.projectReducer.projects);
   const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
+  const highlightedEmployees = useSelector((state) => state.employeeReducer.highlightedEmployees);
+  
   // Get employees for the selected date
   const allEmployees = employeesByDate[selectedDate] || [];
   
-  console.log('Projects in projectReducer:', projects , projects.project_id);
-  console.log('All Employees', allEmployees);
-  console.log('Selected Date from scheduleReducer:', selectedDate);
-
+  // Initialize schedule and handle date changes
   useEffect(() => {
-    const fetchData = async () => {
+    const initializeSchedule = async () => {
       setIsLoading(true);
       try {
-        // Change this
-        await dispatch({ 
+        // Initialize the schedule with saved date
+        await dispatch({ type: 'INITIALIZE_SCHEDULE' });
+      } catch (error) {
+        console.error('Error initializing schedule:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeSchedule();
+  }, [dispatch]);
+
+  // Handle data fetching when selected date changes
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!selectedDate) return;
+      
+      setIsLoading(true);
+      try {
+        // Fetch all data for the selected date
+        await Promise.all([
+          dispatch({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
-            payload: selectedDate  // Send just the date string
-        });
-        
-        if (selectedDate) {
-          await dispatch({ 
-              type: 'FETCH_EMPLOYEES', 
-              payload: { date: selectedDate } // Just need the date
-          });
-        }
+            payload: { date: selectedDate }
+          }),
+          dispatch({ 
+            type: 'FETCH_EMPLOYEES', 
+            payload: { date: selectedDate }
+          }),
+          dispatch({
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
+            payload: { date: selectedDate }
+          })
+        ]);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchData();
-}, [dispatch, selectedDate]);
+  }, [dispatch, selectedDate]);
 
-
+  // Handle employee movement with highlighting
   const moveEmployee = useCallback((employeeId, targetProjectId, sourceProjectId) => {
     dispatch({
       type: 'MOVE_EMPLOYEE',
@@ -54,33 +77,82 @@ const Scheduling = () => {
         targetProjectId,
         sourceProjectId,
         date: selectedDate,
+        is_highlighted: true // Ensure highlighting on move
       },
     });
   }, [dispatch, selectedDate]);
+
+  // Handle employee ordering within projects
+  const updateEmployeeOrder = useCallback(async (projectId, orderedEmployeeIds) => {
+    try {
+      dispatch({
+        type: 'UPDATE_EMPLOYEE_ORDER',
+        payload: {
+          projectId,
+          employees: orderedEmployeeIds.map((id, index) => ({
+            id,
+            display_order: index
+          })),
+          date: selectedDate
+        }
+      });
+
+      await axios.put('/api/project/updateOrder', {
+        projectId,
+        orderedEmployeeIds,
+        date: selectedDate
+      });
+    } catch (error) {
+      console.error('Error updating employee order:', error);
+    }
+  }, [dispatch, selectedDate]);
+
+  // Handle project ordering
   const moveJob = useCallback(async (sourceIndex, targetIndex) => {
     try {
-      // Immediate UI update
       dispatch({
         type: 'REORDER_PROJECTS',
         payload: { sourceIndex, targetIndex, date: selectedDate },
       });
-      // Prepare the updated order of project IDs
+
       const orderedProjectIds = projects
         .slice()
         .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
         .map((project) => project.id);
-      // Move the project in the ordered array
+
       const [movedId] = orderedProjectIds.splice(sourceIndex, 1);
       orderedProjectIds.splice(targetIndex, 0, movedId);
-      // Persist to the backend
-      await axios.put('/api/project/updateProjectOrder', { orderedProjectIds });
+
+      await axios.put('/api/project/updateProjectOrder', {
+        orderedProjectIds,
+        date: selectedDate
+      });
     } catch (error) {
       console.error('Error updating project order:', error);
     }
   }, [dispatch, projects, selectedDate]);
+
+  // Handle employee highlighting toggle
+  const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
+    try {
+      await axios.put(`/api/schedule/${selectedDate}/${employeeId}/highlight`, {
+        isHighlighted
+      });
+
+      dispatch({
+        type: 'SET_HIGHLIGHTED_EMPLOYEE',
+        payload: {
+          id: employeeId,
+          isHighlighted,
+          date: selectedDate
+        }
+      });
+    } catch (error) {
+      console.error('Error toggling highlight:', error);
+    }
+  }, [dispatch, selectedDate]);
+
   const memoizedProjects = useMemo(() => {
-    console.log('Creating memoizedProjects with:', { projects, allEmployees });
-    
     return projects
       .slice()
       .sort((a, b) => {
@@ -89,28 +161,30 @@ const Scheduling = () => {
         }
         return a.display_order === null ? 1 : -1;
       })
-      .map((project) => {
-        const projectEmployees = project.employees || [];
-        console.log(`Project ${project.job_id} employees:`, projectEmployees);
-        
-        return {
-          ...project,
-          employees: projectEmployees,
-        };
-      });
-  }, [projects, allEmployees]);
+      .map((project) => ({
+        ...project,
+        employees: (project.employees || []).map(emp => ({
+          ...emp,
+          is_highlighted: emp.is_highlighted || highlightedEmployees[emp.id]
+        }))
+      }));
+  }, [projects, highlightedEmployees]);
+
   const totalAssignedEmployees = useMemo(() => {
     return memoizedProjects.reduce(
       (total, project) => total + (project.employees?.length || 0),
       0
     );
   }, [memoizedProjects]);
+
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
   return (
     <div className="scheduling-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -142,7 +216,10 @@ const Scheduling = () => {
                 index={index}
                 moveJob={moveJob}
                 moveEmployee={moveEmployee}
+                updateEmployeeOrder={updateEmployeeOrder}
+                toggleHighlight={toggleHighlight}
                 employees={project.employees}
+                selectedDate={selectedDate}
               />
             ))}
           </div>
@@ -151,4 +228,5 @@ const Scheduling = () => {
     </div>
   );
 };
+
 export default React.memo(Scheduling);

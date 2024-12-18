@@ -30,11 +30,13 @@ const validateDate = (req, res, next) => {
     }
 };
 
+
+
 router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.params.date;
         console.log('Fetching projects with employees for date:', date);
-
+        
         const sqlText = `
         SELECT 
             j.job_id,
@@ -54,19 +56,20 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
             s.employee_display_order,
             u.union_name
         FROM jobs j
-        LEFT JOIN schedule s ON j.job_id = s.job_id AND s.date = $1
-        LEFT JOIN add_employee ae ON s.employee_id = ae.id
+        LEFT JOIN (
+            SELECT * FROM schedule 
+            WHERE date = $1
+        ) s ON j.job_id = s.job_id
+        LEFT JOIN add_employee ae ON s.employee_id = ae.id AND ae.employee_status = true
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
         ORDER BY s.project_display_order NULLS LAST, j.job_id, 
                  s.employee_display_order NULLS LAST, ae.id;
         `;
-        
+
         const result = await pool.query(sqlText, [date]);
-        console.log('Raw query results:', result.rows);
-        
         const jobs = {};
-        
+
         result.rows.forEach(row => {
             if (!jobs[row.job_id]) {
                 jobs[row.job_id] = {
@@ -76,7 +79,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
                     employees: []
                 };
             }
-  
+
             if (row.employee_id && row.employee_status === true) {
                 jobs[row.job_id].employees.push({
                     id: row.employee_id,
@@ -93,16 +96,16 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
                     display_order: row.employee_display_order
                 });
             }
-        }); // Added closing bracket here
-        
-        const finalResponse = Object.values(jobs);
-        console.log('Final response being sent:', finalResponse);
-        res.send(finalResponse);
+        });
+
+        res.send(Object.values(jobs));
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
+
+
 // Update employee order within a project for a specific date
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
