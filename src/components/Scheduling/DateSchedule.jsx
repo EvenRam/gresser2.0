@@ -1,27 +1,43 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
+const formatLocalDate = (date) => {
+    return date.toISOString().split('T')[0];
+};
+
 const DateSchedule = () => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
 
     useEffect(() => {
-        const now = new Date();
-        const todayStr = now.toISOString().substring(0, 10);
         if (!selectedDate) {
+            const now = new Date();
+            // Set to noon to avoid timezone issues
+            now.setHours(12, 0, 0, 0);
+            const todayStr = formatLocalDate(now);
             console.log('Setting initial date:', todayStr);
             dispatch({ type: 'SET_SELECTED_DATE', payload: todayStr });
         }
     }, [dispatch, selectedDate]);
 
+    const handleDateChange = (event) => {
+        const selectedValue = event.target.value;
+        console.log('Raw selected date:', selectedValue);
+        
+        // Create date object at noon to avoid timezone shifts
+        const selectedDate = new Date(selectedValue + 'T12:00:00');
+        console.log('Adjusted date object:', selectedDate);
+        
+        const formattedDate = formatLocalDate(selectedDate);
+        console.log('Formatted date being dispatched:', formattedDate);
+        
+        dispatch({ type: 'SET_SELECTED_DATE', payload: formattedDate });
+    };
+
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 7);
-    const maxDateStr = maxDate.toISOString().substring(0, 10);
-
-    const handleDateChange = (event) => {
-        const newDate = event.target.value;
-        dispatch({ type: 'SET_SELECTED_DATE', payload: newDate });
-    };
+    maxDate.setHours(12, 0, 0, 0);
+    const maxDateStr = formatLocalDate(maxDate);
 
     if (!selectedDate) {
         return <div>Loading...</div>;

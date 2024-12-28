@@ -1,10 +1,7 @@
 const formatLocalDate = (date) => {
     const d = new Date(date);
-    // Ensure we're working with local time
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    d.setHours(12, 0, 0, 0);  // Set to noon to avoid timezone issues
+    return d.toISOString().split('T')[0];
 };
 
 const validateDate = (req, res, next) => {
@@ -14,16 +11,19 @@ const validateDate = (req, res, next) => {
     }
     
     try {
+        // Add a day to compensate for timezone
         const requestDate = new Date(date);
+        requestDate.setDate(requestDate.getDate() + 1);
+        
         const today = new Date();
         
-        // Reset hours to ensure consistent comparison
-        requestDate.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
+        // Set all times to noon for consistent comparison
+        requestDate.setHours(12, 0, 0, 0);
+        today.setHours(12, 0, 0, 0);
 
         const maxDate = new Date(today);
         maxDate.setDate(maxDate.getDate() + 7);
-        maxDate.setHours(0, 0, 0, 0);
+        maxDate.setHours(12, 0, 0, 0);
 
         // Format all dates consistently
         const formattedRequestDate = formatLocalDate(requestDate);
@@ -36,7 +36,6 @@ const validateDate = (req, res, next) => {
 
         // For modification requests
         if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-            // Allow same-day modifications
             if (formattedRequestDate < formattedToday) {
                 return res.status(403).send('Cannot modify past dates');
             }

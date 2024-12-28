@@ -1,28 +1,32 @@
 import { takeLatest, call, put, select } from "redux-saga/effects";
 import axios from 'axios';
 
+
 // Helper functions for date handling
 const getDefaultDate = () => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
+    now.setHours(12, 0, 0, 0);  // Set to noon
     return now.toISOString().split('T')[0];
 };
 
 const validateDate = (date) => {
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 7);
-    
     const requestDate = new Date(date);
+    requestDate.setHours(12, 0, 0, 0);  // Set to noon
+    
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 7);
+    maxDate.setHours(12, 0, 0, 0);
     
     return {
         isValid: !isNaN(requestDate.getTime()),
-        formattedDate: requestDate.toISOString().split('T')[0],
+        formattedDate: date, // Use the original date without adjustment
         isWithinRange: requestDate <= maxDate
     };
 };
 
-// Fetch employees for a specific date
 function* fetchEmployees(action) {
     try {
         const date = action.payload?.date || getDefaultDate();
@@ -50,12 +54,11 @@ function* fetchEmployees(action) {
         console.error('Error fetching employees:', error);
         yield put({ 
             type: 'FETCH_ERROR', 
-            payload: error.message || 'Failed to fetch employees' 
+            payload: error.message 
         });
     }
 }
 
-// Fetch unions with employees for a specific date
 function* fetchUnionsWithEmployees(action) {
     try {
         const date = typeof action.payload === 'string' 

@@ -11,20 +11,25 @@ const initialState = {
         case 'SET_SELECTED_DATE': {
             const newDate = action.payload;
             console.log('SET_SELECTED_DATE received:', newDate);
+            
+            // Get today's date string in YYYY-MM-DD format
             const today = new Date();
-            const maxDate = new Date(today);
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // Get max date string
+            const maxDate = new Date();
             maxDate.setDate(maxDate.getDate() + 7);
+            const maxDateStr = maxDate.toISOString().split('T')[0];
         
-            // Format dates for comparison
-            const formattedNewDate = new Date(newDate);
-            formattedNewDate.setHours(0, 0, 0, 0);
-        
-            const formattedToday = new Date(today);
-            formattedToday.setHours(0, 0, 0, 0);
-        
-            // Allow viewing past dates, but only editing today and future dates
-            const isViewable = true;  // Allow all dates to be viewable
-            const isEditable = formattedNewDate >= formattedToday && formattedNewDate <= maxDate;
+            // Simple string comparison
+            const isEditable = newDate >= todayStr && newDate <= maxDateStr;
+            
+            console.log('Date comparison:', {
+                selectedDate: newDate,
+                today: todayStr,
+                maxDate: maxDateStr,
+                isEditable
+            });
         
             return {
                 ...state,
