@@ -2,39 +2,13 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
+const { validateDate } = require('../routes/date-validation.middleware');
 
-//PROJECT.ROUTER.JS
-// Simple date validation middleware
-const validateDate = (req, res, next) => {
-    const date = req.params.date || req.body.date;
-    if (!date) {
-        return res.status(400).send('Date is required');
-    }
-    
-    try {
-        const requestDate = new Date(date);
-        const today = new Date();
-        today.setHours(23, 59, 59, 999); // End of today
-        
-        if (isNaN(requestDate.getTime())) {
-            return res.status(400).send('Invalid date format');
-        }
-
-        if (requestDate > today) {
-            return res.status(400).send('Cannot access or modify future dates');
-        }
-
-        next();
-    } catch (error) {
-        return res.status(400).send('Invalid date');
-    }
-};
-
-
-
+//project.router.js file
+// Get projects with employees for a specific date
 router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
-        const date = req.params.date;
+        const date = req.validatedDate;
         console.log('Fetching projects with employees for date:', date);
         
         const sqlText = `
@@ -105,21 +79,25 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
     }
 });
 
-
 // Update employee order within a project for a specific date
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
-        const { projectId, orderedEmployeeIds, date } = req.body;
+        const { projectId, orderedEmployeeIds } = req.body;
+        const date = req.validatedDate;
         
         await pool.query('BEGIN');
 
         // Update display order in schedule table
         for (let i = 0; i < orderedEmployeeIds.length; i++) {
             await pool.query(
-                `INSERT INTO schedule (date, job_id, employee_id, employee_display_order)
-                 VALUES ($1, $2, $3, $4)
-                 ON CONFLICT (date, employee_id) 
-                 DO UPDATE SET employee_display_order = $4;`,
+                `INSERT INTO schedule 
+                    (date, job_id, employee_id, employee_display_order)
+                VALUES 
+                    ($1, $2, $3, $4)
+                ON CONFLICT (date, employee_id) 
+                DO UPDATE SET 
+                    employee_display_order = $4,
+                    job_id = $2;`,
                 [date, projectId, orderedEmployeeIds[i], i]
             );
         }
@@ -134,20 +112,37 @@ router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res)
 });
 
 // Update project display order
-router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (req, res) => {
+router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
     try {
         const { orderedProjectIds, date } = req.body;
         
+        if (!Array.isArray(orderedProjectIds)) {
+            throw new Error('orderedProjectIds must be an array');
+        }
+
+        if (!date) {
+            throw new Error('date is required');
+        }
+
         await pool.query('BEGIN');
 
+        // First, ensure all projects exist in jobs table
+        const projectsExist = await pool.query(
+            `SELECT job_id FROM jobs WHERE job_id = ANY($1)`,
+            [orderedProjectIds]
+        );
+
+        if (projectsExist.rows.length !== orderedProjectIds.length) {
+            throw new Error('One or more project IDs are invalid');
+        }
+
+        // Then update the order
         for (let i = 0; i < orderedProjectIds.length; i++) {
-            // Insert or update project display order in schedule table
             await pool.query(
-                `INSERT INTO schedule (date, job_id, project_display_order)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (date, job_id) 
-                 DO UPDATE SET project_display_order = $3;`,
-                [date, orderedProjectIds[i], i]
+                `UPDATE jobs 
+                SET display_order = $1 
+                WHERE job_id = $2`,
+                [i, orderedProjectIds[i]]
             );
         }
 
@@ -156,7 +151,7 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
     } catch (error) {
         await pool.query('ROLLBACK');
         console.error('Error updating project order:', error);
-        res.status(500).send('Error updating project order');
+        res.status(500).send(error.message);
     }
 });
 

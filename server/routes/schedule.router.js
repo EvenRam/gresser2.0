@@ -2,35 +2,12 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
+const { validateDate } = require('../routes/date-validation.middleware');
 
-//SCHEDULE.ROUTER.JS
-// Simple date validation middleware
-const validateDate = (req, res, next) => {
-    const date = req.params.date || req.body.date;
-    if (!date) {
-        return res.status(400).send('Date is required');
-    }
-    
-    try {
-        const requestDate = new Date(date);
-        const today = new Date();
-        today.setHours(23, 59, 59, 999); // End of today
-        
-        if (isNaN(requestDate.getTime())) {
-            return res.status(400).send('Invalid date format');
-        }
-        if (requestDate > today) {
-            return res.status(400).send('Cannot access or modify future dates');
-        }
-        next();
-    } catch (error) {
-        return res.status(400).send('Invalid date');
-    }
-};
 // GET all employees with schedule status for a specific date
 router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
-        const date = req.params.date;
+        const date = req.validatedDate;
         const sqlText = `
             WITH scheduled_employees AS (
                 SELECT 
@@ -74,10 +51,11 @@ router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, 
         res.status(500).send(error.message);
     }
 });
+
 // GET employees grouped by unions
 router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
-        const date = req.params.date;
+        const date = req.validatedDate;
         console.log('Fetching unions with employees for date:', date);
 
         const sqlText = `
@@ -152,8 +130,9 @@ router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req,
 // PUT endpoint for updating highlight status
 router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (req, res) => {
     const employeeId = req.params.id;
-    const date = req.params.date;
+    const date = req.validatedDate;
     const { isHighlighted } = req.body;
+    
     try {
         await pool.query('BEGIN');
         await pool.query(
@@ -176,7 +155,7 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
         res.status(500).send(error.message);
     }
 });
-module.exports = router;
+
 // GET endpoint for date range schedule
 router.get('/range', rejectUnauthenticated, async (req, res) => {
     const { startDate, endDate } = req.query;
@@ -185,6 +164,19 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
         if (!startDate || !endDate) {
             throw new Error('Start date and end date are required');
         }
+
+        // Basic date validation
+        const validStartDate = new Date(startDate);
+        const validEndDate = new Date(endDate);
+        
+        if (isNaN(validStartDate.getTime()) || isNaN(validEndDate.getTime())) {
+            throw new Error('Invalid date format');
+        }
+
+        if (validEndDate < validStartDate) {
+            throw new Error('End date cannot be before start date');
+        }
+
         const result = await pool.query(`
             SELECT 
                 s.date,
@@ -217,5 +209,37 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
         res.status(500).send(error.message);
     }
 });
-module.exports = router;
 
+// Add finalize endpoint
+router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, res) => {
+    const currentDate = req.validatedDate;
+    const nextDate = new Date(currentDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const formattedNextDate = nextDate.toISOString().split('T')[0];
+    
+    try {
+        await pool.query('BEGIN');
+        
+        await pool.query(`
+            INSERT INTO schedule 
+                (date, job_id, employee_id, current_location, 
+                 is_highlighted, employee_display_order, 
+                 project_display_order, rain_day)
+            SELECT 
+                $2, job_id, employee_id, current_location,
+                is_highlighted, employee_display_order, 
+                project_display_order, rain_day
+            FROM schedule
+            WHERE date = $1
+        `, [currentDate, formattedNextDate]);
+        
+        await pool.query('COMMIT');
+        res.json({ nextDate: formattedNextDate });
+    } catch (error) {
+        await pool.query('ROLLBACK');
+        console.error('Error finalizing schedule:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+module.exports = router;

@@ -1,21 +1,27 @@
-import React from 'react'; 
-import { useDrag, useDrop } from 'react-dnd'; 
-import ProjectBox from './ProjectBox'; 
-import './EmployeeStyles.css'; 
+import React from 'react';
+import { useDrag, useDrop } from 'react-dnd';
+import ProjectBox from './ProjectBox';
+import './EmployeeStyles.css';
 
-const DraggableJobBox = ({ job, index, moveJob, moveEmployee }) => {
+const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
   const [{ isDragging }, drag] = useDrag({
-    type: 'JOB', 
-    item: () => ({ id: job.id, index, type: 'JOB' }), // Add type to help identify dragged item
+    type: 'JOB',
+    item: { 
+      job_id: job.job_id,
+      index,
+      type: 'JOB'
+    },
+    canDrag: () => isEditable,
     collect: (monitor) => ({
-      isDragging: monitor.isDragging(), 
+      isDragging: monitor.isDragging(),
     }),
   });
 
   const [{ isOver }, drop] = useDrop({
-    accept: 'JOB', 
-    hover: (draggedItem, monitor) => {
-      if (!monitor.canDrop() || !monitor.isOver({ shallow: true })) {
+    accept: 'JOB',
+    canDrop: () => isEditable,
+    hover: (draggedItem) => {
+      if (!draggedItem || draggedItem.type !== 'JOB') {
         return;
       }
 
@@ -27,41 +33,39 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee }) => {
         return;
       }
 
-      // Time to actually perform the action
       moveJob(dragIndex, hoverIndex);
-
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
       draggedItem.index = hoverIndex;
     },
-    collect: monitor => ({
-      isOver: monitor.isOver({ shallow: true })
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
     }),
   });
 
-  // Combine drag and drop refs using a callback ref
   const ref = (node) => {
     drag(drop(node));
   };
 
+  const opacity = isDragging ? 0.5 : 1;
+  const cursor = isEditable ? 'move' : 'default';
+
   return (
-    <div 
-      ref={ref} 
+    <div
+      ref={ref}
       className={`draggable-job-box ${isOver ? 'job-over' : ''}`}
-      style={{ 
-        opacity: isDragging ? 0.5 : 1,
-        cursor: 'move',
+      style={{
+        opacity,
+        cursor,
         position: 'relative',
+        marginBottom: '10px',
+        backgroundColor: isOver ? '#f0f0f0' : 'transparent',
       }}
     >
       <ProjectBox
-        id={job.id}
+        id={job.job_id}
         job_name={job.job_name}
-        employees={job.employees || []} 
+        employees={job.employees || []}
         moveEmployee={moveEmployee}
-        display_order={job.display_order} 
+        display_order={job.display_order}
       />
     </div>
   );

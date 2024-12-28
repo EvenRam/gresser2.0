@@ -2,6 +2,10 @@ const unionBoxReducer = (state = [], action) => {
     switch (action.type) {
         case 'SET_EMPLOYEE_WITH_UNION': {
             const { date, unions } = action.payload;
+            if (!Array.isArray(unions)) {
+                console.warn('Invalid unions data received:', unions);
+                return state;
+            }
             return unions.map(union => ({
                 ...union,
                 date,
@@ -10,6 +14,7 @@ const unionBoxReducer = (state = [], action) => {
 
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, sourceUnionId, targetUnionId, date } = action.payload;
+            if (!employeeId || !date) return state;
 
             // If moving to a project, remove the employee from their union
             if (targetProjectId) {
