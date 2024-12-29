@@ -1,54 +1,47 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-const formatLocalDate = (date) => {
-    return date.toISOString().split('T')[0];
-};
-
 const DateSchedule = () => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
 
     useEffect(() => {
         if (!selectedDate) {
-            const now = new Date();
-            // Set to noon to avoid timezone issues
+            // Get current date in Central Time
+            const centralTime = new Date().toLocaleString("en-US", {
+                timeZone: "America/Chicago"
+            });
+            const now = new Date(centralTime);
             now.setHours(12, 0, 0, 0);
-            const todayStr = formatLocalDate(now);
-            console.log('Setting initial date:', todayStr);
+            const todayStr = now.toISOString().split('T')[0];
+            
+            console.log('Setting initial MN date:', todayStr);
             dispatch({ type: 'SET_SELECTED_DATE', payload: todayStr });
         }
     }, [dispatch, selectedDate]);
 
     const handleDateChange = (event) => {
         const selectedValue = event.target.value;
-        console.log('Raw selected date:', selectedValue);
-        
-        // Create date object at noon to avoid timezone shifts
-        const selectedDate = new Date(selectedValue + 'T12:00:00');
-        console.log('Adjusted date object:', selectedDate);
-        
-        const formattedDate = formatLocalDate(selectedDate);
-        console.log('Formatted date being dispatched:', formattedDate);
-        
-        dispatch({ type: 'SET_SELECTED_DATE', payload: formattedDate });
+        dispatch({ type: 'SET_SELECTED_DATE', payload: selectedValue });
     };
 
-    const maxDate = new Date();
+    // Set range based on current MN date
+    const centralTime = new Date().toLocaleString("en-US", {
+        timeZone: "America/Chicago"
+    });
+    const today = new Date(centralTime);
+    today.setHours(12, 0, 0, 0);
+    
+    const maxDate = new Date(today);
     maxDate.setDate(maxDate.getDate() + 7);
-    maxDate.setHours(12, 0, 0, 0);
-    const maxDateStr = formatLocalDate(maxDate);
-
-    if (!selectedDate) {
-        return <div>Loading...</div>;
-    }
+    const maxDateStr = maxDate.toISOString().split('T')[0];
 
     return (
         <div className='date-schedule'>
             <input 
                 className='date-schedule-input'
                 type='date'
-                value={selectedDate}
+                value={selectedDate || ''}
                 onChange={handleDateChange}
                 max={maxDateStr}
             />

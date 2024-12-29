@@ -12,16 +12,21 @@ const initialState = {
             const newDate = action.payload;
             console.log('SET_SELECTED_DATE received:', newDate);
             
-            // Get today's date string in YYYY-MM-DD format
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
+            // Get current date in Central Time
+            const centralTime = new Date().toLocaleString("en-US", {
+                timeZone: "America/Chicago"
+            });
+            const today = new Date(centralTime);
+            today.setHours(12, 0, 0, 0);
             
-            // Get max date string
-            const maxDate = new Date();
+            const maxDate = new Date(today);
             maxDate.setDate(maxDate.getDate() + 7);
+            
+            // Convert to strings for comparison
+            const todayStr = today.toISOString().split('T')[0];
             const maxDateStr = maxDate.toISOString().split('T')[0];
-        
-            // Simple string comparison
+            
+            // A date is editable if it's today or a future date within 7 days
             const isEditable = newDate >= todayStr && newDate <= maxDateStr;
             
             console.log('Date comparison:', {
@@ -38,7 +43,7 @@ const initialState = {
                 error: null
             };
         }
- 
+        
         case 'SET_EMPLOYEES': {
             const { date, employees } = action.payload;
             if (!date || !Array.isArray(employees)) {

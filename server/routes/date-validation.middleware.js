@@ -11,14 +11,9 @@ const validateDate = (req, res, next) => {
     }
     
     try {
-        // Add a day to compensate for timezone
-        const requestDate = new Date(date);
-        requestDate.setDate(requestDate.getDate() + 1);
-        
+        // Create date objects with consistent time
+        const requestDate = new Date(date + 'T12:00:00');
         const today = new Date();
-        
-        // Set all times to noon for consistent comparison
-        requestDate.setHours(12, 0, 0, 0);
         today.setHours(12, 0, 0, 0);
 
         const maxDate = new Date(today);

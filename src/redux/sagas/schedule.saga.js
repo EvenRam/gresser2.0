@@ -100,18 +100,35 @@ function* fetchProjectsWithEmployees(action) {
             throw new Error('Invalid date format');
         }
 
-        console.log("Saga - Fetching projects with employees for date:", formattedDate);
-
         const response = yield call(
             axios.get, 
             `/api/project/withEmployees/${formattedDate}`
         );
 
+        // Extract highlighted employees from the response
+        const highlightedEmployees = {};
+        response.data.forEach(project => {
+            project.employees?.forEach(employee => {
+                if (employee.is_highlighted) {
+                    highlightedEmployees[employee.id] = true;
+                }
+            });
+        });
+
+        // Dispatch both actions
         yield put({
             type: 'SET_PROJECTS_WITH_EMPLOYEES',
             payload: {
                 date: formattedDate,
                 jobs: response.data
+            }
+        });
+
+        yield put({
+            type: 'SET_HIGHLIGHTED_EMPLOYEES',
+            payload: {
+                date: formattedDate,
+                highlights: highlightedEmployees
             }
         });
     } catch (error) {
@@ -218,33 +235,35 @@ function* handleMoveEmployee(action) {
 
 function* initializeScheduleDate() {
     try {
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);  // Reset time to midnight
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        // Get current date in Central Time (Minnesota)
+        const centralTime = new Date().toLocaleString("en-US", {
+            timeZone: "America/Chicago"
+        });
+        const now = new Date(centralTime);
+        now.setHours(12, 0, 0, 0);  // Set to noon to avoid any timezone edge cases
+        const todayStr = now.toISOString().split('T')[0];
         
-        // Only use saved date if it exists and is not in the past
-        const savedDate = localStorage.getItem('selectedScheduleDate');
-        const savedDateObj = savedDate ? new Date(savedDate) : null;
-        const dateToUse = (savedDateObj && savedDateObj >= now) ? savedDate : todayStr;
-
-        console.log('Initializing with date:', dateToUse);
+        console.log('Initializing with MN current date:', todayStr);
+        
+        // Remove any saved date to ensure we always start with current MN date
+        localStorage.removeItem('selectedScheduleDate');
 
         yield put({
             type: 'SET_SELECTED_DATE',
-            payload: dateToUse
+            payload: todayStr
         });
 
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-            payload: { date: dateToUse }
+            payload: { date: todayStr }
         });
         yield put({
             type: 'FETCH_UNIONS_WITH_EMPLOYEES',
-            payload: { date: dateToUse }
+            payload: { date: todayStr }
         });
         yield put({
             type: 'FETCH_EMPLOYEES',
-            payload: { date: dateToUse }
+            payload: { date: todayStr }
         });
     } catch (error) {
         console.error('Error initializing schedule date:', error);
@@ -254,7 +273,6 @@ function* initializeScheduleDate() {
         });
     }
 }
-
 // function* updateProjectOrder(action) {
 //     try {
 //         const { orderedProjectIds, date } = action.payload;
