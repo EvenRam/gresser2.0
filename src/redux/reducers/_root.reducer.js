@@ -10,6 +10,7 @@ import employeeReducer from './employeeReducer';
 import projectReducer from './project.reducer';
 import unionReducer from './union.reducer';
 import unionBoxReducer from './unionBox.reducer';
+import scheduleReducer from './schedule.reducer';
 // rootReducer is the primary reducer for our entire project
 // It bundles up all of the other reducers so our project can use them.
 // This is imported in index.js as rootSaga
@@ -27,7 +28,8 @@ const rootReducer = combineReducers({
   projectReducer,
   unionReducer,
   unionBoxReducer,
-  employeeReducer
+  employeeReducer,
+  scheduleReducer
 });
 
 export default rootReducer;

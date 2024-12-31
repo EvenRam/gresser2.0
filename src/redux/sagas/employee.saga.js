@@ -13,10 +13,9 @@ function* fetchEmployeeInfo() {
     yield put({ type: 'FETCH_ERROR', payload: 'Failed to fetch employee information.' });
   }
 }
-
 function* addEmployeeInfo(action) {
   try {
-    console.log('Payload to server:', action.payload); // Log payload here
+    console.log('Payload to server:', action.payload); 
     yield call(axios.post, '/api/addemployee', action.payload);
     console.log("add employee actiopn.payload:", action.payload)
     yield put({ type: 'FETCH_EMPLOYEE_INFO' });
@@ -25,45 +24,7 @@ function* addEmployeeInfo(action) {
   }
 }
 
-// function* fetchEmployeeCard() {
-//   try {
-//     const response = yield call(axios.get, '/api/addemployee/employeecard');
-//     yield put({ type: 'SET_EMPLOYEE_CARD', payload: response.data });
-//   } catch (error) {
-//     console.error('Error fetching employee information:', error);
-//   }
-// }
 
-function* fetchProjectsWithEmployees() {
-  try {
-    const response = yield call(axios.get, '/api/project/withEmployees');
-    console.log("Response for fetchProjectsWithEmployees", response.data);
-    yield put({ type: 'SET_PROJECTS_WITH_EMPLOYEES', payload: response.data });
-  } catch (error) {
-    console.error('Error fetching projects with employees:', error);
-  }
-}
-
-function* handleMoveEmployee(action) {
-  try {
-    const { employeeId, targetProjectId, sourceUnionId } = action.payload;
-
-    // Make an API call to move the employee
-    yield call(axios.post, '/api/moveemployee', { 
-      employeeId, 
-      targetProjectId,
-      sourceUnionId
-    });
-
-    // Fetch updated projects and employee information 
-    yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
-    yield put({ type: 'FETCH_EMPLOYEE_INFO' });
-    yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
-  } catch (error) {
-    console.error('Error moving employee:', error);
-    yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });
-  }
-}
 
 function* statusToggle(action) {
   try {
@@ -82,31 +43,16 @@ function* fetchUnion() {
     const response = yield call(axios.get, '/api/addemployee/union');
     yield put({ type: 'SET_UNIONS', payload: response.data });
     console.log("fetch union payload", response.data);
-
-    // yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
-
   } catch (error) {
     console.error('Error fetching employee union information:', error);
   }
 }
 
-function* fetchUnionsWithEmployees() {
-  try {
-    const response = yield call(axios.get, '/api/addemployee/withunions');
-    console.log("Response for fetchUnionsWithEmployees", response.data);
-    yield put({ type: 'SET_EMPLOYEE_WITH_UNION', payload: response.data });
-  } catch (error) {
-    console.error('Error fetching unions with employees:', error);
-  }
-}
+
 
 export default function* rootSaga() {
   yield takeLatest('FETCH_EMPLOYEE_INFO', fetchEmployeeInfo);
   yield takeLatest('ADD_EMPLOYEE_INFO', addEmployeeInfo);
-  // yield takeLatest('FETCH_EMPLOYEE_CARD', fetchEmployeeCard);
-  yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
-  yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
   yield takeLatest('EMPLOYEE_TOGGLE_STATUS', statusToggle);
   yield takeLatest('FETCH_UNION', fetchUnion);
-  yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
 }

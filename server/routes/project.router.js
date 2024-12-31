@@ -2,57 +2,69 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
+const { validateDate } = require('../routes/date-validation.middleware');
 
-router.get('/withEmployees', async (req, res) => {
+//project.router.js file
+// Get projects with employees for a specific date
+router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
+        const date = req.validatedDate;
+        console.log('Fetching projects with employees for date:', date);
+        
         const sqlText = `
         SELECT 
-            jobs.job_id AS job_id, 
-            jobs.job_name AS job_name, 
-            jobs.status AS job_status,
-            jobs.display_order AS display_order,
-            add_employee.id AS employee_id, 
-            add_employee.first_name AS employee_first_name,
-            add_employee.last_name AS employee_last_name,
-            add_employee.employee_status AS employee_status,
-            add_employee.phone_number AS employee_phone_number,
-            add_employee.email AS employee_email,
-            add_employee.address AS employee_address,
-            add_employee.current_location AS current_location,
-            add_employee.union_id AS union_id,
-            add_employee.is_highlighted AS is_highlighted,
-            add_employee.display_order AS employee_display_order,
-            unions.union_name AS union_name
-        FROM jobs
-        LEFT JOIN add_employee ON jobs.job_id = add_employee.job_id
-        LEFT JOIN unions ON add_employee.union_id = unions.id
-        WHERE jobs.status = 'Active'
-        ORDER BY jobs.display_order NULLS LAST, jobs.job_id, add_employee.display_order NULLS LAST, add_employee.id
+            j.job_id,
+            j.job_name,
+            j.status AS job_status,
+            s.project_display_order,
+            s.employee_id,
+            ae.first_name AS employee_first_name,
+            ae.last_name AS employee_last_name,
+            ae.employee_status,
+            ae.phone_number AS employee_phone_number,
+            ae.email AS employee_email,
+            ae.address AS employee_address,
+            s.current_location,
+            ae.union_id,
+            s.is_highlighted,
+            s.employee_display_order,
+            u.union_name
+        FROM jobs j
+        LEFT JOIN (
+            SELECT * FROM schedule 
+            WHERE date = $1
+        ) s ON j.job_id = s.job_id
+        LEFT JOIN add_employee ae ON s.employee_id = ae.id AND ae.employee_status = true
+        LEFT JOIN unions u ON ae.union_id = u.id
+        WHERE j.status = 'Active'
+        ORDER BY s.project_display_order NULLS LAST, j.job_id, 
+                 s.employee_display_order NULLS LAST, ae.id;
+
         `;
-        
-        const result = await pool.query(sqlText);
-        
+
+        const result = await pool.query(sqlText, [date]);
         const jobs = {};
-        
+
         result.rows.forEach(row => {
             if (!jobs[row.job_id]) {
                 jobs[row.job_id] = {
                     id: row.job_id,
                     job_name: row.job_name,
-                    display_order: row.display_order,
+                    display_order: row.project_display_order,
+
                     employees: []
                 };
             }
-  
+
             if (row.employee_id && row.employee_status === true) {
                 jobs[row.job_id].employees.push({
                     id: row.employee_id,
                     first_name: row.employee_first_name,
                     last_name: row.employee_last_name,
                     employee_status: row.employee_status,
-                    phone_number: row.phone_number,
-                    email: row.email,
-                    address: row.address,
+                    phone_number: row.employee_phone_number,
+                    email: row.employee_email,
+                    address: row.employee_address,
                     current_location: row.current_location,
                     union_id: row.union_id,
                     union_name: row.union_name,
@@ -61,7 +73,7 @@ router.get('/withEmployees', async (req, res) => {
                 });
             }
         });
-        
+
         res.send(Object.values(jobs));
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
@@ -69,19 +81,26 @@ router.get('/withEmployees', async (req, res) => {
     }
 });
 
-router.put('/updateOrder', async (req, res) => {
+// Update employee order within a project for a specific date
+router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const { projectId, orderedEmployeeIds } = req.body;
+        const date = req.validatedDate;
         
         await pool.query('BEGIN');
 
-        // Update each employee's display_order
+        // Update display order in schedule table
         for (let i = 0; i < orderedEmployeeIds.length; i++) {
             await pool.query(
-                `UPDATE add_employee 
-                 SET display_order = $1 
-                 WHERE id = $2 AND job_id = $3`,
-                [i, orderedEmployeeIds[i], projectId]
+                `INSERT INTO schedule 
+                    (date, job_id, employee_id, employee_display_order)
+                VALUES 
+                    ($1, $2, $3, $4)
+                ON CONFLICT (date, employee_id) 
+                DO UPDATE SET 
+                    employee_display_order = $4,
+                    job_id = $2;`,
+                [date, projectId, orderedEmployeeIds[i], i]
             );
         }
 
@@ -94,18 +113,38 @@ router.put('/updateOrder', async (req, res) => {
     }
 });
 
-router.put('/updateProjectOrder', async (req, res) => {
+// Update project display order
+router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
     try {
-        const { orderedProjectIds } = req.body;
+        const { orderedProjectIds, date } = req.body;
         
+        if (!Array.isArray(orderedProjectIds)) {
+            throw new Error('orderedProjectIds must be an array');
+        }
+
+        if (!date) {
+            throw new Error('date is required');
+        }
+
         await pool.query('BEGIN');
 
-        // Update each project's display_order
+        // First, ensure all projects exist in jobs table
+        const projectsExist = await pool.query(
+            `SELECT job_id FROM jobs WHERE job_id = ANY($1)`,
+            [orderedProjectIds]
+        );
+
+        if (projectsExist.rows.length !== orderedProjectIds.length) {
+            throw new Error('One or more project IDs are invalid');
+        }
+
+        // Then update the order
         for (let i = 0; i < orderedProjectIds.length; i++) {
             await pool.query(
                 `UPDATE jobs 
-                 SET display_order = $1 
-                 WHERE job_id = $2`,
+                SET display_order = $1 
+                WHERE job_id = $2`,
+
                 [i, orderedProjectIds[i]]
             );
         }
@@ -115,7 +154,8 @@ router.put('/updateProjectOrder', async (req, res) => {
     } catch (error) {
         await pool.query('ROLLBACK');
         console.error('Error updating project order:', error);
-        res.status(500).send('Error updating project order');
+        res.status(500).send(error.message);
+
     }
 });
 

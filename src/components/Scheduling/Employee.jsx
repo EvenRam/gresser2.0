@@ -4,6 +4,7 @@ import unionColors from '../Trades/UnionColors';
 
 const Employee = ({
   id,
+  employee_id,
   name,
   phone_number,
   email,
@@ -15,72 +16,40 @@ const Employee = ({
   onClick,
   index,
   onReorder,
-  projectId // Add projectId to props
+  projectId
 }) => {
+  const actualId = employee_id || id; 
   const unionColor = unionColors[union_name] || 'black';
-
+  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { 
-      id, 
+    item: {  
+      id: actualId,
+      employee_id: actualId,
       union_id, 
       union_name, 
       current_location, 
       index,
-      projectId // Include projectId in the drag item
+      projectId
     },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
-  }), [id, union_id, union_name, current_location, index, projectId]);
-
-  const handleDragStart = (e) => {
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    return false;
-  };
-
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    if (draggedIndex !== index) {
-      onReorder(draggedIndex, index);
-    }
-  };
-
-  const handleDragEnd = () => {
-    // Clean up if needed
-  };
-
+  }), [actualId, union_id, union_name, current_location, index, projectId]);
+  
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
-    if (isHighlighted) {
-      onClick(id, isHighlighted);
+    if (isHighlighted && typeof onClick === 'function') {
+      onClick(actualId, isHighlighted);
     }
-  }, [id, isHighlighted, onClick]);
+  }, [actualId, isHighlighted, onClick]);
 
-  const modalId = `employee-modal-${id}`;
-
+  const modalId = `employee-modal-${actualId}`;
+  
   return (
     <div
       ref={drag}
-      draggable
       onContextMenu={handleContextMenu}
-      onDragStart={(e) => {
-        handleDragStart(e);
-        e.dataTransfer.setData('text/plain', index.toString());
-      }}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDrop={handleDrop}
-      onDragEnd={handleDragEnd}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -101,7 +70,6 @@ const Employee = ({
       >
         {name}
       </h6>
-
       <div className="modal fade" id={modalId} tabIndex="-1" role="dialog" aria-labelledby={`${modalId}-label`} aria-hidden="true">
         <div className="modal-dialog" role="document">
           <div className="modal-content">

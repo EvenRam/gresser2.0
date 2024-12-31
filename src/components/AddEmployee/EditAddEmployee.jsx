@@ -14,7 +14,7 @@ function EditEmployee() {
     
 
     useEffect(() => {
-        dispatch({ type: "FETCH_EMPLOYEE" });
+        dispatch({ type: "FETCH_EMPLOYEE_INFO" });
     }, [dispatch]);
 
     const handleChange = (event, property) => {

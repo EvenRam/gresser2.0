@@ -8,19 +8,28 @@ const Trades = () => {
     const dispatch = useDispatch();
     const unions = useSelector((state) => state.unionReducer);
     const unionBox = useSelector((state) => state.unionBoxReducer);
+    const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
 
     useEffect(() => {
         dispatch({ type: 'FETCH_EMPLOYEE_UNION' });
-        dispatch({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
-    }, [dispatch]);
+        dispatch({ 
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
+            payload: { date: selectedDate }
+        });
+    }, [dispatch, selectedDate]);
 
     const moveEmployee = (employeeId, targetProjectId, sourceUnionId) => {
         dispatch({ 
             type: 'MOVE_EMPLOYEE', 
-            payload: { employeeId, targetProjectId, sourceUnionId }
+            payload: { 
+                employeeId, 
+                targetProjectId, 
+                sourceUnionId,
+                date: selectedDate
+            }
         });
     };
-
+    
     return (
         <div className="trades-container">
             <div className="unions-container">
