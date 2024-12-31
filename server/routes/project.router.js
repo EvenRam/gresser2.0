@@ -39,6 +39,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
         WHERE j.status = 'Active'
         ORDER BY s.project_display_order NULLS LAST, j.job_id, 
                  s.employee_display_order NULLS LAST, ae.id;
+
         `;
 
         const result = await pool.query(sqlText, [date]);
@@ -50,6 +51,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
                     id: row.job_id,
                     job_name: row.job_name,
                     display_order: row.project_display_order,
+
                     employees: []
                 };
             }
@@ -142,6 +144,7 @@ router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
                 `UPDATE jobs 
                 SET display_order = $1 
                 WHERE job_id = $2`,
+
                 [i, orderedProjectIds[i]]
             );
         }
@@ -152,6 +155,7 @@ router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
         await pool.query('ROLLBACK');
         console.error('Error updating project order:', error);
         res.status(500).send(error.message);
+
     }
 });
 
