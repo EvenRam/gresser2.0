@@ -18,7 +18,7 @@ const Employee = ({
   onReorder,
   projectId
 }) => {
-  const actualId = employee_id || id; // Use employee_id with fallback to id
+  const actualId = employee_id || id; 
   const unionColor = unionColors[union_name] || 'black';
   
   const [{ isDragging }, drag] = useDrag(() => ({

@@ -28,7 +28,6 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
       const dragIndex = draggedItem.index;
       const hoverIndex = index;
 
-      // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
         return;
       }

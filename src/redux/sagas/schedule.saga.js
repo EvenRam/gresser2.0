@@ -3,15 +3,16 @@ import axios from 'axios';
 
 
 // Helper functions for date handling
+// set to noon
 const getDefaultDate = () => {
     const now = new Date();
-    now.setHours(12, 0, 0, 0);  // Set to noon
+    now.setHours(12, 0, 0, 0);  
     return now.toISOString().split('T')[0];
 };
 
 const validateDate = (date) => {
     const requestDate = new Date(date);
-    requestDate.setHours(12, 0, 0, 0);  // Set to noon
+    requestDate.setHours(12, 0, 0, 0);  
     
     const today = new Date();
     today.setHours(12, 0, 0, 0);
@@ -22,7 +23,7 @@ const validateDate = (date) => {
     
     return {
         isValid: !isNaN(requestDate.getTime()),
-        formattedDate: date, // Use the original date without adjustment
+        formattedDate: date, 
         isWithinRange: requestDate <= maxDate
     };
 };
@@ -105,7 +106,6 @@ function* fetchProjectsWithEmployees(action) {
             `/api/project/withEmployees/${formattedDate}`
         );
 
-        // Extract highlighted employees from the response
         const highlightedEmployees = {};
         response.data.forEach(project => {
             project.employees?.forEach(employee => {
@@ -115,7 +115,6 @@ function* fetchProjectsWithEmployees(action) {
             });
         });
 
-        // Dispatch both actions
         yield put({
             type: 'SET_PROJECTS_WITH_EMPLOYEES',
             payload: {
@@ -162,7 +161,6 @@ function* addEmployeeSchedule(action) {
             { ...employeeData, selected_date: formattedDate }
         );
 
-        // Refresh all data for the date
         yield put({ 
             type: 'FETCH_EMPLOYEES', 
             payload: { date: formattedDate } 
@@ -235,17 +233,15 @@ function* handleMoveEmployee(action) {
 
 function* initializeScheduleDate() {
     try {
-        // Get current date in Central Time (Minnesota)
         const centralTime = new Date().toLocaleString("en-US", {
             timeZone: "America/Chicago"
         });
         const now = new Date(centralTime);
-        now.setHours(12, 0, 0, 0);  // Set to noon to avoid any timezone edge cases
+        now.setHours(12, 0, 0, 0);  
         const todayStr = now.toISOString().split('T')[0];
         
         console.log('Initializing with MN current date:', todayStr);
         
-        // Remove any saved date to ensure we always start with current MN date
         localStorage.removeItem('selectedScheduleDate');
 
         yield put({
@@ -273,81 +269,81 @@ function* initializeScheduleDate() {
         });
     }
 }
-// function* updateProjectOrder(action) {
-//     try {
-//         const { orderedProjectIds, date } = action.payload;
-//         const currentDate = date || getDefaultDate();
-//         const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
+
+function* updateProjectOrder(action) {
+    try {
+        const { orderedProjectIds, date } = action.payload;
+        const currentDate = date || getDefaultDate();
+        const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
         
-//         if (!isValid) {
-//             throw new Error('Invalid date format');
-//         }
+        if (!isValid) {
+            throw new Error('Invalid date format');
+        }
         
-//         if (!isWithinRange) {
-//             throw new Error('Date is out of allowed range');
-//         }
+        if (!isWithinRange) {
+            throw new Error('Date is out of allowed range');
+        }
 
-//         yield call(
-//             axios.put,
-//             '/api/project/updateProjectOrder',
-//             {
-//                 orderedProjectIds,
-//                 date: formattedDate
-//             }
-//         );
+        yield call(
+            axios.put,
+            '/api/project/updateProjectOrder',
+            {
+                orderedProjectIds,
+                date: formattedDate
+            }
+        );
 
-//         yield put({
-//             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-//             payload: { date: formattedDate }
-//         });
-//     } catch (error) {
-//         console.error('Error updating project order:', error);
-//         yield put({
-//             type: 'UPDATE_PROJECT_ORDER_FAILURE',
-//             payload: error.message || 'Failed to update project order'
-//         });
-//     }
-// }
+        yield put({
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+            payload: { date: formattedDate }
+        });
+    } catch (error) {
+        console.error('Error updating project order:', error);
+        yield put({
+            type: 'UPDATE_PROJECT_ORDER_FAILURE',
+            payload: error.message || 'Failed to update project order'
+        });
+    }
+}
 
-// function* updateEmployeeOrder(action) {
-//     try {
-//         const { projectId, orderedEmployeeIds, date } = action.payload;
-//         const currentDate = date || getDefaultDate();
-//         const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
+function* updateEmployeeOrder(action) {
+    try {
+        const { projectId, orderedEmployeeIds, date } = action.payload;
+        const currentDate = date || getDefaultDate();
+        const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
         
-//         if (!isValid) {
-//             throw new Error('Invalid date format');
-//         }
+        if (!isValid) {
+            throw new Error('Invalid date format');
+        }
         
-//         if (!isWithinRange) {
-//             throw new Error('Date is out of allowed range');
-//         }
+        if (!isWithinRange) {
+            throw new Error('Date is out of allowed range');
+        }
 
-//         yield call(
-//             axios.put,
-//             '/api/project/updateOrder',
-//             {
-//                 projectId,
-//                 orderedEmployeeIds,
-//                 date: formattedDate
-//             }
-//         );
+        yield call(
+            axios.put,
+            '/api/project/updateOrder',
+            {
+                projectId,
+                orderedEmployeeIds,
+                date: formattedDate
+            }
+        );
 
-//         yield put({
-//             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-//             payload: { date: formattedDate }
-//         });
-//     } catch (error) {
-//         console.error('Error updating employee order:', error);
-//         yield put({
-//             type: 'UPDATE_EMPLOYEE_ORDER_FAILURE',
-//             payload: error.message || 'Failed to update employee order'
-//         });
-//     }
-// }
+        yield put({
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+            payload: { date: formattedDate }
+        });
+    } catch (error) {
+        console.error('Error updating employee order:', error);
+        yield put({
+            type: 'UPDATE_EMPLOYEE_ORDER_FAILURE',
+            payload: error.message || 'Failed to update employee order'
+        });
+    }
+}
 
-// All existing helper functions and sagas remain unchanged...
-// [Previous code for fetchEmployees, fetchUnionsWithEmployees, etc.]
+
 
 // Add new finalize saga
 function* finalizeSchedule(action) {
@@ -399,7 +395,7 @@ export default function* scheduleSaga() {
     yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule);
     yield takeLatest('MOVE_EMPLOYEE', handleMoveEmployee);
     yield takeLatest('INITIALIZE_SCHEDULE', initializeScheduleDate);
-    // yield takeLatest('UPDATE_PROJECT_ORDER', updateProjectOrder);
-    // yield takeLatest('UPDATE_EMPLOYEE_ORDER', updateEmployeeOrder);
+    yield takeLatest('UPDATE_PROJECT_ORDER', updateProjectOrder);
+    yield takeLatest('UPDATE_EMPLOYEE_ORDER', updateEmployeeOrder);
     yield takeLatest('FINALIZE_SCHEDULE', finalizeSchedule);
 }

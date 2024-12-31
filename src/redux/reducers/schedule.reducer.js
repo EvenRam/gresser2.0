@@ -1,5 +1,5 @@
 const initialState = {
-    selectedDate: null,  // Change to null initially
+    selectedDate: null,  
     employeesByDate: {},
     isEditable: true,
     error: null,
@@ -86,7 +86,7 @@ const initialState = {
         case 'CLEAR_SCHEDULE_STATE': {
             return {
                 ...initialState,
-                selectedDate: state.selectedDate // Preserve the selected date
+                selectedDate: state.selectedDate 
             };
         }
  
@@ -94,7 +94,6 @@ const initialState = {
             return initialState;
         }
  
-        // New cases for finalize functionality
         case 'FINALIZE_SCHEDULE_SUCCESS': {
             return {
                 ...state,

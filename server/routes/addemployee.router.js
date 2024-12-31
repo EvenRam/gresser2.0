@@ -63,36 +63,69 @@ router.post('/', rejectUnauthenticated, async (req, res) => {
     console.log('Current user is:', req.user.username);
     console.log('Current request body is:', req.body);
 
-    const { first_name, last_name, employee_number, union_name, employee_status, phone_number, email, address, job_id } = req.body;
+    const { 
+        first_name, 
+        last_name, 
+        employee_number, 
+        union_name, 
+        employee_status, 
+        phone_number, 
+        email, 
+        address 
+    } = req.body;
 
     try {
-        
-        const insertUnionQuery = `
-            INSERT INTO "unions" ("union_name")
-            VALUES ($1)
-            RETURNING "id"
+        // Check if union exists
+        const checkUnionQuery = `
+            SELECT "id" FROM "unions" WHERE "union_name" = $1
         `;
-        const unionValues = [union_name];
-        const unionResult = await pool.query(insertUnionQuery, unionValues);
-        const unionId = unionResult.rows[0].id;
+        const unionCheckResult = await pool.query(checkUnionQuery, [union_name]);
+        
+        if (unionCheckResult.rows.length === 0) {
+            return res.status(400).json({ error: 'Union does not exist. Please select a valid union.' });
+        }
 
-      
+        const unionId = unionCheckResult.rows[0].id;
+
+        // Insert new employee
         const insertEmployeeQuery = `
             INSERT INTO "add_employee" (
-                "first_name", "last_name", "employee_number", "employee_status", "phone_number", "email", "address", "job_id", "union_id"
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                "first_name", 
+                "last_name", 
+                "employee_number", 
+                "employee_status", 
+                "phone_number", 
+                "email", 
+                "address", 
+                "union_id"
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING "id"
         `;
-        const employeeValues = [first_name, last_name, employee_number, employee_status, phone_number, email, address, job_id, unionId];
-        await pool.query(insertEmployeeQuery, employeeValues);
 
-        res.status(201).send({ message: 'Employee and union record created successfully' });
+        const employeeValues = [
+            first_name,
+            last_name,
+            employee_number,
+            employee_status,
+            phone_number,
+            email,
+            address,
+            unionId
+        ];
+
+        const result = await pool.query(insertEmployeeQuery, employeeValues);
+        
+        res.status(201).json({ 
+            message: 'Employee added successfully',
+            employeeId: result.rows[0].id
+        });
+        
     } catch (error) {
-        console.error('Error making POST insert for add_employee and unions:', error);
-        res.sendStatus(500);
+        console.error('Error adding employee:', error);
+        res.status(500).json({ error: 'Failed to add employee' });
     }
 });
-
 
 router.put('/:id', rejectUnauthenticated, async (req, res) => {
     const employeeId = req.params.id;

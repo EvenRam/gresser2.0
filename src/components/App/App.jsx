@@ -41,9 +41,9 @@ function App() {
   useEffect(() => {
     dispatch({ type: 'FETCH_USER' });
 
-    // Load highlighted employees from localStorage
-    const highlightedEmployees = JSON.parse(localStorage.getItem('highlightedEmployees') || '{}');
-    dispatch({ type: 'INITIALIZE_HIGHLIGHTED_EMPLOYEES', payload: highlightedEmployees });
+    // // Load highlighted employees from localStorage
+    // const highlightedEmployees = JSON.parse(localStorage.getItem('highlightedEmployees') || '{}');
+    // dispatch({ type: 'INITIALIZE_HIGHLIGHTED_EMPLOYEES', payload: highlightedEmployees });
 
     // Clear highlights when the app unmounts
     return () => {

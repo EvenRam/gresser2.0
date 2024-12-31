@@ -11,7 +11,6 @@ const UnionBox = ({ id, union_name, color }) => {
         state.employeeReducer.employeesByDate?.[selectedDate] || []
     );
 
-    // Filter employees for this union and current date
     const employees = allEmployees.filter(
         emp => emp.current_location === 'union' && emp.union_id === id
     );
@@ -24,13 +23,11 @@ const UnionBox = ({ id, union_name, color }) => {
                 return;
             }
 
-            // Check if item has necessary properties
             if (!item || !item.id) {
                 console.error('Invalid drop item:', item);
                 return;
             }
 
-            // Only proceed if the employee isn't already in this union
             if (item.union_id !== id || item.current_location !== 'union') {
                 console.log(`Moving employee ${item.id} to union ${id} for date ${selectedDate}`);
                 dispatch({
@@ -73,7 +70,7 @@ const UnionBox = ({ id, union_name, color }) => {
                             <Employee
                                 key={employee.id}
                                 {...employee}
-                                id={employee.id} // Explicitly pass id
+                                id={employee.id} 
                                 className="employee-name"
                                 name={`${employee.first_name} ${employee.last_name}`}
                                 union_id={id}
