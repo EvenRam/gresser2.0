@@ -4,28 +4,23 @@
   padding: 2px;
   width: 120%;
 }
-
 .jobs-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
   justify-content: center;
 }
-
 .draggable-job-box {
   width: 100%;
   margin-bottom: 20px;
 }
-
 .draggable-job-box:active {
   cursor: grabbing;
 }
-
 .projectboxname {
   margin-top: 0;
   margin-bottom: 10px;
 }
-
 .employee-count {
   margin-bottom: -5px;
   margin-left: -5px;
@@ -36,46 +31,39 @@
   color: white;
   font-size: small;
 }
-
 .empty-job-box {
   width: 170px;
   height: 100px;
   border: 1px dashed #ccc;
   border-radius: 4px;
 }
-
 @media (max-width: 480px) {
   .jobs-container {
     grid-template-columns: 1fr;
   }
 }
-
 .total-employees{
   text-align: center;
   font-weight: 600;
   margin-bottom: 25px;
   font-size: 14px;
 }
-
 /* Print styles */
 @media print {
   .scheduling-container {
     width: 100% !important;
     padding: 0 !important;
   }
-
   .jobs-container {
     gap: 10px !important;
     page-break-inside: avoid;
   }
-
   /* Force background colors and text colors to print */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-
   /* Preserve union colors */
   [style*="color: red"] { color: red !important; }
   [style*="color: green"] { color: green !important; }
@@ -84,20 +72,65 @@
   [style*="color: blue"] { color: blue !important; }
   [style*="color: pink"] { color: pink !important; }
   [style*="color: orange"] { color: orange !important; }
-
   /* Preserve project box styles */
   .projectboxname {
     background-color: #396a54 !important;
     color: white !important;
   }
-
   .employee-count {
     background-color: rgb(79, 76, 76) !important;
     color: white !important;
   }
-
   /* Hide print button when printing */
   button {
     display: none !important;
   }
+}
+.project-box-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgb(79, 76, 76);
+  margin: -5px;
+  margin-top: auto;
+  padding: 3px 5px;
+  color: white;
+  font-size: 11px;  /* Reduced font size */
+  width: calc(100% + 10px);  /* Compensate for negative margins */
+}
+.rain-day-toggle {
+  display: flex;
+  align-items: center;
+  min-width: 60px;  /* Ensure minimum width for toggle */
+}
+.rain-day-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: white;
+  margin: 0;
+  cursor: pointer;
+  font-size: 11px;  /* Match footer font size */
+}
+.rain-day-checkbox {
+  margin: 0;
+  cursor: pointer;
+  transform: scale(0.9);  /* Slightly smaller checkbox */
+}
+.rain-day-label {
+  white-space: nowrap;
+  user-select: none;
+}
+.employee-count {
+  font-size: 11px;  /* Match footer font size */
+  margin: 0;
+  padding: 0;
+  background-color: transparent;
+  white-space: nowrap;
+  text-align: right;
+}
+/* Adjust main container width to match your layout */
+.projectboxname {
+  margin: -5px -5px 5px -5px !important;  /* Ensure header spans full width */
+  padding: 5px !important;
 }
