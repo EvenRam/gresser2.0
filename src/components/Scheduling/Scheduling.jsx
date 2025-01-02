@@ -120,38 +120,39 @@ const Scheduling = () => {
  
     const moveJob = useCallback(async (dragIndex, hoverIndex) => {
         if (!isEditable) return;
- 
+    
         try {
+            // Get current projects in order
             const orderedProjects = [...projects].sort((a, b) => 
                 (a.display_order ?? Infinity) - (b.display_order ?? Infinity)
             );
- 
+    
+            // Update local order first
             const [movedProject] = orderedProjects.splice(dragIndex, 1);
             orderedProjects.splice(hoverIndex, 0, movedProject);
- 
+            
+            // Get job_ids in new order
             const orderedProjectIds = orderedProjects.map(p => p.job_id);
- 
-            const updatedProjects = orderedProjects.map((project, index) => ({
-                ...project,
-                display_order: index
-            }));
- 
+    
+            // Optimistic update
             dispatch({
-                type: 'SET_PROJECTS',
-                payload: updatedProjects
+                type: 'REORDER_PROJECTS',
+                payload: {
+                    sourceIndex: dragIndex,
+                    targetIndex: hoverIndex,
+                    date: selectedDate
+                }
             });
- 
+    
+            // Send to server
             await axios.put('/api/project/updateProjectOrder', {
                 orderedProjectIds,
                 date: selectedDate
             });
- 
-            dispatch({
-                type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-                payload: { date: selectedDate }
-            });
+    
         } catch (error) {
             console.error('Error updating project order:', error);
+            // Revert on error
             dispatch({
                 type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
                 payload: { date: selectedDate }

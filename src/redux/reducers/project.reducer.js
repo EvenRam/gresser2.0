@@ -4,19 +4,21 @@ const initialState = {
     projectsByDate: {},
     error: null
 };
+
 const findProjectWithEmployee = (projects, employeeId) => {
     return projects.find(project => 
         project.employees?.some(emp => emp.id === employeeId)
     );
 };
+
 const sortProjectsByOrder = (projects) => {
     return [...projects].sort((a, b) => {
-        // Handle null/undefined display_order
         const orderA = a.display_order ?? Infinity;
         const orderB = b.display_order ?? Infinity;
         return orderA - orderB;
     });
 };
+
 const projectReducer = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_PROJECTS_WITH_EMPLOYEES': {
@@ -25,14 +27,21 @@ const projectReducer = (state = initialState, action) => {
                 console.warn('No date provided for SET_PROJECTS_WITH_EMPLOYEES');
                 return state;
             }
+            
+            console.log('Processing projects:', jobs);
+            
             const processedProjects = (jobs || []).map(project => ({
                 ...project,
                 job_id: project.job_id || project.id,
                 id: project.id || project.job_id,
                 employees: Array.isArray(project.employees) ? project.employees : [],
-                display_order: project.display_order ?? null
+                display_order: project.display_order ?? null,
+                rain_day: project.rain_day ?? false
             }));
+            
             const sortedProjects = sortProjectsByOrder(processedProjects);
+            console.log('Sorted projects:', sortedProjects);
+
             return {
                 ...state,
                 date,
@@ -44,17 +53,23 @@ const projectReducer = (state = initialState, action) => {
                 error: null
             };
         }
+
         case 'REORDER_PROJECTS': {
             const { sourceIndex, targetIndex, date } = action.payload;
             if (!date) return state;
+            
+            console.log('Reordering projects:', { sourceIndex, targetIndex, date });
+            
             const currentProjects = [...(state.projectsByDate[date] || [])];
             const [movedProject] = currentProjects.splice(sourceIndex, 1);
             currentProjects.splice(targetIndex, 0, movedProject);
+
             // Update display_order for all projects
             const updatedProjects = currentProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
+
             return {
                 ...state,
                 projects: date === state.date ? updatedProjects : state.projects,
@@ -64,15 +79,20 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
         case 'UPDATE_PROJECT_ORDER': {
             const { orderedProjectIds, date } = action.payload;
             if (!date || !Array.isArray(orderedProjectIds)) return state;
+            
+            console.log('Updating project order:', { orderedProjectIds, date });
+            
             const currentProjects = state.projectsByDate[date] || [];
             const updatedProjects = currentProjects.map(project => ({
                 ...project,
                 display_order: orderedProjectIds.indexOf(project.job_id)
             }));
             const sortedProjects = sortProjectsByOrder(updatedProjects);
+
             return {
                 ...state,
                 projects: date === state.date ? sortedProjects : state.projects,
@@ -82,19 +102,25 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, date } = action.payload;
             if (!date) {
                 console.warn('No date provided for MOVE_EMPLOYEE action');
                 return state;
             }
+            
+            console.log('Moving employee:', { employeeId, targetProjectId, date });
+            
             const currentProjects = state.projectsByDate[date] || [];
             const sourceProject = findProjectWithEmployee(currentProjects, employeeId);
             const employeeToMove = sourceProject?.employees.find(emp => emp.id === employeeId);
+
             if (!employeeToMove && targetProjectId) {
                 console.log('Employee not found in any project, might be coming from union');
                 return state;
             }
+
             const updatedProjects = currentProjects.map(project => {
                 if (project.id === sourceProject?.id) {
                     return {
@@ -114,6 +140,7 @@ const projectReducer = (state = initialState, action) => {
                 }
                 return project;
             });
+
             return {
                 ...state,
                 projects: date === state.date ? updatedProjects : state.projects,
@@ -123,9 +150,13 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
         case 'UPDATE_EMPLOYEE_ORDER': {
             const { projectId, employees, date } = action.payload;
             if (!date || !projectId) return state;
+            
+            console.log('Updating employee order:', { projectId, employees, date });
+            
             const currentProjects = state.projectsByDate[date] || [];
             const updatedProjects = currentProjects.map(project => {
                 if (project.id === projectId) {
@@ -145,6 +176,7 @@ const projectReducer = (state = initialState, action) => {
                 }
                 return project;
             });
+
             return {
                 ...state,
                 projects: date === state.date ? updatedProjects : state.projects,
@@ -154,9 +186,12 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
         case 'UPDATE_RAIN_DAY_STATUS': {
             const { jobId, isRainDay, date } = action.payload;
             if (!date) return state;
+            
+            console.log('Updating rain day status:', { jobId, isRainDay, date });
         
             const currentProjects = state.projectsByDate[date] || [];
             const updatedProjects = currentProjects.map(project => {
@@ -178,8 +213,10 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
         default:
             return state;
     }
 };
+
 export default projectReducer;

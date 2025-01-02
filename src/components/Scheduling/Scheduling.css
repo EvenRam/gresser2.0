@@ -134,3 +134,11 @@
   margin: -5px -5px 5px -5px !important;  /* Ensure header spans full width */
   padding: 5px !important;
 }
+
+.no-employees-message {
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  font-style: italic;
+  margin: 10px 0;
+}

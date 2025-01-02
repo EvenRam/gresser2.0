@@ -242,6 +242,7 @@ function* initializeScheduleDate() {
         });
     }
 }
+
 function* updateProjectOrder(action) {
     try {
         const { orderedProjectIds, date } = action.payload;
@@ -255,14 +256,16 @@ function* updateProjectOrder(action) {
         if (!isWithinRange) {
             throw new Error('Date is out of allowed range');
         }
+
         yield call(
             axios.put,
-            '/api/project/updateProjectOrder',
+            `/api/project/updateProjectOrder`,
             {
                 orderedProjectIds,
                 date: formattedDate
             }
         );
+
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
@@ -275,6 +278,7 @@ function* updateProjectOrder(action) {
         });
     }
 }
+
 function* updateEmployeeOrder(action) {
     try {
         const { projectId, orderedEmployeeIds, date } = action.payload;

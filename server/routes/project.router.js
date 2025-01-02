@@ -5,19 +5,19 @@ const { rejectUnauthenticated } = require('../modules/authentication-middleware'
 const { validateDate } = require('../routes/date-validation.middleware');
 //project.router.js file
 // Get projects with employees for a specific date
+// Get projects with employees for a specific date
 router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.validatedDate;
-        console.log('Fetching projects with employees for date:', date);
         
         const sqlText = `
         SELECT 
             j.job_id,
             j.job_name,
             j.status AS job_status,
-            s.project_display_order,
+            po.display_order,
+            po.rain_day,
             s.employee_id,
-            s.rain_day,
             ae.first_name AS employee_first_name,
             ae.last_name AS employee_last_name,
             ae.employee_status,
@@ -30,24 +30,24 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
             s.employee_display_order,
             u.union_name
         FROM jobs j
-        LEFT JOIN (
-            SELECT * FROM schedule 
-            WHERE date = $1
-        ) s ON j.job_id = s.job_id
+        LEFT JOIN project_order po ON j.job_id = po.job_id AND po.date = $1
+        LEFT JOIN schedule s ON j.job_id = s.job_id AND s.date = $1
         LEFT JOIN add_employee ae ON s.employee_id = ae.id AND ae.employee_status = true
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
-        ORDER BY s.project_display_order NULLS LAST, j.job_id, 
+        ORDER BY po.display_order NULLS LAST, j.job_id, 
                  s.employee_display_order NULLS LAST, ae.id;
         `;
+        
         const result = await pool.query(sqlText, [date]);
         const jobs = {};
+        
         result.rows.forEach(row => {
             if (!jobs[row.job_id]) {
                 jobs[row.job_id] = {
                     id: row.job_id,
                     job_name: row.job_name,
-                    display_order: row.project_display_order,
+                    display_order: row.display_order,
                     rain_day: row.rain_day,
                     employees: []
                 };
@@ -69,12 +69,67 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
                 });
             }
         });
+        
         res.send(Object.values(jobs));
     } catch (error) {
         console.error('Error fetching jobs with employees:', error);
         res.status(500).send('Error fetching jobs with employees');
     }
 });
+
+// Update project display order
+router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const { orderedProjectIds } = req.body;
+        const date = req.validatedDate;
+        
+        if (!Array.isArray(orderedProjectIds)) {
+            throw new Error('orderedProjectIds must be an array');
+        }
+
+        await client.query('BEGIN');
+
+        // First verify all projects exist
+        const projectsExist = await client.query(
+            `SELECT job_id FROM jobs WHERE job_id = ANY($1)`,
+            [orderedProjectIds]
+        );
+
+        if (projectsExist.rows.length !== orderedProjectIds.length) {
+            throw new Error('One or more project IDs are invalid');
+        }
+
+        // Update with UPSERT pattern
+        for (let i = 0; i < orderedProjectIds.length; i++) {
+            await client.query(
+                `INSERT INTO project_order (date, job_id, display_order)
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (date, job_id) 
+                 DO UPDATE SET display_order = EXCLUDED.display_order`,
+                [date, orderedProjectIds[i], i]
+            );
+        }
+
+        // Clean up any old entries that aren't in the new order
+        await client.query(
+            `DELETE FROM project_order 
+             WHERE date = $1 
+             AND job_id != ALL($2)`,
+            [date, orderedProjectIds]
+        );
+
+        await client.query('COMMIT');
+        res.sendStatus(200);
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error updating project order:', error);
+        res.status(500).send(error.message);
+    } finally {
+        client.release();
+    }
+});
+
 // Update employee order within a project for a specific date
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
@@ -104,82 +159,25 @@ router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res)
         res.status(500).send('Error updating employee order');
     }
 });
-// Update project display order
-router.put('/updateProjectOrder', rejectUnauthenticated, async (req, res) => {
-    try {
-        const { orderedProjectIds, date } = req.body;
-        
-        if (!Array.isArray(orderedProjectIds)) {
-            throw new Error('orderedProjectIds must be an array');
-        }
-        if (!date) {
-            throw new Error('date is required');
-        }
-        await pool.query('BEGIN');
-        // First, ensure all projects exist in jobs table
-        const projectsExist = await pool.query(
-            `SELECT job_id FROM jobs WHERE job_id = ANY($1)`,
-            [orderedProjectIds]
-        );
-        if (projectsExist.rows.length !== orderedProjectIds.length) {
-            throw new Error('One or more project IDs are invalid');
-        }
-        // Then update the order
-        for (let i = 0; i < orderedProjectIds.length; i++) {
-            await pool.query(
-                `UPDATE jobs 
-                SET display_order = $1 
-                WHERE job_id = $2`,
-                [i, orderedProjectIds[i]]
-            );
-        }
-        await pool.query('COMMIT');
-        res.sendStatus(200);
-    } catch (error) {
-        await pool.query('ROLLBACK');
-        console.error('Error updating project order:', error);
-        res.status(500).send(error.message);
-    }
-});
+
+
+// Update rain day status
 router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, res) => {
     const { jobId } = req.params;
     const { isRainDay } = req.body;
     const date = req.validatedDate;
+
     try {
         await pool.query('BEGIN');
-        // Get all existing employees for this project on this date
-        const existingEmployees = await pool.query(
-            `SELECT employee_id FROM schedule 
-             WHERE date = $1 AND job_id = $2`,
-            [date, jobId]
+        
+        await pool.query(
+            `INSERT INTO project_order (date, job_id, rain_day)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (date, job_id)
+             DO UPDATE SET rain_day = $3`,
+            [date, jobId, isRainDay]
         );
-        if (existingEmployees.rows.length > 0) {
-            // Update rain day status for existing entries
-            await pool.query(
-                `UPDATE schedule 
-                 SET rain_day = $3
-                 WHERE date = $1 AND job_id = $2`,
-                [date, jobId, isRainDay]
-            );
-        } else {
-            // Get at least one employee from the project to satisfy NOT NULL constraint
-            const projectEmployee = await pool.query(
-                `SELECT id FROM add_employee 
-                 WHERE employee_status = true 
-                 LIMIT 1`
-            );
-            if (projectEmployee.rows.length === 0) {
-                throw new Error('No active employees found');
-            }
-            // Create a new schedule entry with the first employee
-            await pool.query(
-                `INSERT INTO schedule 
-                    (date, job_id, employee_id, rain_day, current_location)
-                VALUES 
-                    ($1, $2, $3, $4, 'union')`,
-                [date, jobId, projectEmployee.rows[0].id, isRainDay]
-            );
-        }
+
         await pool.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
@@ -188,5 +186,6 @@ router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, r
         res.status(500).send(error.message);
     }
 });
+
 module.exports = router;
 

@@ -141,8 +141,8 @@ const ProjectBox = ({
       
       <div style={{ flex: 1, marginBottom: '10px' }}>
         {orderedEmployees.length === 0 ? (
-          <p>No employees assigned</p>
-        ) : (
+  <p className="no-employees-message">No employees assigned</p>
+) : (
           orderedEmployees
             .filter(employee => employee.employee_status === true)
             .map((employee, index) => (
