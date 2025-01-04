@@ -210,35 +210,46 @@ router.get('/range', rejectUnauthenticated, async (req, res) => {
     }
 });
 
-// Add finalize endpoint
 router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, res) => {
-    const currentDate = req.validatedDate;
-    const nextDate = new Date(currentDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-    const formattedNextDate = nextDate.toISOString().split('T')[0];
-    
+    const client = await pool.connect();
     try {
-        await pool.query('BEGIN');
+        const currentDate = req.validatedDate;
+        const nextDate = new Date(currentDate);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const formattedNextDate = nextDate.toISOString().split('T')[0];
         
-        await pool.query(`
+        await client.query('BEGIN');
+
+        // 1. Copy schedule entries (employee assignments and highlights)
+        await client.query(`
             INSERT INTO schedule 
                 (date, job_id, employee_id, current_location, 
-                 is_highlighted, employee_display_order, 
-                 project_display_order, rain_day)
+                 is_highlighted, employee_display_order)
             SELECT 
                 $2, job_id, employee_id, current_location,
-                is_highlighted, employee_display_order, 
-                project_display_order, rain_day
+                is_highlighted, employee_display_order
             FROM schedule
             WHERE date = $1
         `, [currentDate, formattedNextDate]);
-        
-        await pool.query('COMMIT');
+
+        // 2. Copy project_order entries (project ordering and rain day status)
+        await client.query(`
+            INSERT INTO project_order 
+                (date, job_id, display_order, rain_day)
+            SELECT 
+                $2, job_id, display_order, rain_day
+            FROM project_order
+            WHERE date = $1
+        `, [currentDate, formattedNextDate]);
+
+        await client.query('COMMIT');
         res.json({ nextDate: formattedNextDate });
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error finalizing schedule:', error);
         res.status(500).send(error.message);
+    } finally {
+        client.release();
     }
 });
 
