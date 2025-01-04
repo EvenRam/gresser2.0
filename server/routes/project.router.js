@@ -4,7 +4,7 @@ const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 const { validateDate } = require('../routes/date-validation.middleware');
 //project.router.js file
-// Get projects with employees for a specific date
+
 // Get projects with employees for a specific date
 router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
@@ -83,41 +83,32 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
     try {
         const { orderedProjectIds } = req.body;
         const date = req.validatedDate;
-        
+
         if (!Array.isArray(orderedProjectIds)) {
             throw new Error('orderedProjectIds must be an array');
         }
 
         await client.query('BEGIN');
 
-        // First verify all projects exist
-        const projectsExist = await client.query(
-            `SELECT job_id FROM jobs WHERE job_id = ANY($1)`,
-            [orderedProjectIds]
-        );
+        // First, lock the entire project_order table for this date
+        // This prevents deadlocks by ensuring consistent lock order
+        await client.query(`
+            LOCK TABLE project_order IN EXCLUSIVE MODE
+        `);
 
-        if (projectsExist.rows.length !== orderedProjectIds.length) {
-            throw new Error('One or more project IDs are invalid');
-        }
+        // Delete all existing orders for this date
+        await client.query(`
+            DELETE FROM project_order 
+            WHERE date = $1
+        `, [date]);
 
-        // Update with UPSERT pattern
+        // Insert new orders
         for (let i = 0; i < orderedProjectIds.length; i++) {
-            await client.query(
-                `INSERT INTO project_order (date, job_id, display_order)
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (date, job_id) 
-                 DO UPDATE SET display_order = EXCLUDED.display_order`,
-                [date, orderedProjectIds[i], i]
-            );
+            await client.query(`
+                INSERT INTO project_order (date, job_id, display_order)
+                VALUES ($1, $2, $3)
+            `, [date, orderedProjectIds[i], i]);
         }
-
-        // Clean up any old entries that aren't in the new order
-        await client.query(
-            `DELETE FROM project_order 
-             WHERE date = $1 
-             AND job_id != ALL($2)`,
-            [date, orderedProjectIds]
-        );
 
         await client.query('COMMIT');
         res.sendStatus(200);

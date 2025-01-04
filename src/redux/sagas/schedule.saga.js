@@ -315,38 +315,66 @@ function* updateEmployeeOrder(action) {
 }
 
 
-// Add new finalize saga
 function* finalizeSchedule(action) {
     try {
         const { date } = action.payload;
-        const { formattedDate } = validateDate(date);
+        console.log('Starting finalize with date:', date);
         
+        const { formattedDate } = validateDate(date);
+        console.log('Validated date:', formattedDate);
+        
+        console.log('Making API call to finalize schedule...');
         const response = yield call(
             axios.post,
             `/api/schedule/finalize/${formattedDate}`
         );
+        console.log('Received response:', response.data);
         
         const { nextDate } = response.data;
+        console.log('Next date from response:', nextDate);
+        
+        // Store in localStorage and update Redux
         localStorage.setItem('selectedScheduleDate', nextDate);
+        console.log('Updated localStorage with new date');
+        
+        // Update the selected date in Redux
         yield put({ 
             type: 'SET_SELECTED_DATE', 
             payload: nextDate 
         });
-        // Refresh data
+        console.log('Dispatched SET_SELECTED_DATE');
+        
+        // Refresh all data for the new date
+        console.log('Starting data refresh for new date');
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: nextDate }
         });
+        
         yield put({ 
             type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
             payload: { date: nextDate }
         });
+        
         yield put({
             type: 'FETCH_EMPLOYEES',
             payload: { date: nextDate }
         });
+        console.log('Completed all refresh dispatches');
+        
+        // Add a success notification
+        yield put({
+            type: 'SET_SUCCESS_MESSAGE',
+            payload: `Schedule finalized. Moved to ${nextDate}`
+        });
     } catch (error) {
-        console.error('Error finalizing schedule:', error);
+        console.error('Error in finalizeSchedule:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
+        
         yield put({ 
             type: 'FETCH_ERROR', 
             payload: error.response?.data || 'Failed to finalize schedule' 

@@ -142,3 +142,26 @@
   font-style: italic;
   margin: 10px 0;
 }
+
+.primary {
+  font-size: 15px !important;
+  margin: 1px 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
+.project-box-footer {
+  padding: 2px 4px !important;
+  font-size: 10px !important;
+}
+/* Add these to your CSS file */
+.scheduling-container .btn {
+  padding: 1px 4px !important;
+  font-size: 14px !important;
+  height: 18px !important;
+  line-height: 16px !important;
+  min-width: fit-content !important;
+  cursor: pointer !important;
+  border: none !important;
+  margin: 0 !important;
+  display: inline-block !important;
+}
