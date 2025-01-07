@@ -5,34 +5,32 @@ import './EmployeeStyles.css';
 
 const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
   const ref = useRef(null);
+
   const [{ isDragging }, drag] = useDrag({
     type: 'JOB',
-    item: () => {
-      console.log('Drag Started:', { id: job.job_id, index });
-      return {
-        job_id: job.job_id,
-        index,
-        type: 'JOB',
-        originalIndex: index
-      };
-    },
+    item: () => ({
+      job_id: job.job_id,
+      index,
+      type: 'JOB',
+      originalIndex: index
+    }),
+    canDrag: () => isEditable,
     collect: (monitor) => ({
       isDragging: monitor.isDragging()
     }),
     end: (item, monitor) => {
       const didDrop = monitor.didDrop();
-      if (!didDrop) {
-        console.log('Drag cancelled - returning to original position');
+      if (!didDrop && isEditable) {
         moveJob(item.index, item.originalIndex);
       }
     }
   });
 
-  const [{ handlerId, isOver }, drop] = useDrop({
+  const [{ isOver, handlerId }, drop] = useDrop({
     accept: 'JOB',
     collect: (monitor) => ({
-      handlerId: monitor.getHandlerId(),
-      isOver: monitor.isOver()
+      isOver: monitor.isOver(),
+      handlerId: monitor.getHandlerId()
     }),
     hover: (item, monitor) => {
       if (!ref.current || !isEditable) {
@@ -57,13 +55,6 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
       const clientOffset = monitor.getClientOffset();
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
-      console.log('Hover state:', {
-        dragIndex,
-        hoverIndex,
-        hoverClientY,
-        hoverMiddleY
-      });
-
       // Only perform the move when the mouse has crossed half of the item's height
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
         return;
@@ -73,11 +64,6 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
       }
 
       moveJob(dragIndex, hoverIndex);
-      
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
       item.index = hoverIndex;
     }
   });

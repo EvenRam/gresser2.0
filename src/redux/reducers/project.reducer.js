@@ -61,27 +61,25 @@ const projectReducer = (state = initialState, action) => {
             const currentProjects = [...(state.projectsByDate[date] || [])];
             if (!currentProjects.length) return state;
             
-            // Create a sorted copy of the projects
-            const sortedProjects = [...currentProjects].sort((a, b) => 
-                (a.display_order ?? Infinity) - (b.display_order ?? Infinity)
-            );
-            
             // Move the project
-            const [movedProject] = sortedProjects.splice(sourceIndex, 1);
-            sortedProjects.splice(targetIndex, 0, movedProject);
+            const [movedProject] = currentProjects.splice(sourceIndex, 1);
+            currentProjects.splice(targetIndex, 0, movedProject);
             
             // Update display_order for all projects
-            const updatedProjects = sortedProjects.map((project, index) => ({
+            const updatedProjects = currentProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
+
+            // Sort the projects to ensure correct order
+            const sortedProjects = sortProjectsByOrder(updatedProjects);
         
             return {
                 ...state,
-                projects: date === state.date ? updatedProjects : state.projects,
+                projects: date === state.date ? sortedProjects : state.projects,
                 projectsByDate: {
                     ...state.projectsByDate,
-                    [date]: updatedProjects
+                    [date]: sortedProjects
                 }
             };
         }
@@ -108,6 +106,7 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
+
 
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, date } = action.payload;
