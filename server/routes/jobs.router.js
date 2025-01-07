@@ -75,6 +75,7 @@ router.put('/:job_id', rejectUnauthenticated, async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // If only updating status
         if (status !== undefined &&
             !job_number &&
             !job_name &&
@@ -91,41 +92,49 @@ router.put('/:job_id', rejectUnauthenticated, async (req, res) => {
 
             await client.query(queryText, [status, jobId]);
 
-            // If the job is being set to inactive, move employees back to their unions
+            // If setting to inactive, update schedule entries
             if (status === 'Inactive') {
                 const moveEmployeesQuery = `
-                    UPDATE "add_employee"
-                    SET "job_id" = NULL, "current_location" = 'union'
+                    DELETE FROM "schedule"
                     WHERE "job_id" = $1;
                 `;
                 await client.query(moveEmployeesQuery, [jobId]);
+
+                // Clean up project_order entries
+                const cleanupProjectOrderQuery = `
+                    DELETE FROM "project_order"
+                    WHERE "job_id" = $1;
+                `;
+                await client.query(cleanupProjectOrderQuery, [jobId]);
             }
 
             await client.query('COMMIT');
             res.sendStatus(204);
         } else {
-            const updateJob = [
+            // For full job updates
+            const queryText = `
+                UPDATE "jobs"
+                SET 
+                    "job_number" = $1,
+                    "job_name" = $2,
+                    "location" = $3,    
+                    "start_date" = $4,
+                    "end_date" = $5
+                WHERE "job_id" = $6
+                RETURNING *;
+            `;
+
+            const values = [
                 job_number,
                 job_name,
                 location,
                 start_date,
                 end_date,
-                jobId,
+                jobId
             ];
 
-            const sqlText = `
-                UPDATE "jobs"
-                SET "job_number" = $1,
-                    "job_name" = $2,
-                    "location" = $3,    
-                    "start_date" = $4,
-                    "end_date" = $5
-                WHERE "job_id" = $6;
-            `;
-            console.log("Updating job with values:", updateJob);
+            const result = await client.query(queryText, values);
 
-            const result = await client.query(sqlText, updateJob);
-            
             await client.query('COMMIT');
 
             if (result.rowCount > 0) {
@@ -137,7 +146,7 @@ router.put('/:job_id', rejectUnauthenticated, async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.log("Error updating job:", error);
-        res.sendStatus(500);
+        res.status(500).send(error.message);
     } finally {
         client.release();
     }
