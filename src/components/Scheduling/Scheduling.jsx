@@ -16,6 +16,24 @@ const Scheduling = () => {
     const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
     const highlightedEmployees = useSelector((state) => state.employeeReducer.highlightedEmployees);
  
+    // Keep existing sort logic
+    const sortedProjects = useMemo(() => {
+        if (!projects) return [];
+        
+        return [...projects].sort((a, b) => {
+            const aHasEmployees = (a.employees?.length || 0) > 0;
+            const bHasEmployees = (b.employees?.length || 0) > 0;
+            
+            if (aHasEmployees !== bHasEmployees) {
+                return bHasEmployees ? 1 : -1;
+            }
+            
+            const orderA = a.display_order ?? Infinity;
+            const orderB = b.display_order ?? Infinity;
+            return orderA - orderB;
+        });
+    }, [projects]);
+
     const totalAssignedEmployees = useMemo(() => {
         return projects.reduce((total, project) => total + (project.employees?.length || 0), 0);
     }, [projects]);
@@ -64,7 +82,8 @@ const Scheduling = () => {
  
         fetchData();
     }, [dispatch, selectedDate]);
- 
+
+    // Restore the handleFinalize function
     const handleFinalize = useCallback(() => {
         if (!window.confirm('Are you sure you want to finalize this schedule?')) {
             return;
@@ -119,45 +138,57 @@ const Scheduling = () => {
     }, [dispatch, selectedDate, isEditable]);
  
     const moveJob = useCallback(async (dragIndex, hoverIndex) => {
-        if (!isEditable) return;
- 
+        if (!isEditable || dragIndex === hoverIndex) {
+            return;
+        }
+    
         try {
-            const orderedProjects = [...projects].sort((a, b) => 
-                (a.display_order ?? Infinity) - (b.display_order ?? Infinity)
-            );
- 
-            const [movedProject] = orderedProjects.splice(dragIndex, 1);
-            orderedProjects.splice(hoverIndex, 0, movedProject);
- 
-            const orderedProjectIds = orderedProjects.map(p => p.job_id);
- 
-            const updatedProjects = orderedProjects.map((project, index) => ({
+            const currentProjects = [...sortedProjects];
+            const draggedProject = currentProjects[dragIndex];
+            
+            if (!draggedProject) {
+                console.warn('No project found at dragIndex:', dragIndex);
+                return;
+            }
+    
+            // Remove draggedProject from array
+            currentProjects.splice(dragIndex, 1);
+            // Insert it at the new position
+            currentProjects.splice(hoverIndex, 0, draggedProject);
+    
+            // Update display orders
+            const updatedProjects = currentProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
- 
+    
+            // Update Redux first for immediate UI feedback
             dispatch({
-                type: 'SET_PROJECTS',
-                payload: updatedProjects
+                type: 'REORDER_PROJECTS',
+                payload: {
+                    sourceIndex: dragIndex,
+                    targetIndex: hoverIndex,
+                    date: selectedDate,
+                    projects: updatedProjects
+                }
             });
- 
+    
+            // Then update the backend
+            const orderedProjectIds = updatedProjects.map(p => p.job_id || p.id);
             await axios.put('/api/project/updateProjectOrder', {
                 orderedProjectIds,
                 date: selectedDate
             });
- 
-            dispatch({
-                type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-                payload: { date: selectedDate }
-            });
+    
         } catch (error) {
-            console.error('Error updating project order:', error);
-            dispatch({
+            console.error('Error in moveJob:', error);
+            // Revert on error
+            dispatch({ 
                 type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
                 payload: { date: selectedDate }
             });
         }
-    }, [dispatch, projects, selectedDate, isEditable]);
+    }, [dispatch, sortedProjects, selectedDate, isEditable]);
  
     const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
         if (!isEditable) return;
@@ -187,17 +218,17 @@ const Scheduling = () => {
     if (isLoading) {
         return <div>Loading...</div>;
     }
- 
+
+    // Rest of the component remains the same...
     return (
         <div className="scheduling-container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
                 <span className="total-employees">Total Employees: {totalAssignedEmployees}</span>
                 <DateSchedule />
                 {isEditable && (
                     <button 
                         onClick={handleFinalize}
                         className="btn btn-primary"
-                        style={{ margin: '0 10px' }}
                     >
                         Finalize Schedule
                     </button>
@@ -226,7 +257,7 @@ const Scheduling = () => {
                     </table>
                 ) : (
                     <div className="jobs-container">
-                        {projects.map((project, index) => (
+                        {sortedProjects.map((project, index) => (
                             <DraggableJobBox
                                 key={project.job_id}
                                 job={project}
@@ -245,7 +276,6 @@ const Scheduling = () => {
             </div>
         </div>
     );
- };
- 
+};
 
 export default React.memo(Scheduling);

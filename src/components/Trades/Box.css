@@ -1,24 +1,26 @@
 
 /* For the union name */
 .small-text {
-  font-size: 16px;
-  margin-bottom: 5px;  
-  /* text-align: center;   */
-
+  font-size: 15px; /* Slightly larger font for better readability */
+  font-weight: 600; /* Make it bold for emphasis */
+  margin-bottom: 10px; /* Add more spacing below */
+  color: #333; /* Neutral color for better visibility */
 }
+
 
 /* For the separator */
 .separator {
-  border-bottom: 1px solid black;
+  border-bottom: 2px solid black;
   margin: -5px 0;  
   margin-bottom: 15px;
   width: 100%;  /* Full width */
 }
 
 
-/* .union_box,.employee-name {
-  font-size: 16px;
-  text-align: center;  
-  display: block;     
-  margin-top: 5px;
-} */
+
+
+.union-box:hover {
+  background-color: #f0f0f0; /* Slightly darker background on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhance shadow on hover */
+}
+

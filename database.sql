@@ -22,6 +22,7 @@ CREATE TABLE "user" (
 );
 
 
+-- Create tables in correct order
 CREATE TABLE "unions" (
   "id" SERIAL PRIMARY KEY,
   "union_name" VARCHAR(80)
@@ -47,8 +48,7 @@ CREATE TABLE "jobs" (
   "location" VARCHAR(1000),
   "start_date" DATE,
   "end_date" DATE,
-  "status" VARCHAR(20) DEFAULT 'active',
-  "rain_day" BOOLEAN DEFAULT false
+  "status" VARCHAR(20) DEFAULT 'active'
 );
 
 CREATE TABLE "schedule" (
@@ -60,6 +60,7 @@ CREATE TABLE "schedule" (
   "is_highlighted" BOOLEAN DEFAULT false,
   "employee_display_order" INTEGER,
   "project_display_order" INTEGER,
+  "rain_day" BOOLEAN DEFAULT false,
   FOREIGN KEY ("job_id") REFERENCES "jobs" ("job_id"),
   FOREIGN KEY ("employee_id") REFERENCES "add_employee" ("id"),
   UNIQUE ("date", "employee_id")
@@ -74,8 +75,6 @@ INSERT INTO unions (id, union_name) VALUES
 (25, '25 - Carpenters');
 
 
-
-
 INSERT INTO unions (id, union_name) VALUES
   (26, '26 - Supervisors'),
   (27, '27 - Trucking'),
@@ -83,5 +82,24 @@ INSERT INTO unions (id, union_name) VALUES
   (29, '29 - Non-Union');
 
 
+
+
+-- Create project_order table
+CREATE TABLE "project_order" (
+    "id" SERIAL PRIMARY KEY,
+    "date" DATE NOT NULL,
+    "job_id" INT NOT NULL,
+    "display_order" INT,
+    "rain_day" BOOLEAN DEFAULT false,
+    FOREIGN KEY ("job_id") REFERENCES "jobs" ("job_id"),
+    UNIQUE ("date", "job_id")
+);
+
+
+
+-- Update schedule table
+ALTER TABLE "schedule"
+    DROP COLUMN "project_display_order",
+    DROP COLUMN "rain_day";
 
 

@@ -1,63 +1,90 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import ProjectBox from './ProjectBox';
 import './EmployeeStyles.css';
 
 const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
+  const ref = useRef(null);
+
   const [{ isDragging }, drag] = useDrag({
     type: 'JOB',
-    item: { 
+    item: () => ({
       job_id: job.job_id,
       index,
-      type: 'JOB'
-    },
+      type: 'JOB',
+      originalIndex: index
+    }),
     canDrag: () => isEditable,
     collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
+      isDragging: monitor.isDragging()
     }),
+    end: (item, monitor) => {
+      const didDrop = monitor.didDrop();
+      if (!didDrop && isEditable) {
+        moveJob(item.index, item.originalIndex);
+      }
+    }
   });
 
-  const [{ isOver }, drop] = useDrop({
+  const [{ isOver, handlerId }, drop] = useDrop({
     accept: 'JOB',
-    canDrop: () => isEditable,
-    hover: (draggedItem) => {
-      if (!draggedItem || draggedItem.type !== 'JOB') {
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+      handlerId: monitor.getHandlerId()
+    }),
+    hover: (item, monitor) => {
+      if (!ref.current || !isEditable) {
         return;
       }
 
-      const dragIndex = draggedItem.index;
+      const dragIndex = item.index;
       const hoverIndex = index;
 
+      // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
         return;
       }
 
+      // Get rectangle on screen
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      
+      // Get vertical middle
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      
+      // Get pixels to top
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      // Only perform the move when the mouse has crossed half of the item's height
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+
       moveJob(dragIndex, hoverIndex);
-      draggedItem.index = hoverIndex;
-    },
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
+      item.index = hoverIndex;
+    }
   });
 
-  const ref = (node) => {
-    drag(drop(node));
-  };
-
-  const opacity = isDragging ? 0.5 : 1;
-  const cursor = isEditable ? 'move' : 'default';
+  drag(drop(ref));
 
   return (
     <div
       ref={ref}
       className={`draggable-job-box ${isOver ? 'job-over' : ''}`}
       style={{
-        opacity,
-        cursor,
+        opacity: isDragging ? 0.5 : 1,
+        cursor: isEditable ? 'move' : 'default',
         position: 'relative',
         marginBottom: '10px',
         backgroundColor: isOver ? '#f0f0f0' : 'transparent',
+        transition: 'all 0.2s ease',
+        border: isOver ? '2px dashed #666' : '2px solid transparent',
+        transform: isDragging ? 'scale(1.05)' : 'scale(1)'
       }}
+      data-handler-id={handlerId}
     >
       <ProjectBox
         id={job.job_id}
@@ -65,6 +92,7 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
         employees={job.employees || []}
         moveEmployee={moveEmployee}
         display_order={job.display_order}
+        rain_day={job.rain_day}
       />
     </div>
   );
