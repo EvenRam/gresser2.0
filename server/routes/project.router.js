@@ -35,8 +35,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
         LEFT JOIN add_employee ae ON s.employee_id = ae.id AND ae.employee_status = true
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
-        ORDER BY po.display_order NULLS LAST, j.job_id, 
-                 s.employee_display_order NULLS LAST, ae.id;
+      
         `;
         
         const result = await pool.query(sqlText, [date]);
