@@ -1,26 +1,44 @@
 
-/* For the union name */
-.small-text {
-  font-size: 15px; /* Slightly larger font for better readability */
-  font-weight: 600; /* Make it bold for emphasis */
-  margin-bottom: 10px; /* Add more spacing below */
-  color: #333; /* Neutral color for better visibility */
+/* Union Box Specific Styles
+-------------------------------------------------- */
+.union-box-container {
+  display: grid;  /* Change from flex to grid */
+  grid-template-columns: repeat(2, 1fr);  /* Force two columns */
+  gap: 10px;
+  margin-top: 20px;
+  background-color: transparent;
 }
 
-
-/* For the separator */
-.separator {
-  border-bottom: 2px solid black;
-  margin: -5px 0;  
-  margin-bottom: 15px;
-  width: 100%;  /* Full width */
+.union-box {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: transparent;  /* Remove white background */
 }
 
-
-
-
-.union-box:hover {
-  background-color: #f0f0f0; /* Slightly darker background on hover */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhance shadow on hover */
+.union-box h4 {
+  margin: 0 0 10px 0;
+  padding: 5px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
+/* Update the print styles for union boxes */
+@media print {
+  .union-box-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 3px !important;
+    margin: 5px !important;
+    page-break-inside: avoid !important;
+    background-color: transparent !important;
+  }
+
+  .union-box {
+    width: auto !important;
+    padding: 3px !important;
+    margin: 1px !important;
+    min-height: auto !important;
+    background-color: transparent !important;
+  }
+}
