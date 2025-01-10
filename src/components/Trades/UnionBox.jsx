@@ -52,22 +52,8 @@ const UnionBox = ({ id, union_name, color }) => {
             ref={drop}
             className={`union-box union-${unionNumber}`}
             data-union-id={unionNumber}
-            style={{
-                border: '1px solid gray',
-                width: '190px',
-                minHeight: unionNumber >= 26 ? 'auto' : '150px',
-                margin: '1px',
-                padding: '1px',
-                backgroundColor: isOver ? '#f0f0f0' : '#fff',
-            }}
         >
-            <h4 className='small-text' style={{ 
-                color,
-                backgroundColor: '#f8f8f8',
-                borderBottom: '1px solid #ddd',
-                margin: '-1px -1px 5px -1px',
-                padding: '4px 8px'
-            }}>
+            <h4 className='small-text' style={{ color }}>
                 {union_name}
             </h4>
             <div className="union_box"> 
