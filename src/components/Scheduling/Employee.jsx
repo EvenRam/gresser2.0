@@ -14,21 +14,13 @@ const Employee = ({
   union_id,
   union_name,
   current_location,
-  isHighlighted = false,  // Default to false if undefined
+  isHighlighted,
   index,
   projectId
 }) => {
   const dispatch = useDispatch();
   const actualId = id || employee_id;
   const unionColor = unionColors[union_name] || 'black';
-
-  console.log('Employee render:', { 
-    name, 
-    isHighlighted, 
-    actualId, 
-    projectId,
-    current_location 
-  }); 
  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
@@ -46,31 +38,23 @@ const Employee = ({
     }),
   }), [actualId, union_id, union_name, current_location, index, projectId]);
  
-  const handleContextMenu = useCallback((event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault(); // Prevent default right-click menu
     
-    console.log('Right click event triggered for:', name);
-    console.log('Current highlight state:', isHighlighted);
-    console.log('Current location:', current_location);
-    
-    // If in a project, allow un-highlighting
-    if (current_location === 'project') {
-        const date = new Date().toISOString().split('T')[0];
-        console.log('Dispatching unhighlight action for:', name);
-        
-        dispatch({
-            type: 'UPDATE_HIGHLIGHT_STATE',
-            payload: {
-                id: actualId,
-                isHighlighted: false,
-                date,
-                projectId,
-                current_location
-            }
-        });
+    // Only handle right-click for highlighted employees in projects
+    if (isHighlighted && current_location === 'project') {
+      const date = new Date().toISOString().split('T')[0];
+      dispatch({
+        type: 'UPDATE_HIGHLIGHT_STATE',
+        payload: {
+          id: actualId,
+          isHighlighted: false,
+          date,
+          projectId
+        }
+      });
     }
-  }, [actualId, name, isHighlighted, projectId, current_location, dispatch]);
+  }, [actualId, isHighlighted, current_location, dispatch, projectId]);
 
   const modalId = `employee-modal-${actualId}`;
   const modalContainer = document.getElementById('global-modal-container');
@@ -79,12 +63,6 @@ const Employee = ({
     <div
       ref={drag}
       onContextMenu={handleContextMenu}
-      onClick={(e) => {
-        // For Mac users, check if control key is pressed during click
-        if (e.ctrlKey) {
-            handleContextMenu(e);
-        }
-      }}
       style={{
         opacity: isDragging ? 0.5 : 1,
         padding: '1px',
@@ -94,20 +72,14 @@ const Employee = ({
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
-        backgroundColor: isHighlighted ? '#ffeb3b' : (isDragging ? '#f0f0f0' : 'transparent'),
-        userSelect: 'none',
-        position: 'relative',  // Make sure the element can receive clicks/context menu events
-        zIndex: 1,  // Ensure it's above other elements
+        backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
       }}
     >
       <h6
         className="primary"
         data-toggle="modal"
         data-target={`#${modalId}`}
-        style={{ 
-          color: unionColor,
-          pointerEvents: 'none' // Prevent text from interfering with drag
-        }}
+        style={{ color: unionColor }}
       >
         {name}
       </h6>
