@@ -1,5 +1,7 @@
 import React, { useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useDrag } from 'react-dnd';
+import { useDispatch } from 'react-redux';
 import unionColors from '../Trades/UnionColors';
 
 const Employee = ({
@@ -13,14 +15,13 @@ const Employee = ({
   union_name,
   current_location,
   isHighlighted,
-  onClick,
   index,
-  onReorder,
   projectId
 }) => {
-  const actualId = employee_id || id; 
+  const dispatch = useDispatch();
+  const actualId = id || employee_id;
   const unionColor = unionColors[union_name] || 'black';
-  
+ 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: {  
@@ -36,16 +37,28 @@ const Employee = ({
       isDragging: !!monitor.isDragging(),
     }),
   }), [actualId, union_id, union_name, current_location, index, projectId]);
-  
+ 
   const handleContextMenu = useCallback((e) => {
-    e.preventDefault();
-    if (isHighlighted && typeof onClick === 'function') {
-      onClick(actualId, isHighlighted);
+    e.preventDefault(); // Prevent default right-click menu
+    
+    // Only handle right-click for highlighted employees in projects
+    if (isHighlighted && current_location === 'project') {
+      const date = new Date().toISOString().split('T')[0];
+      dispatch({
+        type: 'UPDATE_HIGHLIGHT_STATE',
+        payload: {
+          id: actualId,
+          isHighlighted: false,
+          date,
+          projectId
+        }
+      });
     }
-  }, [actualId, isHighlighted, onClick]);
+  }, [actualId, isHighlighted, current_location, dispatch, projectId]);
 
   const modalId = `employee-modal-${actualId}`;
-  
+  const modalContainer = document.getElementById('global-modal-container');
+
   return (
     <div
       ref={drag}
@@ -70,29 +83,54 @@ const Employee = ({
       >
         {name}
       </h6>
-      <div className="modal fade" id={modalId} tabIndex="-1" role="dialog" aria-labelledby={`${modalId}-label`} aria-hidden="true">
-        <div className="modal-dialog" role="document">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id={`${modalId}-label`}>Employee Name: {name}</h5>
-              <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div className="modal-body">
-              <p>Email: {email || 'N/A'}</p>
-              <p>Number: {phone_number || 'N/A'}</p>
-              <p>Address: {address || 'N/A'}</p>
-              <p>Union: {union_name || 'N/A'}</p>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
+
+      {modalContainer && createPortal(
+        <div 
+          className="modal fade" 
+          id={modalId} 
+          tabIndex="-1" 
+          role="dialog" 
+          aria-labelledby={`${modalId}-label`} 
+          aria-hidden="true"
+          style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1060 }}
+        >
+          <div className="modal-dialog" role="document">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title" id={`${modalId}-label`}>
+                  Employee Name: {name}
+                </h5>
+                <button 
+                  type="button" 
+                  className="close" 
+                  data-dismiss="modal" 
+                  aria-label="Close"
+                >
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <p>Email: {email || 'N/A'}</p>
+                <p>Number: {phone_number || 'N/A'}</p>
+                <p>Address: {address || 'N/A'}</p>
+                <p>Union: {union_name || 'N/A'}</p>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  data-dismiss="modal"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div>,
+        modalContainer
+      )}
     </div>
   );
 };
 
-export default React.memo(Employee);
+export default Employee;

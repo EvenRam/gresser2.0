@@ -53,6 +53,24 @@ const employeeReducer = (state = initialState, action) => {
             };
         }
 
+        case 'MOVE_EMPLOYEE': {
+            const { employeeId, targetProjectId, sourceUnionId } = action.payload;
+            const date = new Date().toISOString().split('T')[0];
+            
+            if (targetProjectId) {
+                return {
+                    ...state,
+                    employeesByDate: {
+                        ...state.employeesByDate,
+                        [date]: state.employeesByDate[date]?.map((emp) =>
+                            emp.id === employeeId ? { ...emp, is_highlighted: true } : emp
+                        ) || []
+                    }
+                };
+            }
+            return state;
+        }
+
         case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
             const { date } = action.payload;
             if (!date) return state;

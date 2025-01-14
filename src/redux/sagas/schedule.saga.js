@@ -1,4 +1,3 @@
-
 import { takeLatest, call, put, select, take } from "redux-saga/effects";
 import axios from 'axios';
 
@@ -166,15 +165,13 @@ function* handleMoveEmployee(action) {
     try {
         const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
         const currentDate = date || getDefaultDate();
-        const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
+        // Only check if date is valid, remove isWithinRange check
+        const { isValid, formattedDate } = validateDate(currentDate);
         
         if (!isValid) {
             throw new Error('Invalid date format');
         }
         
-        if (!isWithinRange) {
-            throw new Error('Date is out of allowed range');
-        }
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 
