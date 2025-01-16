@@ -2,12 +2,13 @@ const express = require('express');
 const pool = require('../modules/pool'); 
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
+const { validateDate } = require('../routes/date-validation.middleware');
 
 //moveemployee.router.js
 // Move employee to project or back to union
-router.post('/:date', rejectUnauthenticated, async (req, res) => {
+router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { employeeId, targetProjectId } = req.body;
-    const date = req.params.date;  // Just use the date parameter directly
+    const date = req.validatedDate;
     
     try {
         await pool.query('BEGIN');
@@ -69,9 +70,9 @@ router.post('/:date', rejectUnauthenticated, async (req, res) => {
 });
 
 // Add bulk operations endpoint
-router.post('/bulk/:date', rejectUnauthenticated, async (req, res) => {
+router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { sourceDate, employeeIds, targetProjectId } = req.body;
-    const targetDate = req.params.date;  // Just use the date parameter directly
+    const targetDate = req.validatedDate;
 
     try {
         await pool.query('BEGIN');
