@@ -24,27 +24,3 @@
   .draggable-job-box:hover {
     z-index: 1;
   }
-
-  .employee-drag-preview {
-    pointer-events: none;
-    position: fixed;
-    z-index: 1000;
-    background: white;
-    border-radius: 4px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    transform: rotate(2deg);
-    transition: transform 0.2s ease;
-}
-
-.drop-indicator {
-    height: 2px;
-    background-color: #396a54;
-    margin: 0;
-    transition: all 0.2s ease;
-}
-
-.drop-indicator.active {
-    height: 4px;
-    background-color: #396a54;
-    box-shadow: 0 0 4px rgba(57, 106, 84, 0.4);
-}

@@ -133,13 +133,8 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
     const date = req.validatedDate;
     const { isHighlighted } = req.body;
     
-    console.log('Highlight update request:', { employeeId, date, isHighlighted }); // Add this
-
     try {
         await pool.query('BEGIN');
-        // Add this console.log to see the query execution
-        console.log('Executing highlight update query for:', { employeeId, date, isHighlighted });
-        
         await pool.query(
             `INSERT INTO schedule 
                 (date, employee_id, is_highlighted, current_location)
@@ -160,6 +155,7 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
         res.status(500).send(error.message);
     }
 });
+
 // GET endpoint for date range schedule
 router.get('/range', rejectUnauthenticated, async (req, res) => {
     const { startDate, endDate } = req.query;
