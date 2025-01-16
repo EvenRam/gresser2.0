@@ -62,19 +62,20 @@ const Employee = ({
     <div
       ref={drag}
       onContextMenu={handleContextMenu}
-      style={{
-        opacity: isDragging ? 0.5 : 1,
-        padding: '1px',
-        margin: '-8px 0 0 2px',
-        cursor: 'move',
-        borderRadius: '4px',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
-        position: 'relative',
-        zIndex: 1,
-      }}
+// In the main div's style object in Employee.jsx, update or add:
+style={{
+  opacity: isDragging ? 0.5 : 1,
+  padding: isHighlighted ? '2px 4px' : '1px', 
+  margin: isHighlighted ? '0 0 4px 2px' : '-8px 0 0 2px', 
+  cursor: 'move',
+  borderRadius: '4px',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
+  position: 'relative',
+  zIndex: 1,
+}}
     >
       <h6
         className="primary"
