@@ -22,61 +22,74 @@ const Employee = ({
   const dispatch = useDispatch();
   const actualId = id || employee_id;
   const unionColor = unionColors[union_name] || 'black';
-
   const ref = React.useRef(null);
 
-  // Setup drag functionality - enhanced to include index for reordering
+  // Combine drag capabilities for both project reordering and union moves
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: { 
-      id: actualId,
-      employee_id: actualId,
-      union_id, 
-      union_name, 
-      current_location, 
-      index,
-      projectId,
-      type: 'EMPLOYEE'
+    item: () => {
+      // Reset the index when starting a new drag
+      return {
+        id: actualId,
+        employee_id: actualId,
+        union_id,
+        union_name,
+        current_location,
+        index,
+        projectId,
+        type: 'EMPLOYEE',
+        originalIndex: index
+      };
     },
     collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+      isDragging: monitor.isDragging(),
     }),
+    end: (item, monitor) => {
+      // If the drop was unsuccessful and we were reordering, reset to original position
+      const didDrop = monitor.didDrop();
+      if (!didDrop && item.projectId === projectId && onReorder) {
+        onReorder(item.index, item.originalIndex);
+      }
+    },
   }), [actualId, union_id, union_name, current_location, index, projectId]);
 
-  // Setup drop functionality for reordering
-  const [{ isOver, dropPosition }, drop] = useDrop(() => ({
+  // Handle drops for reordering within project
+  const [{ isOver, canDrop, dropPosition }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
+    canDrop: (item) => {
+      // Allow drops from unions or other projects, or within same project
+      return true;
+    },
     hover: (item, monitor) => {
-      if (!onReorder) return;
       if (!ref.current) return;
       
-      // Don't replace items with themselves
-      if (item.index === index) return;
-      // Only handle items from the same project
-      if (item.projectId !== projectId) return;
+      // Only handle reordering if it's within the same project
+      if (item.projectId === projectId && onReorder) {
+        if (item.index === index) return;
 
-      const dragIndex = item.index;
-      const hoverIndex = index;
+        const dragIndex = item.index;
+        const hoverIndex = index;
 
-      // Get the middle Y position of the dragged item
-      const hoverBoundingRect = ref.current.getBoundingClientRect();
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const clientOffset = monitor.getClientOffset();
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+        const hoverBoundingRect = ref.current.getBoundingClientRect();
+        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+        const clientOffset = monitor.getClientOffset();
+        const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
-      // Dragging downwards
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
-      // Dragging upwards
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
+        // Only perform the move when the mouse has crossed half of the items height
+        if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+        if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
 
-      onReorder(dragIndex, hoverIndex);
-      item.index = hoverIndex;
+        onReorder(dragIndex, hoverIndex);
+        item.index = hoverIndex;
+      }
     },
     collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop(),
       dropPosition: monitor.isOver() ? 
-        (monitor.getClientOffset()?.y < ref.current?.getBoundingClientRect().top + 
-         (ref.current?.getBoundingClientRect().height / 2) ? 'top' : 'bottom') : null
+        monitor.getClientOffset()?.y < ref.current?.getBoundingClientRect().top + 
+        (ref.current?.getBoundingClientRect().height / 2) ? 'top' : 'bottom' 
+        : null
     }),
   }), [index, onReorder, projectId]);
 

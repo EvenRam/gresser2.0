@@ -55,11 +55,10 @@ const ProjectBox = ({
 
   const handleDrop = useCallback((item) => {
     if (!item?.id || !isEditable) return;
-
-    // Handle both external moves and internal reordering
-    if (item.current_location === 'union' || 
-        (item.current_location === 'project' && item.projectId !== id)) {
-      // External move
+    const isExternalMove = item.current_location === 'union' || 
+                          (item.current_location === 'project' && item.projectId !== id);
+    
+    if (isExternalMove) {
       moveEmployee(item.id, id, item.union_id, selectedDate);
       dispatch({ 
         type: 'SET_HIGHLIGHTED_EMPLOYEE', 
@@ -91,6 +90,7 @@ const ProjectBox = ({
     setOrderedEmployees(newOrder);
 
     try {
+      // Format the data as expected by the API
       const orderedEmployeeIds = newOrder
         .filter(emp => emp.employee_status === true)
         .map((emp, index) => ({
@@ -98,12 +98,14 @@ const ProjectBox = ({
           display_order: index
         }));
 
+      // First dispatch the order update to the backend
       await axios.put('/api/project/updateOrder', {
         projectId: id,
         orderedEmployeeIds,
         date: selectedDate
       });
 
+      // Then update Redux state
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
@@ -118,6 +120,11 @@ const ProjectBox = ({
     } catch (error) {
       console.error('Error updating employee order:', error);
       setOrderedEmployees(employees); // Revert on error
+      // Optionally dispatch an error action
+      dispatch({
+        type: 'UPDATE_EMPLOYEE_ORDER_FAILURE',
+        payload: error.message
+      });
     }
   }, [orderedEmployees, id, dispatch, employees, selectedDate, isEditable]);
 
@@ -133,12 +140,12 @@ const ProjectBox = ({
     const newRainDayStatus = !currentRainDay;
     
     dispatch({
-        type: 'UPDATE_RAIN_DAY_STATUS_REQUEST',
-        payload: {
-            jobId: id,
-            isRainDay: newRainDayStatus,
-            date: selectedDate
-        }
+      type: 'UPDATE_RAIN_DAY_STATUS_REQUEST',
+      payload: {
+        jobId: id,
+        isRainDay: newRainDayStatus,
+        date: selectedDate
+      }
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
  
