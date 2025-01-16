@@ -55,10 +55,12 @@ const ProjectBox = ({
 
   const handleDrop = useCallback((item) => {
     if (!item?.id || !isEditable) return;
-    const isExternalMove = item.current_location === 'union' || 
-                          (item.current_location === 'project' && item.projectId !== id);
-    moveEmployee(item.id, id, item.union_id, selectedDate);
-    if (isExternalMove) {
+
+    // Handle both external moves and internal reordering
+    if (item.current_location === 'union' || 
+        (item.current_location === 'project' && item.projectId !== id)) {
+      // External move
+      moveEmployee(item.id, id, item.union_id, selectedDate);
       dispatch({ 
         type: 'SET_HIGHLIGHTED_EMPLOYEE', 
         payload: { 
@@ -85,26 +87,37 @@ const ProjectBox = ({
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
 
+    // Update local state immediately for smooth UI
+    setOrderedEmployees(newOrder);
+
     try {
       const orderedEmployeeIds = newOrder
         .filter(emp => emp.employee_status === true)
-        .map(emp => emp.id);
+        .map((emp, index) => ({
+          id: emp.id,
+          display_order: index
+        }));
+
       await axios.put('/api/project/updateOrder', {
         projectId: id,
         orderedEmployeeIds,
         date: selectedDate
       });
+
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
           projectId: id,
-          employees: newOrder,
+          employees: newOrder.map((emp, index) => ({
+            ...emp,
+            display_order: index
+          })),
           date: selectedDate
         }
       });
     } catch (error) {
       console.error('Error updating employee order:', error);
-      setOrderedEmployees(employees);
+      setOrderedEmployees(employees); // Revert on error
     }
   }, [orderedEmployees, id, dispatch, employees, selectedDate, isEditable]);
 
@@ -147,7 +160,13 @@ const ProjectBox = ({
         }}
       >
         <h4 className='projectboxname' 
-          style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px', margin: '-5px -5px 5px -5px' }}>
+          style={{ 
+            backgroundColor: '#396a54', 
+            color: 'white', 
+            padding: '5px', 
+            fontSize: '16px', 
+            margin: '-5px -5px 5px -5px' 
+          }}>
           {job_name}
         </h4>
         

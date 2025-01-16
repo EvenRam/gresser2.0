@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useDrag } from 'react-dnd';
+import { useDrag, useDrop } from 'react-dnd';
 import { useDispatch } from 'react-redux';
 import unionColors from '../Trades/UnionColors';
 
@@ -16,66 +16,97 @@ const Employee = ({
   current_location,
   isHighlighted,
   index,
-  projectId
+  projectId,
+  onReorder
 }) => {
   const dispatch = useDispatch();
   const actualId = id || employee_id;
   const unionColor = unionColors[union_name] || 'black';
- 
+
+  // Setup drag functionality - enhanced to include index for reordering
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: {  
+    item: { 
       id: actualId,
       employee_id: actualId,
       union_id, 
       union_name, 
       current_location, 
       index,
-      projectId
+      projectId,
+      type: 'EMPLOYEE'
     },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
   }), [actualId, union_id, union_name, current_location, index, projectId]);
 
+  // Setup drop functionality for reordering
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'EMPLOYEE',
+    hover: (item, monitor) => {
+      if (!onReorder) return;
+      
+      // Don't replace items with themselves
+      if (item.index === index) return;
+      
+      // Only perform reordering if we're in the same project
+      if (item.projectId === projectId) {
+        onReorder(item.index, index);
+        // Update the index of the dragged item
+        item.index = index;
+      }
+    },
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
+    }),
+  }), [index, onReorder, projectId]);
+
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (current_location === 'project') {
-        const date = new Date().toISOString().split('T')[0];
-        console.log('Attempting to toggle highlight state for:', actualId);
-        dispatch({
-            type: 'SET_HIGHLIGHTED_EMPLOYEE',
-            payload: {
-                id: actualId,
-                isHighlighted: !isHighlighted,
-                projectId,
-                date
-            }
-        });
+      const date = new Date().toISOString().split('T')[0];
+      dispatch({
+        type: 'SET_HIGHLIGHTED_EMPLOYEE',
+        payload: {
+          id: actualId,
+          isHighlighted: !isHighlighted,
+          projectId,
+          date
+        }
+      });
     }
   }, [actualId, isHighlighted, current_location, dispatch, projectId]);
 
   const modalId = `employee-modal-${actualId}`;
   const modalContainer = document.getElementById('global-modal-container');
 
+  // Combine drag and drop refs
+  const dragDropRef = (element) => {
+    drag(element);
+    drop(element);
+  };
+
   return (
     <div
-      ref={drag}
+      ref={dragDropRef}
       onContextMenu={handleContextMenu}
-// In the main div's style object in Employee.jsx, update or add:
-style={{
-  opacity: isDragging ? 0.5 : 1,
-  padding: isHighlighted ? '2px 4px' : '1px', 
-  margin: isHighlighted ? '0 0 4px 2px' : '-8px 0 0 2px', 
-  cursor: 'move',
-  borderRadius: '4px',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
-  position: 'relative',
-  zIndex: 1,
-}}
+      style={{
+        opacity: isDragging ? 0.5 : 1,
+        padding: isHighlighted ? '2px 4px' : '1px',
+        margin: isHighlighted ? '0 0 4px 2px' : '-8px 0 0 2px',
+        cursor: 'move',
+        borderRadius: '4px',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        backgroundColor: isHighlighted 
+          ? 'yellow' 
+          : (isDragging ? '#f0f0f0' : isOver ? '#e0e0e0' : 'transparent'),
+        position: 'relative',
+        zIndex: 1,
+        transition: 'background-color 0.2s ease'
+      }}
     >
       <h6
         className="primary"

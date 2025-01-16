@@ -3,7 +3,6 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 const { validateDate } = require('../routes/date-validation.middleware');
-//project.router.js file
 
 // Get projects with employees for a specific date
 router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
@@ -35,7 +34,8 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
         LEFT JOIN add_employee ae ON s.employee_id = ae.id AND ae.employee_status = true
         LEFT JOIN unions u ON ae.union_id = u.id
         WHERE j.status = 'Active'
-      
+        ORDER BY po.display_order NULLS LAST, j.job_id,
+                s.employee_display_order NULLS LAST
         `;
         
         const result = await pool.query(sqlText, [date]);
@@ -89,19 +89,13 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
 
         await client.query('BEGIN');
 
-        // First, lock the entire project_order table for this date
-        // This prevents deadlocks by ensuring consistent lock order
-        await client.query(`
-            LOCK TABLE project_order IN EXCLUSIVE MODE
-        `);
+        await client.query(`LOCK TABLE project_order IN EXCLUSIVE MODE`);
 
-        // Delete all existing orders for this date
         await client.query(`
             DELETE FROM project_order 
             WHERE date = $1
         `, [date]);
 
-        // Insert new orders
         for (let i = 0; i < orderedProjectIds.length; i++) {
             await client.query(`
                 INSERT INTO project_order (date, job_id, display_order)
@@ -122,34 +116,48 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
 
 // Update employee order within a project for a specific date
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
+    const client = await pool.connect();
     try {
         const { projectId, orderedEmployeeIds } = req.body;
         const date = req.validatedDate;
+
+        if (!Array.isArray(orderedEmployeeIds)) {
+            throw new Error('orderedEmployeeIds must be an array of objects with id and display_order');
+        }
         
-        await pool.query('BEGIN');
-        // Update display order in schedule table
-        for (let i = 0; i < orderedEmployeeIds.length; i++) {
-            await pool.query(
+        await client.query('BEGIN');
+        
+        // Lock the relevant rows to prevent concurrent modifications
+        await client.query(`
+            LOCK TABLE schedule IN SHARE ROW EXCLUSIVE MODE
+        `);
+
+        // Update or insert each employee's order
+        for (const { id, display_order } of orderedEmployeeIds) {
+            await client.query(
                 `INSERT INTO schedule 
-                    (date, job_id, employee_id, employee_display_order)
+                    (date, job_id, employee_id, employee_display_order, current_location)
                 VALUES 
-                    ($1, $2, $3, $4)
+                    ($1, $2, $3, $4, 'project')
                 ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
                     employee_display_order = $4,
-                    job_id = $2;`,
-                [date, projectId, orderedEmployeeIds[i], i]
+                    job_id = $2,
+                    current_location = 'project';`,
+                [date, projectId, id, display_order]
             );
         }
-        await pool.query('COMMIT');
+
+        await client.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error updating employee order:', error);
-        res.status(500).send('Error updating employee order');
+        res.status(500).send(error.message);
+    } finally {
+        client.release();
     }
 });
-
 
 // Update rain day status
 router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, res) => {
@@ -178,4 +186,3 @@ router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, r
 });
 
 module.exports = router;
-
