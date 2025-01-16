@@ -37,22 +37,21 @@ const Employee = ({
       isDragging: !!monitor.isDragging(),
     }),
   }), [actualId, union_id, union_name, current_location, index, projectId]);
- 
+
   const handleContextMenu = useCallback((e) => {
-    e.preventDefault(); // Prevent default right-click menu
-    
-    // Only handle right-click for highlighted employees in projects
-    if (isHighlighted && current_location === 'project') {
-      const date = new Date().toISOString().split('T')[0];
-      dispatch({
-        type: 'UPDATE_HIGHLIGHT_STATE',
-        payload: {
-          id: actualId,
-          isHighlighted: false,
-          date,
-          projectId
-        }
-      });
+    e.preventDefault();
+    if (current_location === 'project') {
+        const date = new Date().toISOString().split('T')[0];
+        console.log('Attempting to toggle highlight state for:', actualId);
+        dispatch({
+            type: 'SET_HIGHLIGHTED_EMPLOYEE',
+            payload: {
+                id: actualId,
+                isHighlighted: !isHighlighted,
+                projectId,
+                date
+            }
+        });
     }
   }, [actualId, isHighlighted, current_location, dispatch, projectId]);
 
@@ -73,6 +72,8 @@ const Employee = ({
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
+        position: 'relative',
+        zIndex: 1,
       }}
     >
       <h6

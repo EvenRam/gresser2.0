@@ -21,6 +21,32 @@ const sortProjectsByOrder = (projects) => {
 
 const projectReducer = (state = initialState, action) => {
     switch (action.type) {
+        case 'SET_HIGHLIGHTED_EMPLOYEE': {
+            const { id, isHighlighted, projectId } = action.payload;
+            console.log('Processing highlight toggle:', { id, isHighlighted, projectId });
+            
+            const updatedProjects = state.projects.map(project => {
+                if (project.id === projectId) {
+                    return {
+                        ...project,
+                        employees: project.employees.map(emp => 
+                            emp.id === id ? { ...emp, is_highlighted: isHighlighted } : emp
+                        )
+                    };
+                }
+                return project;
+            });
+
+            return {
+                ...state,
+                projects: updatedProjects,
+                projectsByDate: {
+                    ...state.projectsByDate,
+                    [state.date]: updatedProjects
+                }
+            };
+        }
+
         case 'SET_PROJECTS_WITH_EMPLOYEES': {
             const { date, jobs } = action.payload;
             if (!date) {
@@ -61,17 +87,14 @@ const projectReducer = (state = initialState, action) => {
             const currentProjects = [...(state.projectsByDate[date] || [])];
             if (!currentProjects.length) return state;
             
-            // Move the project
             const [movedProject] = currentProjects.splice(sourceIndex, 1);
             currentProjects.splice(targetIndex, 0, movedProject);
             
-            // Update display_order for all projects
             const updatedProjects = currentProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
 
-            // Sort the projects to ensure correct order
             const sortedProjects = sortProjectsByOrder(updatedProjects);
         
             return {
@@ -106,7 +129,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
 
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, date } = action.payload;

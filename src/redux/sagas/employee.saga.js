@@ -43,25 +43,45 @@ function* fetchUnion() {
 function* updateHighlightState(action) {
   try {
     const { id, isHighlighted, date, projectId } = action.payload;
-    yield call(axios.put, `/api/schedule/${date}/${id}/highlight`, {
-      isHighlighted
+    console.log('Attempting to update highlight state:', { id, isHighlighted, date, projectId });
+    
+    const response = yield call(axios.put, `/api/schedule/${date}/${id}/highlight`, {
+      isHighlighted,
+      projectId
     });
     
-    yield put({ 
-      type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
-      payload: { date } 
+    console.log('Server response:', response.data);
+    
+    // First update local state
+    yield put({
+      type: 'SET_HIGHLIGHTED_EMPLOYEE',
+      payload: action.payload
     });
+    
+    // Then refresh all data
+    yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
+    yield put({ type: 'FETCH_EMPLOYEE_INFO' });
+    yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
   } catch (error) {
     console.error('Error updating highlight state:', error);
+    console.log('Error details:', error.response?.data);
   }
 }
 
 function* handleEmployeeMove(action) {
   try {
     const { employeeId, targetProjectId, sourceUnionId } = action.payload;
-    const date = new Date().toISOString().split('T')[0];
-    
+
+    // Make API call to move the employee
+    yield call(axios.post, '/api/moveemployee', { 
+      employeeId, 
+      targetProjectId,
+      sourceUnionId
+    });
+
+    // If moving to a project, set highlight state
     if (targetProjectId) {
+      const date = new Date().toISOString().split('T')[0];
       yield put({
         type: 'UPDATE_HIGHLIGHT_STATE',
         payload: {
@@ -72,8 +92,14 @@ function* handleEmployeeMove(action) {
         }
       });
     }
+
+    // Fetch updated data
+    yield put({ type: 'FETCH_PROJECTS_WITH_EMPLOYEES' });
+    yield put({ type: 'FETCH_EMPLOYEE_INFO' });
+    yield put({ type: 'FETCH_UNIONS_WITH_EMPLOYEES' });
   } catch (error) {
-    console.error('Error handling employee move:', error);
+    console.error('Error moving employee:', error);
+    yield put({ type: 'MOVE_EMPLOYEE_FAILURE', error });
   }
 }
 
