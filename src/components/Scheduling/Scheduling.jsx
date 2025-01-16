@@ -219,7 +219,6 @@ const Scheduling = () => {
         return <div>Loading...</div>;
     }
 
-    // Rest of the component remains the same...
     return (
         <div className="scheduling-container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>

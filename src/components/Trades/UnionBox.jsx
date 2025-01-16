@@ -53,9 +53,10 @@ const UnionBox = ({ id, union_name, color }) => {
             className={`union-box union-${unionNumber}`}
             data-union-id={unionNumber}
         >
-            <h4 className='small-text' style={{ color }}>
-                {union_name}
-            </h4>
+           <div className='union-label small-text' style={{ color }}>
+    {union_name}
+</div>
+
             <div className="union_box"> 
                 {employees.length === 0 ? (
                     <p className="no-employees">No employees assigned</p>
