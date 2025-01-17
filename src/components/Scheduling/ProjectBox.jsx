@@ -1,7 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
-import axios from 'axios';
 import Employee from './Employee';
 import '../Trades/Box.css';
 import '../Scheduling/Scheduling.css';
@@ -86,45 +85,19 @@ const ProjectBox = ({
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
 
-    // Update local state immediately for smooth UI
-    setOrderedEmployees(newOrder);
 
     try {
-      // Format the data as expected by the API
-      const orderedEmployeeIds = newOrder
-        .filter(emp => emp.employee_status === true)
-        .map((emp, index) => ({
-          id: emp.id,
-          display_order: index
-        }));
-
-      // First dispatch the order update to the backend
-      await axios.put('/api/project/updateOrder', {
-        projectId: id,
-        orderedEmployeeIds,
-        date: selectedDate
-      });
-
-      // Then update Redux state
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
           projectId: id,
-          employees: newOrder.map((emp, index) => ({
-            ...emp,
-            display_order: index
-          })),
+          employees: newOrder,  // Send the full employee objects
           date: selectedDate
         }
       });
     } catch (error) {
       console.error('Error updating employee order:', error);
       setOrderedEmployees(employees); // Revert on error
-      // Optionally dispatch an error action
-      dispatch({
-        type: 'UPDATE_EMPLOYEE_ORDER_FAILURE',
-        payload: error.message
-      });
     }
   }, [orderedEmployees, id, dispatch, employees, selectedDate, isEditable]);
 

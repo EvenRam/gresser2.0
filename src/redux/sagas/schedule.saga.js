@@ -254,6 +254,16 @@ function* updateProjectOrder(action) {
             throw new Error('Date is out of allowed range');
         }
 
+        // First update local state for immediate feedback
+        yield put({
+            type: 'REORDER_PROJECTS',
+            payload: {
+                date: formattedDate,
+                orderedProjectIds
+            }
+        });
+
+        // Then persist to backend
         yield call(
             axios.put,
             `/api/project/updateProjectOrder`,
@@ -263,18 +273,27 @@ function* updateProjectOrder(action) {
             }
         );
 
+        // Finally, fetch fresh data to ensure consistency
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
         });
     } catch (error) {
         console.error('Error updating project order:', error);
+        
+        // On error, refresh to get back to correct state
+        yield put({
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+            payload: { date: action.payload.date }
+        });
+        
         yield put({
             type: 'UPDATE_PROJECT_ORDER_FAILURE',
             payload: error.message || 'Failed to update project order'
         });
     }
 }
+
 
 function* updateEmployeeOrder(action) {
     try {

@@ -1,5 +1,6 @@
 import React from 'react'; 
 import { useDrag, useDrop } from 'react-dnd'; 
+import { useDispatch, useSelector } from 'react-redux';
 import ProjectBox from './ProjectBox'; 
 import './EmployeeStyles.css'; 
 
@@ -9,6 +10,10 @@ const DraggableJobBox = ({
   moveJob, 
   moveEmployee 
 }) => {
+  const dispatch = useDispatch();
+  const selectedDate = useSelector(state => state.scheduleReducer.selectedDate);
+  const allProjects = useSelector(state => state.projectReducer.projectsByDate[selectedDate] || []);
+
   // Set up dragging for the entire job box
   const [{ isDragging }, drag] = useDrag({
     type: 'JOB',
@@ -22,7 +27,6 @@ const DraggableJobBox = ({
       isDragging: monitor.isDragging()
     }),
     end: (item, monitor) => {
-      // If the drop wasn't successful, move back to original position
       const didDrop = monitor.didDrop();
       if (!didDrop) {
         moveJob(item.index, item.originalIndex);
@@ -45,6 +49,20 @@ const DraggableJobBox = ({
 
       // Move the job box
       moveJob(dragIndex, hoverIndex);
+
+      // After local move, dispatch order update
+      const updatedOrder = allProjects.map(project => project.id);
+      let newOrder = [...updatedOrder];
+      const [movedItem] = newOrder.splice(dragIndex, 1);
+      newOrder.splice(hoverIndex, 0, movedItem);
+
+      dispatch({
+        type: 'UPDATE_PROJECT_ORDER',
+        payload: {
+          orderedProjectIds: newOrder,
+          date: selectedDate
+        }
+      });
       
       // Update the dragged item's index
       item.index = hoverIndex;

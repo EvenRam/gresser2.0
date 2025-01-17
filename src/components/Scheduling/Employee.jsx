@@ -24,11 +24,9 @@ const Employee = ({
   const unionColor = unionColors[union_name] || 'black';
   const ref = React.useRef(null);
 
-  // Combine drag capabilities for both project reordering and union moves
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: () => {
-      // Reset the index when starting a new drag
       return {
         id: actualId,
         employee_id: actualId,
@@ -45,7 +43,6 @@ const Employee = ({
       isDragging: monitor.isDragging(),
     }),
     end: (item, monitor) => {
-      // If the drop was unsuccessful and we were reordering, reset to original position
       const didDrop = monitor.didDrop();
       if (!didDrop && item.projectId === projectId && onReorder) {
         onReorder(item.index, item.originalIndex);
@@ -53,17 +50,14 @@ const Employee = ({
     },
   }), [actualId, union_id, union_name, current_location, index, projectId]);
 
-  // Handle drops for reordering within project
   const [{ isOver, canDrop, dropPosition }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     canDrop: (item) => {
-      // Allow drops from unions or other projects, or within same project
       return true;
     },
     hover: (item, monitor) => {
       if (!ref.current) return;
       
-      // Only handle reordering if it's within the same project
       if (item.projectId === projectId && onReorder) {
         if (item.index === index) return;
 
@@ -75,7 +69,6 @@ const Employee = ({
         const clientOffset = monitor.getClientOffset();
         const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
-        // Only perform the move when the mouse has crossed half of the items height
         if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
         if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
 
@@ -112,7 +105,6 @@ const Employee = ({
   const modalId = `employee-modal-${actualId}`;
   const modalContainer = document.getElementById('global-modal-container');
 
-  // Combine drag and drop refs
   const dragDropRef = (element) => {
     drag(element);
     drop(element);
