@@ -2,12 +2,12 @@ import { takeLatest, call, put, select, take } from "redux-saga/effects";
 import axios from 'axios';
 
 // Helper functions for date handling
-// set to noon
 const getDefaultDate = () => {
     const now = new Date();
     now.setHours(12, 0, 0, 0);  
     return now.toISOString().split('T')[0];
 };
+
 const validateDate = (date) => {
     const requestDate = new Date(date);
     requestDate.setHours(12, 0, 0, 0);  
@@ -25,6 +25,37 @@ const validateDate = (date) => {
         isWithinRange: requestDate <= maxDate
     };
 };
+
+function* updateHighlightStatus(action) {
+    try {
+        const { id, isHighlighted, date } = action.payload;
+        const currentDate = date || getDefaultDate();
+        const { isValid, formattedDate } = validateDate(currentDate);
+        
+        if (!isValid) {
+            throw new Error('Invalid date format');
+        }
+
+        yield call(
+            axios.put,
+            `/api/schedule/${formattedDate}/${id}/highlight`,
+            { isHighlighted }
+        );
+
+        // Refresh the data to ensure UI is in sync
+        yield put({
+            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+            payload: { date: formattedDate }
+        });
+    } catch (error) {
+        console.error('Error updating highlight status:', error);
+        yield put({ 
+            type: 'FETCH_ERROR', 
+            payload: error.message 
+        });
+    }
+}
+
 function* fetchEmployees(action) {
     try {
         const date = action.payload?.date || getDefaultDate();
@@ -53,6 +84,7 @@ function* fetchEmployees(action) {
         });
     }
 }
+
 function* fetchUnionsWithEmployees(action) {
     try {
         const date = typeof action.payload === 'string' 
@@ -80,6 +112,7 @@ function* fetchUnionsWithEmployees(action) {
         });
     }
 }
+
 function* fetchProjectsWithEmployees(action) {
     try {
         const date = action.payload?.date || getDefaultDate();
@@ -122,6 +155,7 @@ function* fetchProjectsWithEmployees(action) {
         });
     }
 }
+
 function* addEmployeeSchedule(action) {
     try {
         const { selected_date, ...employeeData } = action.payload;
@@ -161,11 +195,11 @@ function* addEmployeeSchedule(action) {
         });
     }
 }
+
 function* handleMoveEmployee(action) {
     try {
         const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
         const currentDate = date || getDefaultDate();
-        // Only check if date is valid, remove isWithinRange check
         const { isValid, formattedDate } = validateDate(currentDate);
         
         if (!isValid) {
@@ -203,6 +237,7 @@ function* handleMoveEmployee(action) {
         });
     }
 }
+
 function* initializeScheduleDate() {
     try {
         const centralTime = new Date().toLocaleString("en-US", {
@@ -294,7 +329,6 @@ function* updateProjectOrder(action) {
     }
 }
 
-
 function* updateEmployeeOrder(action) {
     try {
         const { projectId, orderedEmployeeIds, date } = action.payload;
@@ -329,7 +363,6 @@ function* updateEmployeeOrder(action) {
         });
     }
 }
-
 
 function* finalizeSchedule(action) {
     try {
@@ -397,6 +430,7 @@ function* finalizeSchedule(action) {
         });
     }
 }
+
 function* updateRainDayStatus(action) {
     try {
         const { jobId, isRainDay, date } = action.payload;
@@ -410,7 +444,9 @@ function* updateRainDayStatus(action) {
         yield put({ type: 'FETCH_ERROR', payload: error.message });
     }
 }
+
 export default function* scheduleSaga() {
+    yield takeLatest('SET_HIGHLIGHTED_EMPLOYEE', updateHighlightStatus);
     yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
     yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
     yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
@@ -420,5 +456,5 @@ export default function* scheduleSaga() {
     yield takeLatest('UPDATE_PROJECT_ORDER', updateProjectOrder);
     yield takeLatest('UPDATE_EMPLOYEE_ORDER', updateEmployeeOrder);
     yield takeLatest('FINALIZE_SCHEDULE', finalizeSchedule);
-    yield takeLatest('UPDATE_RAIN_DAY_STATUS_REQUEST', updateRainDayStatus)
+    yield takeLatest('UPDATE_RAIN_DAY_STATUS_REQUEST', updateRainDayStatus);
 }
