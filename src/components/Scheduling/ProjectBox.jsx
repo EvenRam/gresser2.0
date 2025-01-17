@@ -85,13 +85,22 @@ const ProjectBox = ({
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
 
+    setOrderedEmployees(newOrder);
 
     try {
+      // Format data to match router expectations
+      const orderedEmployeeIds = newOrder
+        .filter(emp => emp.employee_status === true)
+        .map((emp, index) => ({
+          id: emp.id,  // router expects {id, display_order}
+          display_order: index
+        }));
+
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
           projectId: id,
-          employees: newOrder,  // Send the full employee objects
+          orderedEmployeeIds,
           date: selectedDate
         }
       });
@@ -140,13 +149,7 @@ const ProjectBox = ({
         }}
       >
         <h4 className='projectboxname' 
-          style={{ 
-            backgroundColor: '#396a54', 
-            color: 'white', 
-            padding: '5px', 
-            fontSize: '16px', 
-            margin: '-5px -5px 5px -5px' 
-          }}>
+          style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px', margin: '-5px -5px 5px -5px' }}>
           {job_name}
         </h4>
         

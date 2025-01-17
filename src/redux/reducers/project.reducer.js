@@ -179,19 +179,19 @@ const projectReducer = (state = initialState, action) => {
         }
 
         case 'UPDATE_EMPLOYEE_ORDER': {
-            const { projectId, employees, date } = action.payload;
+            const { projectId, orderedEmployeeIds, date } = action.payload;
             if (!date || !projectId) return state;
             
-            console.log('Updating employee order:', { projectId, employees, date });
+            console.log('Updating employee order:', { projectId, orderedEmployeeIds, date });
             
             const currentProjects = state.projectsByDate[date] || [];
             const updatedProjects = currentProjects.map(project => {
                 if (project.id === projectId) {
                     const updatedEmployees = project.employees.map(emp => {
-                        const newOrder = employees.findIndex(e => e.id === emp.id);
+                        const orderInfo = orderedEmployeeIds.find(o => o.id === emp.id);
                         return {
                             ...emp,
-                            display_order: newOrder >= 0 ? newOrder : emp.display_order
+                            display_order: orderInfo ? orderInfo.display_order : emp.display_order
                         };
                     });
                     return {
