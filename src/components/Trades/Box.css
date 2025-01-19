@@ -1,29 +1,99 @@
-/* /* Union Box Specific Styles
--------------------------------------------------- */
-/* .union-boxes-container {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(190px, 1fr));
-  gap: 5px;
-  background-color: transparent;
-  float: right;
-  width: 400px;
-  margin-left: 20px;
-}
 
-.union-box {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 2px;
-  background-color: transparent;
-}*/
 
-.union-box h4.small-text {
-  margin: -2px -2px 2px -2px;
-  padding: 3px;
-  font-size: 14px;
+/* For the union name */
+.small-text {
+  font-size: 15px; /* Slightly larger font for better readability */
+  font-weight: 600; /* Make it bold for emphasis */
+  margin-bottom: 10px; /* Add more spacing below */
+  color: #333; /* Neutral color for better visibility */
+ }
+ 
+ 
+ 
+ 
+ /* For the separator */
+ .separator {
+  border-bottom: 2px solid black;
+  margin: -5px 0; 
+  margin-bottom: 15px;
+  width: 100%;  /* Full width */
+ }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ .union-box:hover {
+  background-color: #f0f0f0; /* Slightly darker background on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhance shadow on hover */
+ }
+ 
+ 
+ /* Existing styles */
+ .small-text {
+  font-size: 15px;
   font-weight: 600;
-
-  background-color: #f8f8f8;
-  border-bottom: 1px solid #ddd;
-} 
-
+  margin-bottom: 10px;
+  color: #333;
+ }
+ 
+ 
+ .separator {
+  border-bottom: 2px solid black;
+  margin: -5px 0; 
+  margin-bottom: 15px;
+  width: 100%;
+ }
+ 
+ 
+ .union-box:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+ }
+ 
+ 
+ /* New modal-specific styles */
+ .modal-backdrop {
+  z-index: 1040 !important;
+ }
+ 
+ 
+ .modal {
+  z-index: 1050 !important;
+ }
+ 
+ 
+ .modal-dialog {
+  z-index: 1051 !important;
+ }
+ 
+ 
+ .scheduling-container {
+  transform: none !important;
+ }
+ 
+ 
+ .jobs-container {
+  transform: none !important;
+ }
+ 
+ 
+ .draggable-job-box {
+  transform-style: flat !important;
+ }
+ 
+ 
+ /* Ensure proper stacking context */
+ .project-box-container {
+  isolation: isolate;
+ }
+ 
+ 
+ /* Override any transform during drag that might affect modal */
+ .draggable-job-box.dragging {
+  transform: none !important;
+ }
+ 
