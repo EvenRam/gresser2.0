@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useDrag } from 'react-dnd';
 import unionColors from '../Trades/UnionColors';
-
+//console.log("test")
 const Employee = ({
   id,
   employee_id,
