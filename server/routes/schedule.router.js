@@ -237,7 +237,7 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
             INSERT INTO project_order 
                 (date, job_id, display_order, rain_day)
             SELECT 
-                $2, job_id, display_order, rain_day
+                $2, job_id, display_order, FALSE
             FROM project_order
             WHERE date = $1
         `, [currentDate, formattedNextDate]);

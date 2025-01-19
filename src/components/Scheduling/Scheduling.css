@@ -1,91 +1,128 @@
+/* Main Container Styles */
 .scheduling-container {
   display: flex;
   flex-direction: column;
   padding: 2px;
   width: 120%;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
 }
-.jobs-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+
+/* Header and Controls */
+.schedule-controls {
+  display: flex;
   gap: 10px;
-  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
 }
-.draggable-job-box {
-  width: 100%;
-  margin-bottom: 20px;
-}
-.draggable-job-box:active {
-  cursor: grabbing;
-}
-.projectboxname {
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-.employee-count {
-  margin-bottom: -5px;
-  margin-left: -5px;
-  margin-right: -5px;
-  text-align: end;
-  padding-right: 5px;
-  background-color: rgb(79, 76, 76);
-  color: white;
-  font-size: small;
-}
-.empty-job-box {
-  width: 170px;
-  height: 100px;
-  border: 1px dashed #ccc;
-  border-radius: 4px;
-}
-@media (max-width: 480px) {
-  .jobs-container {
-    grid-template-columns: 1fr;
-  }
-}
-.total-employees{
+
+.total-employees {
   text-align: center;
   font-weight: 600;
   margin-bottom: 25px;
   font-size: 14px;
 }
-/* Print styles */
-@media print {
-  .scheduling-container {
-    width: 100% !important;
-    padding: 0 !important;
-  }
-  .jobs-container {
-    gap: 10px !important;
-    page-break-inside: avoid;
-  }
-  /* Force background colors and text colors to print */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-  /* Preserve union colors */
-  [style*="color: red"] { color: red !important; }
-  [style*="color: green"] { color: green !important; }
-  [style*="color: black"] { color: black !important; }
-  [style*="color: purple"] { color: purple !important; }
-  [style*="color: blue"] { color: blue !important; }
-  [style*="color: pink"] { color: pink !important; }
-  [style*="color: orange"] { color: orange !important; }
-  /* Preserve project box styles */
-  .projectboxname {
-    background-color: #396a54 !important;
-    color: white !important;
-  }
-  .employee-count {
-    background-color: rgb(79, 76, 76) !important;
-    color: white !important;
-  }
-  /* Hide print button when printing */
-  button {
-    display: none !important;
-  }
+
+/* Button Styles */
+.print-button,
+.finalize-button {
+  padding: 4px 12px;
+  font-size: 13px;
+  height: 28px;
+  border-radius: 4px;
+  background-color: #396a54;
+  color: white;
+  border: none;
+  cursor: pointer;
 }
+
+.print-button:hover,
+.finalize-button:hover {
+  background-color: #2c543f;
+}
+
+/* Grid Layout - Essential for Drag Context */
+.jobs-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+  justify-content: center;
+  background-color: transparent;
+  position: relative;
+  min-height: 100px;
+  z-index: 1;
+  touch-action: none;
+}
+
+/* Draggable Box - Critical Properties */
+.draggable-job-box {
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  background-color: white;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  cursor: move;
+  z-index: 1;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Active Drag State */
+.draggable-job-box.dragging {
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.9;
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Union Boxes Container */
+.union-boxes-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(190px, 1fr));
+  gap: 5px;
+  background-color: transparent;
+  float: right;
+  width: 400px;
+  margin-left: 20px;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+}
+
+.union-box {
+  border-radius: 4px;
+  padding: 2px;
+  background-color: transparent;
+  min-height: 30px;
+  position: relative;
+  touch-action: none;
+}
+
+.union-box .union-label.small-text {
+  margin: -2px -2px 2px -2px;
+  padding: 3px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Project Box Elements */
+.projectboxname {
+  margin: -5px -5px 5px -5px;
+  padding: 5px;
+  background-color: #396a54;
+  color: white;
+  font-weight: 600;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  z-index: 2;
+}
+
 .project-box-footer {
   display: flex;
   justify-content: space-between;
@@ -93,46 +130,24 @@
   background-color: rgb(79, 76, 76);
   margin: -5px;
   margin-top: auto;
-  padding: 3px 5px;
+  padding: 2px 4px;
   color: white;
-  font-size: 11px;  /* Reduced font size */
-  width: calc(100% + 10px);  /* Compensate for negative margins */
+  font-size: 10px;
+  width: calc(100% + 10px);
+  border-radius: 0 0 4px 4px;
+  position: relative;
+  z-index: 2;
 }
-.rain-day-toggle {
-  display: flex;
-  align-items: center;
-  min-width: 60px;  /* Ensure minimum width for toggle */
-}
-.rain-day-toggle label {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  color: white;
-  margin: 0;
-  cursor: pointer;
-  font-size: 11px;  /* Match footer font size */
-}
-.rain-day-checkbox {
-  margin: 0;
-  cursor: pointer;
-  transform: scale(0.9);  /* Slightly smaller checkbox */
-}
-.rain-day-label {
-  white-space: nowrap;
-  user-select: none;
-}
+
+/* Employee List Styles */
 .employee-count {
-  font-size: 11px;  /* Match footer font size */
   margin: 0;
   padding: 0;
-  background-color: transparent;
+  padding-right: 5px;
+  color: white;
+  font-size: 11px;
   white-space: nowrap;
   text-align: right;
-}
-/* Adjust main container width to match your layout */
-.projectboxname {
-  margin: -5px -5px 5px -5px !important;  /* Ensure header spans full width */
-  padding: 5px !important;
 }
 
 .no-employees-message {
@@ -144,25 +159,245 @@
 }
 
 .primary {
-  font-size: 15px !important;
-  margin: 1px 0 !important;
-  padding: 0 !important;
-  line-height: 1.2 !important;
-}
-.project-box-footer {
-  padding: 2px 4px !important;
-  font-size: 10px !important;
-}
-/* Add these to your CSS file */
-.scheduling-container .btn {
-  padding: 1px 4px !important;
-  font-size: 14px !important;
-  height: 18px !important;
-  line-height: 16px !important;
-  min-width: fit-content !important;
-  cursor: pointer !important;
-  border: none !important;
-  margin: 0 !important;
-  display: inline-block !important;
+  font-size: 15px;
+  margin: 1px 0;
+  padding: 0;
+  line-height: 1.2;
 }
 
+/* Rain Day Toggle */
+.rain-day-toggle {
+  display: flex;
+  align-items: center;
+  min-width: 60px;
+}
+
+.rain-day-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: white;
+  margin: 0;
+  margin-right: 25px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.rain-day-checkbox {
+  margin: 0;
+  cursor: pointer;
+  transform: scale(0.9);
+}
+
+/* Print Optimization */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.5in;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+  }
+
+  .scheduling-container {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: scale(0.90) !important;
+    transform-origin: top left !important;
+  }
+
+  .jobs-container {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: calc(155% - 260px) !important;
+    float: left !important;
+  }
+
+  .union-box .union-label.small-text {
+    font-size: 7px !important;
+    padding: 3px !important;
+    margin: -2px -2px 4px -2px !important;
+    font-weight: 600 !important;
+    background-color: #f8f8f8 !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+
+
+  /* Union Boxes Print Layout */
+  .union-boxes-container {
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    width: 100px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    float: right !important;
+  }
+
+  .union-box {
+    margin-bottom: 2px !important;
+    padding: 1px !important;
+    font-size: 14px !important;
+  }
+
+  /* Project Box Print Adjustments */
+  .draggable-job-box {
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0px !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    border: 1px solid #ddd !important;
+    padding-bottom: 16px !important; /* Make space for footer */
+    margin-bottom: 6px !important; /* Increased space after project name */
+    position: relative !important;
+    min-height: 40px !important;
+    overflow: hidden !important; /* Prevent content from creating gaps */
+    justify-content: space-between !important; /* This will push the footer to bottom */
+  }
+
+  .projectboxname {
+    font-size: 10px !important;
+    padding: 1px 2px !important;
+    margin: 0 !important; /* Remove negative margins */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    border-radius: 0 !important; /* Remove border radius to align with box */
+    margin-bottom: 3px !important; /* Add space after project name */
+  }
+
+  .draggable-job-box > div:not(.projectboxname):not(.project-box-footer) {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important; /* Allow content to shrink */
+  }
+
+
+  /* Employee Count in Footer */
+  .employee-count {
+    font-size: 8px !important;
+    margin-left: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .project-box-footer {
+    padding: 1px 1px !important;
+    font-size: 8px !important;
+    margin: -2px !important;
+  }
+
+  .primary {
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+    margin: 1px 0 !important;
+  }
+
+  .employee-count {
+    font-size: 8px !important;
+  }
+
+  .rain-day-toggle {
+    font-size: 5px !important;
+    display: flex !important;
+    align-items: center !important;
+    min-width: auto !important;
+    margin-right: 4px !important;
+    white-space: nowrap !important;
+  }
+  .rain-day-label {
+    font-size: 7px !important;
+    font-size: 8px !important;
+    margin-right: 2px !important;
+    white-space: nowrap !important;
+    color: white !important;
+  }
+  .rain-day-checkbox {
+    transform: scale(0.7) !important;
+    margin: 0 2px !important;
+  }
+
+  
+.no-employees-message {
+    font-size: 8px !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 8px 4px !important;
+    margin: 0 !important;
+    color: #666 !important;
+    font-style: italic !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    white-space: nowrap !important;
+  }
+
+  /* Force colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Preserve drag context in print */
+  .draggable-job-box,
+  .union-box,
+  .jobs-container,
+  .union-boxes-container {
+    touch-action: none !important;
+    user-select: none !important;
+  }
+
+  /* Hide UI Elements */
+  .finalize-button,
+  .print-button,
+  .nav,
+  .websitelogo,
+  button,
+  .btn,
+  .btn-primary,
+  input[type="button"],
+  .print-schedule,
+  .finalize-schedule,
+  .print-container button,
+  .schedule-controls button {
+    display: none !important;
+  }
+
+  /* Preserve colors and formatting */
+  .projectboxname {
+    background-color: #396a54 !important;
+    color: white !important;
+  }
+
+  .project-box-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background-color: rgb(79, 76, 76) !important;
+    padding: 2px 4px !important;
+    font-size: 8px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 16px !important;
+  }
+}

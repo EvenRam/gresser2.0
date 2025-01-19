@@ -19,9 +19,7 @@ const UnionBox = ({ id, union_name, color }) => {
         accept: 'EMPLOYEE',
         drop: (item, monitor) => {
             const didDrop = monitor.didDrop();
-            if (didDrop) {
-                return;
-            }
+            if (didDrop) return;
 
             if (!item || !item.id) {
                 console.error('Invalid drop item:', item);
@@ -46,23 +44,22 @@ const UnionBox = ({ id, union_name, color }) => {
         }),
     }), [id, dispatch, selectedDate]);
 
+    // Get union number for styling
+    const unionNumber = union_name.match(/^\d+/)?.[0];
+    
     return (
         <div 
             ref={drop}
-            style={{
-                border: '1px solid gray',
-                width: '190px',
-                minHeight: '150px',
-                margin: '1px',
-                padding: '1px',
-                backgroundColor: isOver ? '#f0f0f0' : '#fff',
-            }}
+            className={`union-box union-${unionNumber}`}
+            data-union-id={unionNumber}
         >
-            <h4 className='small-text' style={{ color }}>{union_name}</h4>
-            <div className="separator"></div>
-            <div className='union_box'> 
+           <div className='union-label small-text' style={{ color }}>
+    {union_name}
+</div>
+
+            <div className="union_box"> 
                 {employees.length === 0 ? (
-                    <p>No employees assigned</p>
+                    <p className="no-employees">No employees assigned</p>
                 ) : (
                     employees
                         .filter(employee => employee.employee_status === true)
@@ -71,7 +68,7 @@ const UnionBox = ({ id, union_name, color }) => {
                                 key={employee.id}
                                 {...employee}
                                 id={employee.id} 
-                                className="employee-name"
+                                className={`employee-name union-${unionNumber}`}
                                 name={`${employee.first_name} ${employee.last_name}`}
                                 union_id={id}
                                 union_name={union_name}

@@ -1,26 +1,29 @@
-
-/* For the union name */
-.small-text {
-  font-size: 15px; /* Slightly larger font for better readability */
-  font-weight: 600; /* Make it bold for emphasis */
-  margin-bottom: 10px; /* Add more spacing below */
-  color: #333; /* Neutral color for better visibility */
+/* /* Union Box Specific Styles
+-------------------------------------------------- */
+/* .union-boxes-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(190px, 1fr));
+  gap: 5px;
+  background-color: transparent;
+  float: right;
+  width: 400px;
+  margin-left: 20px;
 }
 
+.union-box {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px;
+  background-color: transparent;
+}*/
 
-/* For the separator */
-.separator {
-  border-bottom: 2px solid black;
-  margin: -5px 0;  
-  margin-bottom: 15px;
-  width: 100%;  /* Full width */
-}
+.union-box h4.small-text {
+  margin: -2px -2px 2px -2px;
+  padding: 3px;
+  font-size: 14px;
+  font-weight: 600;
 
-
-
-
-.union-box:hover {
-  background-color: #f0f0f0; /* Slightly darker background on hover */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhance shadow on hover */
-}
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+} 
 
