@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import { put, takeLatest, call } from 'redux-saga/effects';
 import axios from 'axios';
 
@@ -34,7 +27,7 @@ function* addEmployeeInfo(action) {
 function* statusToggle(action) {
  try {
    const { id, employee_status } = action.payload;
-   yield call(axios.put, `/api/addemployee/${id}`, { employee_status });
+   yield call(axios.put, /api/addemployee/${id}, { employee_status });
    yield put({ type: 'FETCH_EMPLOYEE_INFO' });
  } catch (error) {
    console.error("Error toggling employee status:", error);
@@ -57,7 +50,7 @@ function* updateHighlightState(action) {
    const { id, isHighlighted, date, projectId } = action.payload;
    console.log('Attempting to update highlight state:', { id, isHighlighted, date, projectId });
   
-   const response = yield call(axios.put, `/api/schedule/${date}/${id}/highlight`, {
+   const response = yield call(axios.put, /api/schedule/${date}/${id}/highlight, {
      isHighlighted,
      projectId
    });
@@ -185,7 +178,7 @@ function* updateHighlightStatus(action) {
 
        yield call(
            axios.put,
-           `/api/schedule/${formattedDate}/${id}/highlight`,
+           /api/schedule/${formattedDate}/${id}/highlight,
            { isHighlighted }
        );
 
@@ -216,7 +209,7 @@ function* fetchEmployees(action) {
        console.log("Fetching employees for date:", formattedDate);
        const response = yield call(
            axios.get,
-           `/api/schedule/employees/${formattedDate}`
+           /api/schedule/employees/${formattedDate}
        );
        yield put({
            type: 'SET_EMPLOYEES',
@@ -248,7 +241,7 @@ function* fetchUnionsWithEmployees(action) {
        console.log('Fetching unions with employees for date:', formattedDate);
        const response = yield call(
            axios.get,
-           `/api/schedule/withunions/${formattedDate}`
+           /api/schedule/withunions/${formattedDate}
        );
        yield put({
            type: 'SET_EMPLOYEE_WITH_UNION',
@@ -274,7 +267,7 @@ function* fetchProjectsWithEmployees(action) {
        }
        const response = yield call(
            axios.get,
-           `/api/project/withEmployees/${formattedDate}`
+           /api/project/withEmployees/${formattedDate}
        );
        const highlightedEmployees = {};
        response.data.forEach(project => {
@@ -361,7 +354,7 @@ function* handleMoveEmployee(action) {
       
        yield call(
            axios.post,
-           `/api/moveemployee/${formattedDate}`,
+           /api/moveemployee/${formattedDate},
            { employeeId, targetProjectId }
        );
        localStorage.setItem('selectedScheduleDate', formattedDate);
@@ -458,7 +451,7 @@ function* updateProjectOrder(action) {
        // Then persist to backend
        yield call(
            axios.put,
-           `/api/project/updateProjectOrder`,
+           /api/project/updateProjectOrder,
            {
                orderedProjectIds,
                date: formattedDate
@@ -535,7 +528,7 @@ function* finalizeSchedule(action) {
        console.log('Making API call to finalize schedule...');
        const response = yield call(
            axios.post,
-           `/api/schedule/finalize/${formattedDate}`
+           /api/schedule/finalize/${formattedDate}
        );
        console.log('Received response:', response.data);
       
@@ -574,7 +567,7 @@ function* finalizeSchedule(action) {
        // Add a success notification
        yield put({
            type: 'SET_SUCCESS_MESSAGE',
-           payload: `Schedule finalized. Moved to ${nextDate}`
+           payload: Schedule finalized. Moved to ${nextDate}
        });
    } catch (error) {
        console.error('Error in finalizeSchedule:', error);
@@ -595,7 +588,7 @@ function* finalizeSchedule(action) {
 function* updateRainDayStatus(action) {
    try {
        const { jobId, isRainDay, date } = action.payload;
-       yield call(axios.put, `/api/project/${jobId}/rainday`, { date, isRainDay });
+       yield call(axios.put, /api/project/${jobId}/rainday, { date, isRainDay });
        yield put({
            type: 'UPDATE_RAIN_DAY_STATUS',
            payload: { jobId, isRainDay, date }
