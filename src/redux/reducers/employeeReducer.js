@@ -21,19 +21,6 @@ const employeeReducer = (state = initialState, action) => {
             };
         }
 
-        case 'SET_HIGHLIGHTED_EMPLOYEES': {
-            const { date, highlights } = action.payload;
-            if (!date) return state;
-
-            return {
-                ...state,
-                highlightedEmployeesByDate: {
-                    ...state.highlightedEmployeesByDate,
-                    [date]: highlights
-                }
-            };
-        }
-
         case 'SET_HIGHLIGHTED_EMPLOYEE': {
             const { id, isHighlighted, date } = action.payload;
             if (!date || !id) {
