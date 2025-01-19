@@ -16,7 +16,6 @@ const ProjectBox = ({
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
   const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
   const [orderedEmployees, setOrderedEmployees] = useState([]);
-
   useEffect(() => {
     if (!Array.isArray(employees)) {
       console.warn('Employees prop is not an array:', employees);
@@ -30,15 +29,12 @@ const ProjectBox = ({
     });
     setOrderedEmployees(sorted);
   }, [employees]);
-
   const highlightedEmployees = useSelector(state => 
     state.employeeReducer.highlightedEmployeesByDate[selectedDate] || {}
   );
-
   if (!id) {
     return null;
   }
-
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     if (!isEditable) return;
     
@@ -51,14 +47,15 @@ const ProjectBox = ({
       }
     });
   }, [dispatch, selectedDate, isEditable]);
-
   const handleDrop = useCallback((item) => {
     if (!item?.id || !isEditable) return;
     const isExternalMove = item.current_location === 'union' || 
                           (item.current_location === 'project' && item.projectId !== id);
+
     
     if (isExternalMove) {
       moveEmployee(item.id, id, item.union_id, selectedDate);
+
       dispatch({ 
         type: 'SET_HIGHLIGHTED_EMPLOYEE', 
         payload: { 
@@ -69,7 +66,6 @@ const ProjectBox = ({
       });
     }
   }, [id, moveEmployee, dispatch, selectedDate, isEditable]);
-
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: handleDrop,
@@ -77,7 +73,6 @@ const ProjectBox = ({
       isOver: !!monitor.isOver(),
     }),
   }), [handleDrop]);
-
   const handleReorder = useCallback(async (fromIndex, toIndex) => {
     if (!isEditable) return;
     
@@ -85,37 +80,26 @@ const ProjectBox = ({
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
 
-    setOrderedEmployees(newOrder);
-
-    try {
-      // Format data to match router expectations
-      const orderedEmployeeIds = newOrder
-        .filter(emp => emp.employee_status === true)
-        .map((emp, index) => ({
-          id: emp.id,  // router expects {id, display_order}
-          display_order: index
-        }));
-
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
           projectId: id,
+
           orderedEmployeeIds,
+
           date: selectedDate
         }
       });
     } catch (error) {
       console.error('Error updating employee order:', error);
-      setOrderedEmployees(employees); // Revert on error
+      setOrderedEmployees(employees);
     }
   }, [orderedEmployees, id, dispatch, employees, selectedDate, isEditable]);
-
   const currentRainDay = useSelector(state => {
     const projects = state.projectReducer.projectsByDate[selectedDate] || [];
     const project = projects.find(p => p.id === id);
     return project?.rain_day || false;
   });
-
   const handleRainDayToggle = useCallback(() => {
     if (!isEditable) return;
     
@@ -132,6 +116,7 @@ const ProjectBox = ({
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
  
   return (
+
     <>
       <div
         ref={drop}
@@ -173,27 +158,25 @@ const ProjectBox = ({
               ))
           )}
         </div>
-        <div className="project-box-footer">
-          <div className="employee-count">
-            Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
-          </div>
-          <div className="rain-day-toggle">
-            <label>
-              <input
-                type="checkbox"
-                checked={currentRainDay}
-                onChange={handleRainDayToggle}
-                disabled={!isEditable}
-                className="rain-day-checkbox"
-              />
-              <span className="rain-day-label">Rain Day</span>
-            </label>
-          </div>
+
+      <div className="project-box-footer">
+        <div className="employee-count">
+          Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
+        </div>
+        <div className="rain-day-toggle">
+          <label>
+            <input
+              type="checkbox"
+              checked={currentRainDay}
+              onChange={handleRainDayToggle}
+              disabled={!isEditable}
+              className="rain-day-checkbox"
+            />
+            <span className="rain-day-label">Rain Day</span>
+          </label>
         </div>
       </div>
-      <div id="project-box-modals-container" style={{ position: 'relative', zIndex: 1050 }}></div>
-    </>
+    </div>
   );
 };
-
 export default React.memo(ProjectBox);

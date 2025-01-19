@@ -1,3 +1,4 @@
+
 import { takeLatest, call, put, select, take } from "redux-saga/effects";
 import axios from 'axios';
 
@@ -200,12 +201,17 @@ function* handleMoveEmployee(action) {
     try {
         const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
         const currentDate = date || getDefaultDate();
+
         const { isValid, formattedDate } = validateDate(currentDate);
+
         
         if (!isValid) {
             throw new Error('Invalid date format');
         }
         
+        if (!isWithinRange) {
+            throw new Error('Date is out of allowed range');
+        }
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 
@@ -456,5 +462,7 @@ export default function* scheduleSaga() {
     yield takeLatest('UPDATE_PROJECT_ORDER', updateProjectOrder);
     yield takeLatest('UPDATE_EMPLOYEE_ORDER', updateEmployeeOrder);
     yield takeLatest('FINALIZE_SCHEDULE', finalizeSchedule);
+
     yield takeLatest('UPDATE_RAIN_DAY_STATUS_REQUEST', updateRainDayStatus);
 }
+

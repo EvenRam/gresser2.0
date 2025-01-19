@@ -45,6 +45,7 @@ const DraggableJobBox = ({
       const hoverIndex = index;
 
       // Don't replace items with themselves
+
       if (dragIndex === hoverIndex) return;
 
       // Move the job box
@@ -55,6 +56,7 @@ const DraggableJobBox = ({
       let newOrder = [...updatedOrder];
       const [movedItem] = newOrder.splice(dragIndex, 1);
       newOrder.splice(hoverIndex, 0, movedItem);
+
 
       dispatch({
         type: 'UPDATE_PROJECT_ORDER',
@@ -71,6 +73,7 @@ const DraggableJobBox = ({
       isOver: monitor.isOver({ shallow: true })
     })
   });
+
 
   // Combine drag and drop refs
   const dragDropRef = (el) => {
@@ -99,6 +102,7 @@ const DraggableJobBox = ({
         job_name={job.job_name}
         employees={job.employees || []}
         moveEmployee={moveEmployee}
+
         rain_day={job.rain_day}
       />
     </div>
