@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDrag, useDrop } from 'react-dnd';
 import { useDispatch } from 'react-redux';
 import unionColors from '../Trades/UnionColors';
-
+//console.log("test")
 const Employee = ({
   id,
   employee_id,
