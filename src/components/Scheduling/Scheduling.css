@@ -1,14 +1,15 @@
-/* Main Container Styles
--------------------------------------------------- */
+/* Main Container Styles */
 .scheduling-container {
   display: flex;
   flex-direction: column;
   padding: 2px;
   width: 120%;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
 }
 
-/* Header and Controls
--------------------------------------------------- */
+/* Header and Controls */
 .schedule-controls {
   display: flex;
   gap: 10px;
@@ -41,26 +42,76 @@
   background-color: #2c543f;
 }
 
-/* Grid Layout
--------------------------------------------------- */
+/* Grid Layout - Essential for Drag Context */
 .jobs-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 10px;
   justify-content: center;
   background-color: transparent;
+  position: relative;
+  min-height: 100px;
+  z-index: 1;
+  touch-action: none;
 }
 
-/* Project Box Styles
--------------------------------------------------- */
+/* Draggable Box - Critical Properties */
 .draggable-job-box {
   width: 100%;
   margin-bottom: 20px;
   border-radius: 4px;
+  background-color: white;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  cursor: move;
+  z-index: 1;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  background-color: transparent;
 }
 
+/* Active Drag State */
+.draggable-job-box.dragging {
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.9;
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Union Boxes Container */
+.union-boxes-container {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(190px, 1fr));
+  gap: 5px;
+  background-color: transparent;
+  float: right;
+  width: 400px;
+  margin-left: 20px;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+}
+
+.union-box {
+  border-radius: 4px;
+  padding: 2px;
+  background-color: transparent;
+  min-height: 30px;
+  position: relative;
+  touch-action: none;
+}
+
+.union-box .union-label.small-text {
+  margin: -2px -2px 2px -2px;
+  padding: 3px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Project Box Elements */
 .projectboxname {
   margin: -5px -5px 5px -5px;
   padding: 5px;
@@ -68,10 +119,27 @@
   color: white;
   font-weight: 600;
   border-radius: 4px 4px 0 0;
+  position: relative;
+  z-index: 2;
 }
 
-/* Employee List Styles
--------------------------------------------------- */
+.project-box-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgb(79, 76, 76);
+  margin: -5px;
+  margin-top: auto;
+  padding: 2px 4px;
+  color: white;
+  font-size: 10px;
+  width: calc(100% + 10px);
+  border-radius: 0 0 4px 4px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Employee List Styles */
 .employee-count {
   margin: 0;
   padding: 0;
@@ -97,22 +165,7 @@
   line-height: 1.2;
 }
 
-/* Footer and Rain Day Toggle
--------------------------------------------------- */
-.project-box-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: rgb(79, 76, 76);
-  margin: -5px;
-  margin-top: auto;
-  padding: 2px 4px;
-  color: white;
-  font-size: 10px;
-  width: calc(100% + 10px);
-  border-radius: 0 0 4px 4px;
-}
-
+/* Rain Day Toggle */
 .rain-day-toggle {
   display: flex;
   align-items: center;
@@ -136,35 +189,11 @@
   cursor: pointer;
   transform: scale(0.9);
 }
-/* Union Box Specific Styles
--------------------------------------------------- */
-.union-boxes-container {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(190px, 1fr));
-  gap: 5px;
-  background-color: transparent;
-  float: right;
-  width: 400px;
-  margin-left: 20px;
-}
-.union-box {
-  /* border: 1px solid #ccc; */
-  border-radius: 4px;
-  padding: 2px;
-  background-color: transparent;
-}
-.union-box .union-label.small-text {
-  margin: -2px -2px 2px -2px;
-  padding: 3px;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #f8f8f8;
-  border-bottom: 1px solid #ddd;
-}
 
+/* Print Optimization */
 @media print {
   @page {
-    size: A4 landscape;
+    size: landscape;
     margin: 0.5in;
   }
 
@@ -175,45 +204,55 @@
   }
 
   .scheduling-container {
-    width: 98% !important;
+    width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
-    transform: scale(0.75) !important;
+    transform: scale(0.90) !important;
     transform-origin: top left !important;
-  }
-
-  /* Header Controls */
-  .schedule-controls {
-    margin-bottom: 4px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-
-  .total-employees {
-    font-size: 9px !important;
-    margin: 0 8px 0 0 !important;
-  }
-
-  /* Date Picker */
-  input[type="date"] {
-    font-size: 9px !important;
-    padding: 1px !important;
-    margin-right: 8px !important;
-    height: 14px !important;
-    width: auto !important;
-    display: inline-block !important;
-    visibility: visible !important;
   }
 
   .jobs-container {
     display: grid !important;
     grid-template-columns: repeat(6, 1fr) !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: calc(155% - 260px) !important;
+    float: left !important;
+  }
+
+  .union-box .union-label.small-text {
+    font-size: 7px !important;
+    padding: 3px !important;
+    margin: -2px -2px 4px -2px !important;
+    font-weight: 600 !important;
+    background-color: #f8f8f8 !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+
+
+  /* Union Boxes Print Layout */
+  .union-boxes-container {
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    width: 100px !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 1px !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: calc(95% - 60px) !important; /* Reduced space for union boxes */
+    float: right !important;
   }
 
+  .union-box {
+    margin-bottom: 2px !important;
+    padding: 1px !important;
+    font-size: 14px !important;
+  }
+
+  /* Project Box Print Adjustments */
   .draggable-job-box {
     display: flex !important;
     flex-direction: column !important;
@@ -222,32 +261,16 @@
     box-shadow: none !important;
     background-color: transparent !important;
     border: 1px solid #ddd !important;
-    min-height: 40px !important; /* Increased to accommodate footer */
+    padding-bottom: 16px !important; /* Make space for footer */
+    margin-bottom: 6px !important; /* Increased space after project name */
+    position: relative !important;
+    min-height: 40px !important;
     overflow: hidden !important; /* Prevent content from creating gaps */
     justify-content: space-between !important; /* This will push the footer to bottom */
-
-  }
- 
-  /* Empty project boxes */
-  .draggable-job-box .no-employees-message {
-    margin: 0 !important;
-  }
-
-  .draggable-job-box:has(.no-employees-message) {
-    max-height: none !important; /* Remove height restriction */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-  }
-
-  /* Project boxes with employees */
-  .draggable-job-box:not(:has(.no-employees-message)) {
-    height: auto !important;
-    min-height: 25px !important;
   }
 
   .projectboxname {
-    font-size: 14px !important;
+    font-size: 10px !important;
     padding: 1px 2px !important;
     margin: 0 !important; /* Remove negative margins */
     white-space: nowrap !important;
@@ -255,99 +278,92 @@
     text-overflow: ellipsis !important;
     border-radius: 0 !important; /* Remove border radius to align with box */
     margin-bottom: 3px !important; /* Add space after project name */
-
   }
 
-  /* Union Box Print Styles */
- .trades-container {
-    position: absolute !important;
-    right: 0.5in !important;
-    top: -.8in !important;
-    width: 290px !important;  /* Increased from 215px */
-    transform: scale(0.8) !important;
-    height: calc(100% - 0.5in) !important;
-}
-
-  .unions-container {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1px !important;
-  }
-
-  .union-box {
-    margin: 0 !important;
-    padding: 1px !important;
-    border: 1px solid #ccc !important;
-    background-color: transparent !important;
-  }
-
- .union-box .union-label.small-text {
-    font-size: 14px;
-    padding: 1px;
-    margin: 0;
-    font-weight: 600;
-
-}
-
-  /* Employee Names */
-  .employee-name {
-    font-size: 1px !important;
-    line-height: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    white-space: normal !important; /* Allow wrapping */
-    overflow: visible !important;
-    max-width: none !important;
-    width: auto !important;
-  }
-
-  /* Footer Elements */
-  .project-box-footer {
-    margin-top: auto !important; /* Additional assurance footer stays at bottom */
+  .draggable-job-box > div:not(.projectboxname):not(.project-box-footer) {
+    flex: 1 1 auto !important;
     display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    background-color: rgb(79, 76, 76) !important;
-    padding: 1px 2px !important;
-    margin: 0 !important; /* Remove negative margins */
-    font-size: 1px !important;
-    min-height: 8px !important;
-    border-radius: 0 !important; /* Remove border radius to align with box */
-    width: 100% !important; /* Ensure full width */  }
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    min-height: 0 !important; /* Allow content to shrink */
+  }
 
 
-    .draggable-job-box > div:not(.projectboxname):not(.project-box-footer) {
-      flex: 1 1 auto !important;
-      display: flex !important;
-      flex-direction: column !important;
-      justify-content: flex-start !important;
-      min-height: 0 !important; /* Allow content to shrink */
-    }
+  /* Employee Count in Footer */
+  .employee-count {
+    font-size: 8px !important;
+    margin-left: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .project-box-footer {
+    padding: 1px 1px !important;
+    font-size: 8px !important;
+    margin: -2px !important;
+  }
+
+  .primary {
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+    margin: 1px 0 !important;
+  }
 
   .employee-count {
-    font-size: 7px !important;
-    padding-right: 2px !important;
+    font-size: 8px !important;
   }
 
   .rain-day-toggle {
     font-size: 5px !important;
+    display: flex !important;
+    align-items: center !important;
+    min-width: auto !important;
+    margin-right: 4px !important;
+    white-space: nowrap !important;
   }
-
   .rain-day-label {
     font-size: 7px !important;
+    font-size: 8px !important;
+    margin-right: 2px !important;
+    white-space: nowrap !important;
+    color: white !important;
   }
-
   .rain-day-checkbox {
     transform: scale(0.7) !important;
+    margin: 0 2px !important;
   }
 
- .no-employees-message {
-    font-size: 7px !important;
-    margin: 1px 0 !important;
-    flex-grow: 1 !important;
+  
+.no-employees-message {
+    font-size: 8px !important;
+    text-align: center !important;
+    width: 100% !important;
+    padding: 8px 4px !important;
+    margin: 0 !important;
+    color: #666 !important;
+    font-style: italic !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    white-space: nowrap !important;
   }
 
-  /* Hide Controls */
+  /* Force colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Preserve drag context in print */
+  .draggable-job-box,
+  .union-box,
+  .jobs-container,
+  .union-boxes-container {
+    touch-action: none !important;
+    user-select: none !important;
+  }
+
+  /* Hide UI Elements */
   .finalize-button,
   .print-button,
   .nav,
@@ -361,38 +377,27 @@
   .print-container button,
   .schedule-controls button {
     display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
+  }
+
+  /* Preserve colors and formatting */
+  .projectboxname {
+    background-color: #396a54 !important;
+    color: white !important;
+  }
+
+  .project-box-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background-color: rgb(79, 76, 76) !important;
+    padding: 2px 4px !important;
+    font-size: 8px !important;
     margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-  }
-
-  /* Preserve Colors */
-  .union-21 { color: red !important; }
-  .union-22 { color: green !important; }
-  .union-23 { color: black !important; }
-  .union-24 { color: purple !important; }
-  .union-25 { color: blue !important; }
-  .union-26 { color: pink !important; }
-  .union-27 { color: orange !important; }
-  .union-28 { color: blue !important; }
-  .union-29 { color: black !important; }
-
-  /* Force background colors to print */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-
-  .draggable-job-box {
-    min-height: 20px !important; /* Base height for all boxes */
-  }
-  
-  /* Let boxes with employees grow larger */
-  .draggable-job-box .employee-name {
-    min-height: 10px !important; /* Space for each employee name */
+    width: 100% !important;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 16px !important;
   }
 }

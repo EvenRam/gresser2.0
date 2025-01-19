@@ -229,7 +229,7 @@ const Scheduling = () => {
                         onClick={handleFinalize}
                         className="btn btn-primary"
                     >
-                        Finalize Schedule
+                        Carry Forward
                     </button>
                 )}
                 {!isEditable && (
