@@ -1,4 +1,6 @@
-/* Main Container Styles */
+/* 
+scheduling.css file
+Main Container Styles */
 .scheduling-container {
   display: flex;
   flex-direction: column;

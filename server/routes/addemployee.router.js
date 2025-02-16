@@ -3,7 +3,7 @@ const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 
-
+//addemployee.router.js
 router.get('/', async (req, res) => {
     if (req.isAuthenticated()) {
         console.log('User is authenticated?:', req.isAuthenticated());

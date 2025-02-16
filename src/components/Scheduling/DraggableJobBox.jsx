@@ -3,7 +3,13 @@ import { useDrag, useDrop } from 'react-dnd';
 import ProjectBox from './ProjectBox';
 import './EmployeeStyles.css';
 
-const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
+const DraggableJobBox = ({ 
+  job, 
+  index, 
+  moveJob, 
+  moveEmployee, 
+  isEditable 
+}) => {
   const ref = useRef(null);
 
   const [{ isDragging }, drag] = useDrag({
@@ -40,22 +46,15 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
       const dragIndex = item.index;
       const hoverIndex = index;
 
-      // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
         return;
       }
 
-      // Get rectangle on screen
       const hoverBoundingRect = ref.current.getBoundingClientRect();
-      
-      // Get vertical middle
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      
-      // Get pixels to top
       const clientOffset = monitor.getClientOffset();
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
-      // Only perform the move when the mouse has crossed half of the item's height
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
         return;
       }
@@ -93,6 +92,7 @@ const DraggableJobBox = ({ job, index, moveJob, moveEmployee, isEditable }) => {
         moveEmployee={moveEmployee}
         display_order={job.display_order}
         rain_day={job.rain_day}
+        isEditable={isEditable}
       />
     </div>
   );

@@ -122,34 +122,109 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
 
 // Update employee order within a project for a specific date
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
+    const client = await pool.connect();
     try {
-        const { projectId, orderedEmployeeIds } = req.body;
+        const { projectId, orderedEmployeeIds, sourceIndex, targetIndex } = req.body;
         const date = req.validatedDate;
         
-        await pool.query('BEGIN');
-        // Update display order in schedule table
-        for (let i = 0; i < orderedEmployeeIds.length; i++) {
-            await pool.query(
-                `INSERT INTO schedule 
-                    (date, job_id, employee_id, employee_display_order)
-                VALUES 
-                    ($1, $2, $3, $4)
-                ON CONFLICT (date, employee_id) 
-                DO UPDATE SET 
-                    employee_display_order = $4,
-                    job_id = $2;`,
-                [date, projectId, orderedEmployeeIds[i], i]
-            );
+        await client.query('BEGIN');
+
+        // If we have specific source and target indices, we're handling a drop operation
+        if (sourceIndex !== undefined && targetIndex !== undefined) {
+            // First, get all employees in the project
+            const currentOrderQuery = `
+                SELECT employee_id, employee_display_order 
+                FROM schedule 
+                WHERE date = $1 AND job_id = $2 
+                ORDER BY employee_display_order NULLS LAST
+            `;
+            const currentOrder = await client.query(currentOrderQuery, [date, projectId]);
+            const employees = currentOrder.rows;
+
+            // Calculate new positions
+            let updatePromises = [];
+            employees.forEach((emp, currentIndex) => {
+                let newOrder;
+                if (sourceIndex < targetIndex) {
+                    // Moving down
+                    if (currentIndex < sourceIndex || currentIndex > targetIndex) {
+                        return; // Position unchanged
+                    }
+                    if (currentIndex === targetIndex) {
+                        newOrder = targetIndex;
+                    } else {
+                        newOrder = currentIndex - 1;
+                    }
+                } else {
+                    // Moving up
+                    if (currentIndex < targetIndex || currentIndex > sourceIndex) {
+                        return; // Position unchanged
+                    }
+                    if (currentIndex === targetIndex) {
+                        newOrder = targetIndex;
+                    } else {
+                        newOrder = currentIndex + 1;
+                    }
+                }
+
+                // Update the position
+                updatePromises.push(
+                    client.query(
+                        `UPDATE schedule 
+                         SET employee_display_order = $1 
+                         WHERE date = $2 AND employee_id = $3`,
+                        [newOrder, date, emp.employee_id]
+                    )
+                );
+            });
+
+            // Execute all updates
+            await Promise.all(updatePromises);
+        } else {
+            // Handle bulk reordering (e.g., after drag between projects)
+            for (let i = 0; i < orderedEmployeeIds.length; i++) {
+                await client.query(
+                    `INSERT INTO schedule 
+                        (date, job_id, employee_id, employee_display_order)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT (date, employee_id) 
+                     DO UPDATE SET 
+                        employee_display_order = $4,
+                        job_id = $2
+                     WHERE schedule.date = $1 
+                        AND schedule.employee_id = $3`,
+                    [date, projectId, orderedEmployeeIds[i], i]
+                );
+            }
         }
-        await pool.query('COMMIT');
+
+        // Finally, ensure all display orders are sequential
+        await client.query(`
+            WITH ranked AS (
+                SELECT 
+                    employee_id,
+                    ROW_NUMBER() OVER (ORDER BY employee_display_order NULLS LAST) - 1 as new_order
+                FROM schedule
+                WHERE date = $1 AND job_id = $2
+            )
+            UPDATE schedule s
+            SET employee_display_order = r.new_order
+            FROM ranked r
+            WHERE s.date = $1 
+                AND s.job_id = $2
+                AND s.employee_id = r.employee_id
+        `, [date, projectId]);
+
+        await client.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error updating employee order:', error);
         res.status(500).send('Error updating employee order');
+    } finally {
+        client.release();
     }
 });
-
 
 // Update rain day status
 router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, res) => {

@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
-import { useDrag } from 'react-dnd';
+import React, { useCallback, useRef } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
+import { useDispatch, useSelector } from 'react-redux';
 import ReactDOM from 'react-dom';
 import unionColors from '../Trades/UnionColors';
 
@@ -19,81 +20,109 @@ const Employee = ({
   onReorder,
   projectId
 }) => {
+  const dispatch = useDispatch();
+  const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
+  const ref = useRef(null);
   const actualId = employee_id || id;
   const unionColor = unionColors[union_name] || 'black';
   const modalId = `employee-modal-${actualId}`;
-  
+
+  // Drag configuration
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: {
+    item: () => ({
       id: actualId,
       employee_id: actualId,
       union_id,
       union_name,
       current_location,
       index,
-      projectId
+      projectId,
+      type: 'EMPLOYEE',
+      originalIndex: index
+    }),
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+    end: (item, monitor) => {
+      const didDrop = monitor.didDrop();
+      if (!didDrop && projectId && onReorder) {
+        onReorder(item.index, item.originalIndex);
+      }
+    },
+  }), [actualId, union_id, union_name, current_location, index, projectId, onReorder]);
+
+  // Drop configuration for reordering within project
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'EMPLOYEE',
+    canDrop: (item) => item.projectId === projectId,
+    hover: (item, monitor) => {
+      if (!ref.current || item.projectId !== projectId) return;
+      
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      
+      if (dragIndex === hoverIndex) return;
+
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
+
+      onReorder(dragIndex, hoverIndex);
+      item.index = hoverIndex;
     },
     collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
+      isOver: monitor.isOver(),
+      canDrop: monitor.canDrop()
     }),
-  }), [actualId, union_id, union_name, current_location, index, projectId]);
-  
+  }), [index, onReorder, projectId]);
+
+  // Handle right-click for highlighting
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
-    if (isHighlighted && typeof onClick === 'function') {
-      onClick(actualId, isHighlighted);
+    if (current_location === 'project') {
+      dispatch({
+        type: 'SET_HIGHLIGHTED_EMPLOYEE',
+        payload: {
+          id: actualId,
+          isHighlighted: !isHighlighted,
+          date: selectedDate
+        }
+      });
     }
-  }, [actualId, isHighlighted, onClick]);
+  }, [actualId, isHighlighted, current_location, dispatch, selectedDate]);
 
-  // Render the modal markup
-  const modalContent = (
-    <div 
-      className="modal fade" 
-      id={modalId} 
-      tabIndex="-1" 
-      role="dialog" 
-      aria-labelledby={`${modalId}-label`} 
-      aria-hidden="true"
-      style={{ zIndex: 1050 }}
-    >
-      <div className="modal-dialog" role="document">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title" id={`${modalId}-label`}>Employee Name: {name}</h5>
-            <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div className="modal-body">
-            <p>Email: {email || 'N/A'}</p>
-            <p>Number: {phone_number || 'N/A'}</p>
-            <p>Address: {address || 'N/A'}</p>
-            <p>Union: {union_name || 'N/A'}</p>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Combine drag and drop refs
+  const dragDropRef = (el) => {
+    drag(el);
+    drop(el);
+    ref.current = el;
+  };
 
   return (
     <>
       <div
-        ref={drag}
+        ref={dragDropRef}
         onContextMenu={handleContextMenu}
         style={{
           opacity: isDragging ? 0.5 : 1,
-          padding: '1px',
-          margin: '-8px 0 0 2px',
+          padding: isHighlighted ? '2px 4px' : '1px',
+          margin: isHighlighted ? '0 0 4px 2px' : '-8px 0 0 2px',
           cursor: 'move',
           borderRadius: '4px',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
+          position: 'relative',
+          zIndex: isDragging ? 1000 : 1,
+          transition: 'all 0.2s ease',
+          transform: isDragging ? 'scale(1.05)' : 'scale(1)',
+          boxShadow: isDragging ? '0 5px 10px rgba(0,0,0,0.15)' : 'none'
         }}
       >
         <h6
@@ -105,9 +134,32 @@ const Employee = ({
           {name}
         </h6>
       </div>
-      {/* Render modal at document body level */}
+
+      {/* Modal Portal */}
       {ReactDOM.createPortal(
-        modalContent,
+        <div className="modal fade" id={modalId} tabIndex="-1" role="dialog">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Employee Name: {name}</h5>
+                <button type="button" className="close" data-dismiss="modal">
+                  <span>&times;</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <p>Email: {email || 'N/A'}</p>
+                <p>Number: {phone_number || 'N/A'}</p>
+                <p>Address: {address || 'N/A'}</p>
+                <p>Union: {union_name || 'N/A'}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" data-dismiss="modal">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
     </>
