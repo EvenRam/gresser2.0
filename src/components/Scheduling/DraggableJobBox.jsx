@@ -8,6 +8,7 @@ const DraggableJobBox = ({
   index, 
   moveJob, 
   moveEmployee, 
+  updateEmployeeOrder,
   isEditable 
 }) => {
   const ref = useRef(null);
@@ -90,6 +91,7 @@ const DraggableJobBox = ({
         job_name={job.job_name}
         employees={job.employees || []}
         moveEmployee={moveEmployee}
+        updateEmployeeOrder={updateEmployeeOrder}  // Pass it through to ProjectBox
         display_order={job.display_order}
         rain_day={job.rain_day}
         isEditable={isEditable}

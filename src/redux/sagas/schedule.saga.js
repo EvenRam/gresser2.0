@@ -162,9 +162,11 @@ function* addEmployeeSchedule(action) {
         });
     }
 }
+
+// Enhanced move employee handling
 function* handleMoveEmployee(action) {
     try {
-        const { employeeId, targetProjectId, sourceUnionId, date } = action.payload;
+        const { employeeId, targetProjectId, sourceLocation, dropIndex, date } = action.payload;
         const currentDate = date || getDefaultDate();
         const { isValid, formattedDate, isWithinRange } = validateDate(currentDate);
         
@@ -175,29 +177,44 @@ function* handleMoveEmployee(action) {
         if (!isWithinRange) {
             throw new Error('Date is out of allowed range');
         }
+
+        // Log move details for debugging
+        console.log('Moving employee:', {
+            employeeId,
+            targetProjectId,
+            sourceLocation,
+            dropIndex,
+            date: formattedDate
+        });
+
+        // Make API call with enhanced payload
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 
-            { employeeId, targetProjectId }
+            { 
+                employeeId, 
+                targetProjectId,
+                dropIndex,
+                sourceLocation
+            }
         );
-        localStorage.setItem('selectedScheduleDate', formattedDate);
-        yield put({
-            type: 'SET_SELECTED_DATE',
-            payload: formattedDate
-        });
-        // Refresh data for the current date
+
+        // Refresh all relevant data after move
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: formattedDate } 
         });
+
         yield put({ 
             type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
             payload: { date: formattedDate } 
         });
+
         yield put({
             type: 'FETCH_EMPLOYEES',
             payload: { date: formattedDate }
         });
+
     } catch (error) {
         console.error('Error moving employee:', error);
         yield put({ 
@@ -206,6 +223,7 @@ function* handleMoveEmployee(action) {
         });
     }
 }
+
 function* initializeScheduleDate() {
     try {
         const centralTime = new Date().toLocaleString("en-US", {
@@ -279,6 +297,7 @@ function* updateProjectOrder(action) {
     }
 }
 
+// In schedule.saga.js, update the updateEmployeeOrder saga
 function* updateEmployeeOrder(action) {
     try {
         const { projectId, orderedEmployeeIds, date } = action.payload;
@@ -292,6 +311,19 @@ function* updateEmployeeOrder(action) {
         if (!isWithinRange) {
             throw new Error('Date is out of allowed range');
         }
+
+        // Enhanced validation and logging
+        if (!Array.isArray(orderedEmployeeIds) || orderedEmployeeIds.length === 0) {
+            throw new Error('Invalid employee order data');
+        }
+
+        console.log('Updating employee order:', {
+            projectId,
+            orderedEmployeeIds,
+            date: formattedDate
+        });
+
+        // Make API call
         yield call(
             axios.put,
             '/api/project/updateOrder',
@@ -301,10 +333,19 @@ function* updateEmployeeOrder(action) {
                 date: formattedDate
             }
         );
+
+        // Refresh all relevant data to ensure consistency
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
         });
+
+        // Also refresh unions since order changes might affect the view
+        yield put({
+            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
+            payload: { date: formattedDate }
+        });
+
     } catch (error) {
         console.error('Error updating employee order:', error);
         yield put({

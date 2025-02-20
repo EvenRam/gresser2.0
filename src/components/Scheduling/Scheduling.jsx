@@ -112,30 +112,29 @@ const Scheduling = () => {
     }, [dispatch, selectedDate, isEditable]);
  
     const updateEmployeeOrder = useCallback(async (projectId, orderedEmployeeIds) => {
-        if (!isEditable) return;
- 
-        try {
-            await axios.put('/api/project/updateOrder', {
+    if (!isEditable) return;
+
+    try {
+        // API call remains the same
+        await axios.put('/api/project/updateOrder', {
+            projectId,
+            orderedEmployeeIds,
+            date: selectedDate
+        });
+
+        // Update Redux with full employee data structure
+        dispatch({
+            type: 'UPDATE_EMPLOYEE_ORDER',
+            payload: {
                 projectId,
-                orderedEmployeeIds,
+                employees: orderedEmployeeIds.map(id => ({ id })),
                 date: selectedDate
-            });
- 
-            dispatch({
-                type: 'UPDATE_EMPLOYEE_ORDER',
-                payload: {
-                    projectId,
-                    employees: orderedEmployeeIds.map((id, index) => ({
-                        id,
-                        display_order: index
-                    })),
-                    date: selectedDate
-                }
-            });
-        } catch (error) {
-            console.error('Error updating employee order:', error);
-        }
-    }, [dispatch, selectedDate, isEditable]);
+            }
+        });
+    } catch (error) {
+        console.error('Error updating employee order:', error);
+    }
+}, [dispatch, selectedDate, isEditable]);
  
     const moveJob = useCallback(async (dragIndex, hoverIndex) => {
         if (!isEditable || dragIndex === hoverIndex) {

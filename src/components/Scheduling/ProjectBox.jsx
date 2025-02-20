@@ -9,6 +9,7 @@ const ProjectBox = ({
   id,
   employees = [],
   moveEmployee,
+  updateEmployeeOrder,
   job_name,
   rain_day
 }) => {
@@ -18,7 +19,7 @@ const ProjectBox = ({
   const [orderedEmployees, setOrderedEmployees] = useState([]);
   const boxRef = useRef(null);
 
-  // Sort employees by display order
+  // Set up orderedEmployees when employees prop changes
   useEffect(() => {
     if (!Array.isArray(employees)) {
       console.warn('Employees prop is not an array:', employees);
@@ -33,11 +34,31 @@ const ProjectBox = ({
     setOrderedEmployees(sorted);
   }, [employees]);
 
-  const highlightedEmployees = useSelector(state =>
-    state.employeeReducer.highlightedEmployeesByDate[selectedDate] || {}
-  );
+  // Enhanced drop position calculation
+  const calculateDropIndex = useCallback((monitor) => {
+    if (!boxRef.current || !monitor.getClientOffset()) {
+      console.log('Missing requirements for drop calculation');
+      return orderedEmployees.length;
+    }
 
-  // Handle employee highlighting
+    const hoveredRect = boxRef.current.getBoundingClientRect();
+    const clientOffset = monitor.getClientOffset();
+    const mouseY = clientOffset.y - hoveredRect.top;
+
+    // Get only active employees for position calculation
+    const activeEmployees = orderedEmployees.filter(emp => emp.employee_status === true);
+    
+    if (activeEmployees.length === 0) {
+      return 0;
+    }
+
+    const itemHeight = hoveredRect.height / activeEmployees.length;
+    const index = Math.floor(mouseY / itemHeight);
+
+    // Ensure index is within bounds
+    return Math.max(0, Math.min(index, activeEmployees.length));
+  }, [orderedEmployees]);
+
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     if (!isEditable) return;
     
@@ -51,100 +72,93 @@ const ProjectBox = ({
     });
   }, [dispatch, selectedDate, isEditable]);
 
-  // Calculate drop position
-  const calculateDropIndex = (monitor) => {
-    if (!boxRef.current || !monitor.getClientOffset()) {
-        // Return a safe default if we don't have valid measurements
-        return orderedEmployees.length;
-    }
+  // Enhanced drop handling for unified approach
+  // ProjectBox.jsx handleDrop function
+const handleDrop = useCallback((item, monitor) => {
+  if (!item?.id || !isEditable) return;
 
-    const hoveredRect = boxRef.current.getBoundingClientRect();
-    const clientOffset = monitor.getClientOffset();
-    
-    if (!clientOffset) {
-        return orderedEmployees.length;
-    }
+  const dropIndex = calculateDropIndex(monitor);
+  console.log('Drop handling:', {
+      itemId: item.id,
+      sourceLocation: item.sourceLocation,
+      dropIndex,  // Let's verify this is correct
+      projectId: id
+  });
 
-    const mouseY = clientOffset.y - hoveredRect.top;
-    const height = hoveredRect.bottom - hoveredRect.top;
+  // Determine if this is an external move
+  const isExternalMove = item.sourceLocation.type === 'union' || 
+                      (item.sourceLocation.type === 'project' && item.sourceLocation.id !== id);
 
-    // Ensure we have employees and valid height
-    if (!orderedEmployees.length || height <= 0) {
-        return 0;
-    }
-    
-    let index = Math.floor((mouseY / height) * orderedEmployees.length);
-
-    // Clamp the index between valid bounds
-    return Math.max(0, Math.min(index, orderedEmployees.length));
-};
-
-  // Handle drops
-  const handleDrop = useCallback((item, monitor) => {
-    if (!item?.id || !isEditable) return;
-    
-    const dropIndex = calculateDropIndex(monitor);
-    const isExternalMove = item.current_location === 'union' ||
-                          (item.current_location === 'project' && item.projectId !== id);
-
-    if (isExternalMove) {
+  if (isExternalMove) {
       moveEmployee(item.id, id, item.union_id, selectedDate, dropIndex);
+      
       dispatch({
-        type: 'SET_HIGHLIGHTED_EMPLOYEE',
-        payload: {
-          id: item.id,
-          isHighlighted: true,
-          date: selectedDate
-        }
+          type: 'SET_HIGHLIGHTED_EMPLOYEE',
+          payload: {
+              id: item.id,
+              isHighlighted: true,
+              date: selectedDate
+          }
       });
-    }
-  }, [id, moveEmployee, dispatch, selectedDate, isEditable, orderedEmployees.length]);
+  }
+}, [id, moveEmployee, dispatch, selectedDate, isEditable, calculateDropIndex]);
 
-  // Configure drop target
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: handleDrop,
+    hover: (item, monitor) => {
+      if (!isEditable || !item) return;
+      
+      // Calculate and show drop position during hover
+      const dropIndex = calculateDropIndex(monitor);
+      console.log('Hover position:', dropIndex);
+    },
     collect: (monitor) => ({
-      isOver: monitor.isOver(),
+      isOver: monitor.isOver()
     }),
-  }), [handleDrop]);
+  }), [handleDrop, isEditable, calculateDropIndex]);
 
-  // Update handleReorder to be more robust
-const handleReorder = useCallback(async (fromIndex, toIndex) => {
-  if (!isEditable || fromIndex === toIndex) return;
-  
-  const newOrder = [...orderedEmployees];
-  const [moved] = newOrder.splice(fromIndex, 1);
-  
-  if (!moved) return; // Guard against invalid moves
-  
-  newOrder.splice(toIndex, 0, moved);
+  // Setup drop ref
+  const dropRef = useCallback((node) => {
+    boxRef.current = node;
+    drop(node);
+  }, [drop]);
 
-  // Update local state immediately for smooth UI
-  setOrderedEmployees(newOrder);
+  const highlightedEmployees = useSelector(state =>
+    state.employeeReducer.highlightedEmployeesByDate[selectedDate] || {}
+  );
 
-  try {
+  // Handle internal reordering
+  const handleReorder = useCallback(async (fromIndex, toIndex) => {
+    if (!isEditable) return;
+    
+    const newOrder = [...orderedEmployees];
+    const [moved] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, moved);
+
+    try {
+      // Get active employees in the new order
       const orderedEmployeeIds = newOrder
-          .filter(emp => emp && emp.employee_status)
-          .map(emp => emp.id);
+        .filter(emp => emp.employee_status === true)
+        .map(emp => emp.id);
 
-      if (orderedEmployeeIds.length > 0) {
-          dispatch({
-              type: 'UPDATE_EMPLOYEE_ORDER',
-              payload: {
-                  projectId: id,
-                  orderedEmployeeIds,
-                  sourceIndex: fromIndex,
-                  targetIndex: toIndex,
-                  date: selectedDate
-              }
-          });
-      }
-  } catch (error) {
+      // Update through Redux/saga
+      dispatch({
+        type: 'UPDATE_EMPLOYEE_ORDER',
+        payload: {
+          projectId: id,
+          orderedEmployeeIds,
+          date: selectedDate
+        }
+      });
+
+      // Update local state for immediate feedback
+      setOrderedEmployees(newOrder);
+    } catch (error) {
       console.error('Error updating employee order:', error);
       setOrderedEmployees(orderedEmployees); // Revert on error
-  }
-}, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
+    }
+  }, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
 
   const currentRainDay = useSelector(state => {
     const projects = state.projectReducer.projectsByDate[selectedDate] || [];
@@ -155,28 +169,19 @@ const handleReorder = useCallback(async (fromIndex, toIndex) => {
   const handleRainDayToggle = useCallback(() => {
     if (!isEditable) return;
     
-    const newRainDayStatus = !currentRainDay;
-    
     dispatch({
       type: 'UPDATE_RAIN_DAY_STATUS_REQUEST',
       payload: {
         jobId: id,
-        isRainDay: newRainDayStatus,
+        isRainDay: !currentRainDay,
         date: selectedDate
       }
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
 
-  if (!id) {
-    return null;
-  }
-
   return (
     <div
-      ref={(el) => {
-        boxRef.current = el;
-        drop(el);
-      }}
+      ref={dropRef}
       style={{
         display: 'flex',
         flexDirection: 'column',

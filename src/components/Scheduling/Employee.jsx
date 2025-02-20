@@ -27,7 +27,7 @@ const Employee = ({
   const unionColor = unionColors[union_name] || 'black';
   const modalId = `employee-modal-${actualId}`;
 
-  // Drag configuration
+  // Enhanced drag configuration with unified move handling
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
     item: () => ({
@@ -36,28 +36,30 @@ const Employee = ({
       union_id,
       union_name,
       current_location,
+      projectId, // Current project ID (if in a project)
       index,
-      projectId,
       type: 'EMPLOYEE',
-      originalIndex: index
+      sourceLocation: {
+        type: current_location,
+        id: current_location === 'project' ? projectId : union_id
+      }
     }),
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-    end: (item, monitor) => {
-      const didDrop = monitor.didDrop();
-      if (!didDrop && projectId && onReorder) {
-        onReorder(item.index, item.originalIndex);
-      }
-    },
-  }), [actualId, union_id, union_name, current_location, index, projectId, onReorder]);
+  }), [actualId, union_id, union_name, current_location, index, projectId]);
 
-  // Drop configuration for reordering within project
+  // Drop configuration for reordering within same project
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
-    canDrop: (item) => item.projectId === projectId,
+    canDrop: (item) => {
+      // Only allow drops within projects for reordering
+      if (!projectId) return false;
+      return item.projectId === projectId;
+    },
     hover: (item, monitor) => {
-      if (!ref.current || item.projectId !== projectId) return;
+      if (!ref.current || !projectId || item.projectId !== projectId) return;
+      if (typeof onReorder !== 'function') return;
       
       const dragIndex = item.index;
       const hoverIndex = index;
@@ -76,8 +78,7 @@ const Employee = ({
       item.index = hoverIndex;
     },
     collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop()
+      isOver: monitor.isOver()
     }),
   }), [index, onReorder, projectId]);
 
@@ -117,7 +118,13 @@ const Employee = ({
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          backgroundColor: isHighlighted ? 'yellow' : (isDragging ? '#f0f0f0' : 'transparent'),
+          backgroundColor: projectId ? (
+            isHighlighted ? 'yellow' : 
+            isDragging ? '#f0f0f0' : 
+            isOver ? 'lightblue' : 'transparent'
+          ) : (
+            isDragging ? '#f0f0f0' : 'transparent'
+          ),
           position: 'relative',
           zIndex: isDragging ? 1000 : 1,
           transition: 'all 0.2s ease',
@@ -135,7 +142,6 @@ const Employee = ({
         </h6>
       </div>
 
-      {/* Modal Portal */}
       {ReactDOM.createPortal(
         <div className="modal fade" id={modalId} tabIndex="-1" role="dialog">
           <div className="modal-dialog">

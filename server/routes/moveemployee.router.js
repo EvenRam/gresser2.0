@@ -4,12 +4,11 @@ const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 const { validateDate } = require('../routes/date-validation.middleware');
 
-//moveemployee.router.js
 // Move employee to project or back to union
 router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const client = await pool.connect();
     try {
-        const { employeeId, targetProjectId, insertIndex } = req.body;
+        const { employeeId, targetProjectId, dropIndex } = req.body;
         const date = req.validatedDate;
 
         await client.query('BEGIN');
@@ -25,76 +24,90 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
         }
 
         if (targetProjectId) {
-            // Moving to a project
-            
-            // First, get current max display order for target project
-            const currentOrderResult = await client.query(`
-                SELECT 
-                    COUNT(*) as employee_count,
-                    MAX(employee_display_order) as max_order
-                FROM schedule 
-                WHERE date = $1 AND job_id = $2
-            `, [date, targetProjectId]);
-            
-            const { employee_count, max_order } = currentOrderResult.rows[0];
-            let newDisplayOrder;
+            if (dropIndex !== undefined) {
+                // First, get current max order to handle edge case
+                const maxOrderResult = await client.query(`
+                    SELECT COALESCE(MAX(employee_display_order), -1) as max_order
+                    FROM schedule 
+                    WHERE date = $1 AND job_id = $2
+                `, [date, targetProjectId]);
+                
+                const maxOrder = maxOrderResult.rows[0].max_order;
+                const effectiveDropIndex = Math.min(dropIndex, maxOrder + 1);
 
-            if (insertIndex !== undefined) {
-                // If specific position requested, shift existing employees
+                // Make space for the new employee
                 await client.query(`
                     UPDATE schedule
                     SET employee_display_order = employee_display_order + 1
                     WHERE date = $1 
                         AND job_id = $2
                         AND employee_display_order >= $3
-                `, [date, targetProjectId, insertIndex]);
+                `, [date, targetProjectId, effectiveDropIndex]);
                 
-                newDisplayOrder = insertIndex;
+                // Insert or update the employee at the specified position
+                await client.query(`
+                    INSERT INTO schedule 
+                        (date, employee_id, job_id, current_location, is_highlighted,
+                        employee_display_order)
+                    VALUES 
+                        ($1, $2, $3, 'project', TRUE, $4)
+                    ON CONFLICT (date, employee_id) 
+                    DO UPDATE SET 
+                        job_id = EXCLUDED.job_id,
+                        current_location = EXCLUDED.current_location,
+                        is_highlighted = EXCLUDED.is_highlighted,
+                        employee_display_order = EXCLUDED.employee_display_order
+                `, [date, employeeId, targetProjectId, effectiveDropIndex]);
+
+                // Ensure sequential ordering
+                await client.query(`
+                    WITH ranked AS (
+                        SELECT 
+                            employee_id,
+                            ROW_NUMBER() OVER (
+                                ORDER BY 
+                                    CASE 
+                                        WHEN employee_id = $1 THEN 0 
+                                        ELSE 1 
+                                    END,
+                                    employee_display_order
+                            ) - 1 as new_order
+                        FROM schedule
+                        WHERE date = $2 AND job_id = $3
+                    )
+                    UPDATE schedule s
+                    SET employee_display_order = r.new_order
+                    FROM ranked r
+                    WHERE s.date = $2 
+                        AND s.job_id = $3
+                        AND s.employee_id = r.employee_id
+                `, [employeeId, date, targetProjectId]);
             } else {
-                // If no position specified, append to end
-                newDisplayOrder = (max_order !== null ? max_order : -1) + 1;
-            }
-
-            // Insert or update employee position
-            await client.query(`
-                INSERT INTO schedule 
-                    (date, employee_id, job_id, current_location, is_highlighted,
-                    employee_display_order)
-                VALUES 
-                    ($1, $2, $3, 'project', TRUE, $4)
-                ON CONFLICT (date, employee_id) 
-                DO UPDATE SET 
-                    job_id = EXCLUDED.job_id,
-                    current_location = EXCLUDED.current_location,
-                    is_highlighted = EXCLUDED.is_highlighted,
-                    employee_display_order = EXCLUDED.employee_display_order
-            `, [date, employeeId, targetProjectId, newDisplayOrder]);
-
-            // Ensure display orders are sequential
-            await client.query(`
-                WITH ranked AS (
-                    SELECT 
-                        employee_id,
-                        ROW_NUMBER() OVER (
-                            ORDER BY 
-                                CASE 
-                                    WHEN employee_id = $3 THEN $4
-                                    ELSE employee_display_order 
-                                END
-                        ) - 1 as new_order
-                    FROM schedule
+                // If no dropIndex, append to end (existing behavior)
+                const maxOrderResult = await client.query(`
+                    SELECT COALESCE(MAX(employee_display_order), -1) + 1 as next_order
+                    FROM schedule 
                     WHERE date = $1 AND job_id = $2
-                )
-                UPDATE schedule s
-                SET employee_display_order = r.new_order
-                FROM ranked r
-                WHERE s.date = $1 
-                    AND s.job_id = $2
-                    AND s.employee_id = r.employee_id
-            `, [date, targetProjectId, employeeId, newDisplayOrder]);
+                `, [date, targetProjectId]);
 
+                const nextOrder = maxOrderResult.rows[0].next_order;
+
+                await client.query(`
+                    INSERT INTO schedule 
+                        (date, employee_id, job_id, current_location, is_highlighted,
+                        employee_display_order)
+                    VALUES 
+                        ($1, $2, $3, 'project', TRUE, $4)
+                    ON CONFLICT (date, employee_id) 
+                    DO UPDATE SET 
+                        job_id = EXCLUDED.job_id,
+                        current_location = EXCLUDED.current_location,
+                        is_highlighted = EXCLUDED.is_highlighted,
+                        employee_display_order = $4
+                `, [date, employeeId, targetProjectId, nextOrder]);
+            }
         } else {
-            // Moving back to union
+            // Moving back to union - clear project assignment and order
             await client.query(`
                 INSERT INTO schedule 
                     (date, employee_id, current_location, is_highlighted)
@@ -120,7 +133,7 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     }
 });
 
-// Add bulk operations endpoint
+// Add bulk operations endpoint - keeping existing functionality
 router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { sourceDate, employeeIds, targetProjectId } = req.body;
     const targetDate = req.validatedDate;
