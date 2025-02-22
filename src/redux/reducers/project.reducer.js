@@ -19,15 +19,19 @@ const sortProjectsByOrder = (projects) => {
     });
 };
 
-const insertEmployeeAtPosition = (employees, employeeToMove, targetIndex) => {
-    // Create a new array without the employee (in case they're moving within same project)
-    const filteredEmployees = employees.filter(emp => emp.id !== employeeToMove.id);
+// Improved helper function for inserting employee at specific position
+const insertEmployeeAtPosition = (employees, employeeToMove, dropIndex) => {
+    // Remove employee if they already exist in the array
+    const existingEmployees = employees.filter(emp => emp.id !== employeeToMove.id);
     
-    // Insert the employee at the target position
-    const newEmployees = [...filteredEmployees];
-    newEmployees.splice(targetIndex, 0, employeeToMove);
-    
-    // Update display orders
+    // Create new array with employee inserted at correct position
+    const newEmployees = [
+        ...existingEmployees.slice(0, dropIndex),
+        { ...employeeToMove, display_order: dropIndex },
+        ...existingEmployees.slice(dropIndex)
+    ];
+
+    // Update all display orders sequentially
     return newEmployees.map((emp, index) => ({
         ...emp,
         display_order: index
@@ -67,7 +71,7 @@ const projectReducer = (state = initialState, action) => {
         }
 
         case 'MOVE_EMPLOYEE': {
-            const { employeeId, targetProjectId, date, dropIndex, sourceLocation } = action.payload;
+            const { employeeId, targetProjectId, sourceLocation, dropIndex, date } = action.payload;
             if (!date) return state;
 
             const currentProjects = state.projectsByDate[date] || [];
@@ -75,31 +79,35 @@ const projectReducer = (state = initialState, action) => {
                 ? currentProjects.find(p => p.id === sourceLocation.id)
                 : findProjectWithEmployee(currentProjects, employeeId);
 
-            const employeeToMove = sourceProject?.employees.find(emp => emp.id === employeeId) || { id: employeeId };
+            const employeeToMove = sourceProject?.employees?.find(emp => emp.id === employeeId) || 
+                { id: employeeId };
 
             const updatedProjects = currentProjects.map(project => {
-                // Remove from source project
+                // Remove from source project if it exists
                 if (project.id === sourceProject?.id) {
                     return {
                         ...project,
-                        employees: project.employees.filter(emp => emp.id !== employeeId)
+                        employees: project.employees
+                            .filter(emp => emp.id !== employeeId)
+                            .map((emp, idx) => ({
+                                ...emp,
+                                display_order: idx
+                            }))
                     };
                 }
-                
-                // Add to target project at specific position
+
+                // Add to target project at specified position
                 if (project.id === targetProjectId) {
                     const updatedEmployee = {
                         ...employeeToMove,
                         current_location: 'project',
-                        is_highlighted: true,
-                        display_order: dropIndex
+                        is_highlighted: true
                     };
 
-                    const currentEmployees = [...(project.employees || [])];
                     const updatedEmployees = insertEmployeeAtPosition(
-                        currentEmployees,
+                        project.employees || [],
                         updatedEmployee,
-                        typeof dropIndex === 'number' ? dropIndex : currentEmployees.length
+                        typeof dropIndex === 'number' ? dropIndex : (project.employees || []).length
                     );
 
                     return {
@@ -107,6 +115,7 @@ const projectReducer = (state = initialState, action) => {
                         employees: updatedEmployees
                     };
                 }
+
                 return project;
             });
 
@@ -120,43 +129,6 @@ const projectReducer = (state = initialState, action) => {
             };
         }
 
-        case 'UPDATE_EMPLOYEE_ORDER': {
-            const { projectId, orderedEmployeeIds, date } = action.payload;
-            if (!date || !projectId || !Array.isArray(orderedEmployeeIds)) return state;
-            
-            const currentProjects = state.projectsByDate[date] || [];
-            const updatedProjects = currentProjects.map(project => {
-                if (project.id === projectId) {
-                    const currentEmployees = project.employees || [];
-                    const employeeMap = currentEmployees.reduce((map, emp) => {
-                        map[emp.id] = emp;
-                        return map;
-                    }, {});
-
-                    const updatedEmployees = orderedEmployeeIds
-                        .filter(id => employeeMap[id])
-                        .map((id, index) => ({
-                            ...employeeMap[id],
-                            display_order: index
-                        }));
-
-                    return {
-                        ...project,
-                        employees: updatedEmployees
-                    };
-                }
-                return project;
-            });
-
-            return {
-                ...state,
-                projects: date === state.date ? updatedProjects : state.projects,
-                projectsByDate: {
-                    ...state.projectsByDate,
-                    [date]: updatedProjects
-                }
-            };
-        }
 
         case 'REORDER_PROJECTS': {
             const { sourceIndex, targetIndex, date } = action.payload;
@@ -202,6 +174,44 @@ const projectReducer = (state = initialState, action) => {
                 projectsByDate: {
                     ...state.projectsByDate,
                     [date]: sortedProjects
+                }
+            };
+        }
+
+        case 'UPDATE_EMPLOYEE_ORDER': {
+            const { projectId, orderedEmployeeIds, date } = action.payload;
+            if (!date || !projectId || !Array.isArray(orderedEmployeeIds)) return state;
+            
+            const currentProjects = state.projectsByDate[date] || [];
+            const updatedProjects = currentProjects.map(project => {
+                if (project.id === projectId) {
+                    const currentEmployees = project.employees || [];
+                    const employeeMap = currentEmployees.reduce((map, emp) => {
+                        map[emp.id] = emp;
+                        return map;
+                    }, {});
+
+                    const updatedEmployees = orderedEmployeeIds
+                        .filter(id => employeeMap[id])
+                        .map((id, index) => ({
+                            ...employeeMap[id],
+                            display_order: index
+                        }));
+
+                    return {
+                        ...project,
+                        employees: updatedEmployees
+                    };
+                }
+                return project;
+            });
+
+            return {
+                ...state,
+                projects: date === state.date ? updatedProjects : state.projects,
+                projectsByDate: {
+                    ...state.projectsByDate,
+                    [date]: updatedProjects
                 }
             };
         }

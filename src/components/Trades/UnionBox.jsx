@@ -17,6 +17,9 @@ const UnionBox = ({ id, union_name, color }) => {
 
     const [{ isOver }, drop] = useDrop(() => ({
         accept: 'EMPLOYEE',
+        collect: (monitor) => ({
+            isOver: !!monitor.isOver()
+        }),
         drop: (item, monitor) => {
             const didDrop = monitor.didDrop();
             if (didDrop) return;
@@ -33,15 +36,16 @@ const UnionBox = ({ id, union_name, color }) => {
                     payload: {
                         employeeId: item.id,
                         targetProjectId: null,
-                        sourceUnionId: item.union_id,
+                        sourceLocation: {
+                            type: 'union',
+                            id: item.union_id
+                        },
+                        dropIndex: null,
                         date: selectedDate
                     }
                 });
             }
-        },
-        collect: (monitor) => ({
-            isOver: !!monitor.isOver()
-        }),
+        }
     }), [id, dispatch, selectedDate]);
 
     // Get union number for styling
@@ -53,9 +57,9 @@ const UnionBox = ({ id, union_name, color }) => {
             className={`union-box union-${unionNumber}`}
             data-union-id={unionNumber}
         >
-           <div className='union-label small-text' style={{ color }}>
-    {union_name}
-</div>
+            <div className='union-label small-text' style={{ color }}>
+                {union_name}
+            </div>
 
             <div className="union_box"> 
                 {employees.length === 0 ? (

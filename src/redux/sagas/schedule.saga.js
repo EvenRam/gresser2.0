@@ -178,7 +178,6 @@ function* handleMoveEmployee(action) {
             throw new Error('Date is out of allowed range');
         }
 
-        // Log move details for debugging
         console.log('Moving employee:', {
             employeeId,
             targetProjectId,
@@ -187,7 +186,7 @@ function* handleMoveEmployee(action) {
             date: formattedDate
         });
 
-        // Make API call with enhanced payload
+        // Make API call
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 
@@ -199,7 +198,7 @@ function* handleMoveEmployee(action) {
             }
         );
 
-        // Refresh all relevant data after move
+        // Refresh all relevant data
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: formattedDate } 
@@ -334,18 +333,16 @@ function* updateEmployeeOrder(action) {
             }
         );
 
-        // Refresh all relevant data to ensure consistency
+        // Refresh data
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
         });
 
-        // Also refresh unions since order changes might affect the view
         yield put({
             type: 'FETCH_UNIONS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
         });
-
     } catch (error) {
         console.error('Error updating employee order:', error);
         yield put({
