@@ -27,35 +27,74 @@ const Employee = ({
   const unionColor = unionColors[union_name] || 'black';
   const modalId = `employee-modal-${actualId}`;
 
-  // Enhanced drag configuration with unified move handling
+  // Debug helper
+  const debugLog = (message, data) => {
+    console.log(`[DEBUG-EMPLOYEE-${actualId}] ${message}`, data);
+  };
+
+  // Enhanced drag configuration with position tracking and debug
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'EMPLOYEE',
-    item: () => ({
-      id: actualId,
-      employee_id: actualId,
-      union_id,
-      union_name,
-      current_location,
-      projectId, // Current project ID (if in a project)
-      index,
-      type: 'EMPLOYEE',
-      sourceLocation: {
-        type: current_location,
-        id: current_location === 'project' ? projectId : union_id
-      }
-    }),
+    item: (monitor) => {
+      const sourceRect = ref.current?.getBoundingClientRect();
+      const initialOffset = monitor.getClientOffset();
+      
+      debugLog('Starting drag', {
+        id: actualId,
+        name,
+        current_location,
+        projectId,
+        index,
+        sourceRect: {
+          top: sourceRect?.top,
+          left: sourceRect?.left,
+          height: sourceRect?.height,
+          width: sourceRect?.width
+        },
+        initialOffset
+      });
+      
+      return {
+        id: actualId,
+        employee_id: actualId,
+        union_id,
+        union_name,
+        current_location,
+        projectId,
+        index,
+        name,
+        type: 'EMPLOYEE',
+        sourceLocation: {
+          type: current_location,
+          id: current_location === 'project' ? projectId : union_id,
+          rect: sourceRect,
+          offset: initialOffset
+        }
+      };
+    },
+    end: (item, monitor) => {
+      const didDrop = monitor.didDrop();
+      debugLog('Drag ended', {
+        id: actualId,
+        name,
+        didDrop,
+        dropResult: monitor.getDropResult()
+      });
+    },
     collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
+      isDragging: monitor.isDragging()
     }),
-  }), [actualId, union_id, union_name, current_location, index, projectId]);
+  }), [actualId, union_id, union_name, current_location, index, projectId, name]);
 
-  // Drop configuration for reordering within same project
+  // Preserve drop configuration for reordering within projects
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     canDrop: (item) => {
-      // Only allow drops within projects for reordering
-      if (!projectId) return false;
-      return item.projectId === projectId;
+      const canDrop = !!(projectId && item.projectId === projectId);
+      if (canDrop) {
+        debugLog('Can drop item', { itemId: item.id, itemName: item.name });
+      }
+      return canDrop;
     },
     hover: (item, monitor) => {
       if (!ref.current || !projectId || item.projectId !== projectId) return;
@@ -74,6 +113,7 @@ const Employee = ({
       if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
       if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
 
+      debugLog('Reordering', { dragIndex, hoverIndex });
       onReorder(dragIndex, hoverIndex);
       item.index = hoverIndex;
     },
@@ -82,10 +122,11 @@ const Employee = ({
     }),
   }), [index, onReorder, projectId]);
 
-  // Handle right-click for highlighting
+  // Preserve highlight handling
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (current_location === 'project') {
+      debugLog('Right-click highlight toggle', { isHighlighted });
       dispatch({
         type: 'SET_HIGHLIGHTED_EMPLOYEE',
         payload: {
@@ -131,6 +172,9 @@ const Employee = ({
           transform: isDragging ? 'scale(1.05)' : 'scale(1)',
           boxShadow: isDragging ? '0 5px 10px rgba(0,0,0,0.15)' : 'none'
         }}
+        data-employee-id={actualId}
+        data-location={current_location}
+        data-index={index}
       >
         <h6
           className="primary"
@@ -138,7 +182,8 @@ const Employee = ({
           data-target={`#${modalId}`}
           style={{ color: unionColor }}
         >
-          {name}
+          {/* Add index for debug only */}
+          {name} <span style={{ fontSize: '8px', color: '#999' }}>[{index}]</span>
         </h6>
       </div>
 
@@ -157,6 +202,7 @@ const Employee = ({
                 <p>Number: {phone_number || 'N/A'}</p>
                 <p>Address: {address || 'N/A'}</p>
                 <p>Union: {union_name || 'N/A'}</p>
+                <p>Position Index: {index}</p> {/* Debug info */}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" data-dismiss="modal">

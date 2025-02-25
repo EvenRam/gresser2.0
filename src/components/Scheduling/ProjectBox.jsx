@@ -17,6 +17,17 @@ const ProjectBox = ({
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
   const boxRef = useRef(null);
   const [orderedEmployees, setOrderedEmployees] = useState([]);
+  const [hoverIndex, setHoverIndex] = useState(null); // Track hover index for debugging
+
+  // Debug helper
+  const debugLog = (message, data) => {
+    console.log(`[DEBUG-PROJECT-${id}] ${message}`, data);
+  };
+
+  // Log component mount and updates
+  useEffect(() => {
+    debugLog(`ProjectBox mounted/updated with ${employees.length} employees`);
+  });
 
   useEffect(() => {
     if (!Array.isArray(employees)) {
@@ -29,36 +40,63 @@ const ProjectBox = ({
       if (b.display_order === null) return -1;
       return a.display_order - b.display_order;
     });
+    
+    // Debug log employee ordering
+    debugLog("Sorted employees by display_order", 
+      sorted.map(e => ({id: e.id, name: e.first_name + ' ' + e.last_name, order: e.display_order}))
+    );
+    
     setOrderedEmployees(sorted);
   }, [employees]);
 
+  // Improved and debugged drop position calculation
   const calculateDropIndex = useCallback((monitor) => {
     if (!boxRef.current || !monitor.getClientOffset()) {
+      debugLog("No boxRef or client offset available");
       return orderedEmployees.length;
     }
 
-    const hoverBoundingRect = boxRef.current.getBoundingClientRect();
+    const boxRect = boxRef.current.getBoundingClientRect();
     const clientOffset = monitor.getClientOffset();
-    const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-    // Get only active employees for position calculation
-    const activeEmployees = orderedEmployees.filter(emp => emp.employee_status === true);
     
+    // Debug measurements
+    debugLog("Box measurements", {
+      top: boxRect.top,
+      height: boxRect.height,
+      clientY: clientOffset.y
+    });
+    
+    // Calculate position with header offset
+    const headerHeight = 30;
+    const contentY = clientOffset.y - boxRect.top - headerHeight;
+    
+    debugLog("Content Y position", contentY);
+    
+    // Get active employees
+    const activeEmployees = orderedEmployees.filter(emp => emp.employee_status === true);
+    debugLog("Active employee count", activeEmployees.length);
+    
+    // Empty project handling
     if (activeEmployees.length === 0) {
+      debugLog("Empty project - returning index 0");
       return 0;
     }
-
-    // Handle top drop zone
-    if (hoverClientY < 20) {
-      return 0;
-    }
-
-    const contentHeight = hoverBoundingRect.height - 20; // Subtract header space
-    const itemHeight = contentHeight / (activeEmployees.length + 1);
-    const index = Math.floor((hoverClientY - 20) / itemHeight);
-
-    return Math.max(0, Math.min(index, activeEmployees.length));
-  }, [orderedEmployees]);
+    
+    // Calculate index using employee height
+    const EMPLOYEE_HEIGHT = 22;
+    const calculatedIndex = Math.floor(contentY / EMPLOYEE_HEIGHT);
+    const validIndex = Math.max(0, Math.min(calculatedIndex, activeEmployees.length));
+    
+    debugLog("Position calculations", {
+      contentY,
+      employeeHeight: EMPLOYEE_HEIGHT,
+      calculatedIndex,
+      validIndex,
+      maxAllowed: activeEmployees.length
+    });
+    
+    return validIndex;
+  }, [orderedEmployees, id]);
 
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     if (!isEditable) return;
@@ -76,6 +114,8 @@ const ProjectBox = ({
   const handleReorder = useCallback(async (fromIndex, toIndex) => {
     if (!isEditable) return;
     
+    debugLog("Reordering", {fromIndex, toIndex});
+    
     const newOrder = [...orderedEmployees];
     const [moved] = newOrder.splice(fromIndex, 1);
     newOrder.splice(toIndex, 0, moved);
@@ -85,6 +125,8 @@ const ProjectBox = ({
         .filter(emp => emp.employee_status === true)
         .map(emp => emp.id);
 
+      debugLog("New employee order", orderedEmployeeIds);
+      
       dispatch({
         type: 'UPDATE_EMPLOYEE_ORDER',
         payload: {
@@ -101,15 +143,26 @@ const ProjectBox = ({
     }
   }, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
 
+  // Enhanced drop handling with debug
   const handleDrop = useCallback((item, monitor) => {
-    if (!item?.id || !isEditable) return;
+    if (!item?.id || !isEditable) {
+      debugLog("Drop ignored - item invalid or not editable", {itemId: item?.id, isEditable});
+      return;
+    }
 
     const dropIndex = calculateDropIndex(monitor);
+    debugLog("DROP EVENT", {
+      employeeId: item.id,
+      employeeName: item.name,
+      sourceType: item.sourceLocation?.type,
+      sourceId: item.sourceLocation?.id,
+      targetProject: id,
+      calculatedDropIndex: dropIndex
+    });
 
-    // Handle external moves (from union or other projects)
-    if (item.sourceLocation.type === 'union' || 
-        (item.sourceLocation.type === 'project' && item.sourceLocation.id !== id)) {
-        
+    if (item.sourceLocation?.type === 'union' || 
+        (item.sourceLocation?.type === 'project' && item.sourceLocation?.id !== id)) {
+      
       moveEmployee({
         employeeId: item.id,
         targetProjectId: id,
@@ -127,20 +180,26 @@ const ProjectBox = ({
         }
       });
     }
+    
+    setHoverIndex(null);
   }, [id, moveEmployee, dispatch, selectedDate, isEditable, calculateDropIndex]);
 
+  // Enhanced drop configuration with hover tracking
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     drop: handleDrop,
+    hover: (item, monitor) => {
+      if (!isEditable) return;
+      const index = calculateDropIndex(monitor);
+      if (hoverIndex !== index) {
+        setHoverIndex(index);
+        debugLog("Hover position updated", {index});
+      }
+    },
     collect: (monitor) => ({
       isOver: !!monitor.isOver()
     }),
-  }), [handleDrop]);
-
-  const dropRef = useCallback((node) => {
-    boxRef.current = node;
-    drop(node);
-  }, [drop]);
+  }), [handleDrop, calculateDropIndex, isEditable, hoverIndex]);
 
   const highlightedEmployees = useSelector(state =>
     state.employeeReducer.highlightedEmployeesByDate[selectedDate] || {}
@@ -167,7 +226,11 @@ const ProjectBox = ({
 
   return (
     <div
-      ref={dropRef}
+      ref={node => {
+        boxRef.current = node;
+        drop(node);
+      }}
+      className={`project-box ${isOver ? 'over' : ''}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -194,12 +257,25 @@ const ProjectBox = ({
         {job_name}
       </h4>
       
-      <div style={{ 
+      <div className="employees-container" style={{ 
         flex: 1, 
         marginBottom: '10px',
         position: 'relative',
         minHeight: '40px'
       }}>
+        {/* Debug marker */}
+        {isEditable && isOver && hoverIndex !== null && (
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            height: '2px',
+            backgroundColor: 'red',
+            top: `${hoverIndex * 22}px`,
+            zIndex: 5
+          }}/>
+        )}
+        
         {orderedEmployees.length === 0 ? (
           <p className="no-employees-message">No employees assigned</p>
         ) : (
@@ -219,6 +295,7 @@ const ProjectBox = ({
             ))
         )}
       </div>
+
       <div className="project-box-footer">
         <div className="employee-count">
           Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}

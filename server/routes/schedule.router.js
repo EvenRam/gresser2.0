@@ -4,6 +4,7 @@ const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 const { validateDate } = require('../routes/date-validation.middleware');
 
+//schedule.router.js
 // GET all employees with schedule status for a specific date
 router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {

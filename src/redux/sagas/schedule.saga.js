@@ -186,7 +186,7 @@ function* handleMoveEmployee(action) {
             date: formattedDate
         });
 
-        // Make API call
+        // Make API call with the exact drop position
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 

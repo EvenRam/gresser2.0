@@ -72,53 +72,82 @@ const projectReducer = (state = initialState, action) => {
 
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, sourceLocation, dropIndex, date } = action.payload;
-            if (!date) return state;
-
+            if (!date) {
+                console.warn('No date provided for MOVE_EMPLOYEE action');
+                return state;
+            }
+            
+            console.log('Moving employee in reducer:', { 
+                employeeId, 
+                targetProjectId, 
+                sourceLocation,
+                dropIndex, 
+                date 
+            });
+            
             const currentProjects = state.projectsByDate[date] || [];
+            
+            // Find source project if moving from project
             const sourceProject = sourceLocation?.type === 'project' 
                 ? currentProjects.find(p => p.id === sourceLocation.id)
                 : findProjectWithEmployee(currentProjects, employeeId);
-
+            
+            // Get employee to move
             const employeeToMove = sourceProject?.employees?.find(emp => emp.id === employeeId) || 
                 { id: employeeId };
-
+        
+            // Update projects
             const updatedProjects = currentProjects.map(project => {
-                // Remove from source project if it exists
+                // Remove from source project
                 if (project.id === sourceProject?.id) {
                     return {
                         ...project,
-                        employees: project.employees
-                            .filter(emp => emp.id !== employeeId)
-                            .map((emp, idx) => ({
-                                ...emp,
-                                display_order: idx
-                            }))
+                        employees: project.employees.filter(emp => emp.id !== employeeId)
                     };
                 }
-
+                
                 // Add to target project at specified position
                 if (project.id === targetProjectId) {
+                    const updatedEmployees = [...(project.employees || [])];
+                    
+                    // Create updated employee with new location
                     const updatedEmployee = {
                         ...employeeToMove,
                         current_location: 'project',
-                        is_highlighted: true
+                        is_highlighted: true,
+                        display_order: dropIndex
                     };
-
-                    const updatedEmployees = insertEmployeeAtPosition(
-                        project.employees || [],
-                        updatedEmployee,
-                        typeof dropIndex === 'number' ? dropIndex : (project.employees || []).length
-                    );
-
-                    return {
-                        ...project,
-                        employees: updatedEmployees
-                    };
+                    
+                    // If dropIndex is specified, insert at that position
+                    if (typeof dropIndex === 'number') {
+                        // Make a copy of employees without the current employee
+                        const filteredEmployees = updatedEmployees.filter(
+                            emp => emp.id !== employeeId
+                        );
+                        
+                        // Insert at specified position
+                        filteredEmployees.splice(dropIndex, 0, updatedEmployee);
+                        
+                        // Update display_order for all employees
+                        return {
+                            ...project,
+                            employees: filteredEmployees.map((emp, index) => ({
+                                ...emp,
+                                display_order: index
+                            }))
+                        };
+                    } else {
+                        // Default to appending
+                        return {
+                            ...project,
+                            employees: [...updatedEmployees, updatedEmployee]
+                        };
+                    }
                 }
-
+                
                 return project;
             });
-
+        
             return {
                 ...state,
                 projects: date === state.date ? updatedProjects : state.projects,
@@ -128,7 +157,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
 
         case 'REORDER_PROJECTS': {
             const { sourceIndex, targetIndex, date } = action.payload;
