@@ -127,17 +127,33 @@ router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res)
     try {
         const { projectId, orderedEmployeeIds, date } = req.body;
         
+        if (!Array.isArray(orderedEmployeeIds) || orderedEmployeeIds.length === 0) {
+            throw new Error('Invalid employee order data - must be a non-empty array');
+        }
+        
+        console.log('Updating employee order:', {
+            projectId,
+            orderedEmployeeIds,
+            date
+        });
+        
         await client.query('BEGIN');
 
-        // First get all current employees in this project
-        const currentEmployees = await client.query(`
-            SELECT employee_id, employee_display_order 
-            FROM schedule 
-            WHERE date = $1 AND job_id = $2
-            ORDER BY employee_display_order NULLS LAST
-        `, [date, projectId]);
+        // First, ensure all employees are assigned to this project
+        for (const employeeId of orderedEmployeeIds) {
+            await client.query(`
+                INSERT INTO schedule 
+                    (date, employee_id, job_id, current_location)
+                VALUES 
+                    ($1, $2, $3, 'project')
+                ON CONFLICT (date, employee_id) 
+                DO UPDATE SET 
+                    job_id = $3,
+                    current_location = 'project'
+            `, [date, employeeId, projectId]);
+        }
 
-        // Update each employee's order
+        // Then update each employee's order
         for (let i = 0; i < orderedEmployeeIds.length; i++) {
             await client.query(`
                 UPDATE schedule 
@@ -148,29 +164,12 @@ router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res)
             `, [i, date, projectId, orderedEmployeeIds[i]]);
         }
 
-        // Ensure sequential ordering
-        await client.query(`
-            WITH ranked AS (
-                SELECT 
-                    employee_id,
-                    ROW_NUMBER() OVER (ORDER BY employee_display_order NULLS LAST) - 1 as new_order
-                FROM schedule
-                WHERE date = $1 AND job_id = $2
-            )
-            UPDATE schedule s
-            SET employee_display_order = r.new_order
-            FROM ranked r
-            WHERE s.date = $1 
-                AND s.job_id = $2
-                AND s.employee_id = r.employee_id
-        `, [date, projectId]);
-
         await client.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error updating employee order:', error);
-        res.status(500).send('Error updating employee order');
+        res.status(500).send('Error updating employee order: ' + error.message);
     } finally {
         client.release();
     }

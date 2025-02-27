@@ -29,7 +29,11 @@ const Employee = ({
 
   // Debug helper
   const debugLog = (message, data) => {
-    console.log(`[DEBUG-EMPLOYEE-${actualId}] ${message}`, data);
+    if (data !== undefined) {
+      console.log(`[DEBUG-EMPLOYEE-${actualId}] ${message}`, data);
+    } else {
+      console.log(`[DEBUG-EMPLOYEE-${actualId}] ${message}`);
+    }
   };
 
   // Enhanced drag configuration with position tracking and debug
@@ -86,13 +90,24 @@ const Employee = ({
     }),
   }), [actualId, union_id, union_name, current_location, index, projectId, name]);
 
-  // Preserve drop configuration for reordering within projects
+  // Enhanced drop configuration for reordering within projects
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',
     canDrop: (item) => {
-      const canDrop = !!(projectId && item.projectId === projectId);
+      // Can only drop if same project and not the same position
+      const canDrop = !!(
+        projectId && 
+        item.projectId === projectId && 
+        item.index !== index
+      );
+      
       if (canDrop) {
-        debugLog('Can drop item', { itemId: item.id, itemName: item.name });
+        debugLog('Can drop item for reordering', { 
+          itemId: item.id, 
+          itemName: item.name,
+          fromIndex: item.index,
+          toIndex: index 
+        });
       }
       return canDrop;
     },
@@ -103,22 +118,61 @@ const Employee = ({
       const dragIndex = item.index;
       const hoverIndex = index;
       
+      // Don't replace items with themselves
       if (dragIndex === hoverIndex) return;
-
+  
+      // Get the rectangle on screen
       const hoverBoundingRect = ref.current.getBoundingClientRect();
+      
+      // Get vertical middle
       const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      
+      // Get mouse position
       const clientOffset = monitor.getClientOffset();
+      
+      // Get pixels to the top
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
-
-      debugLog('Reordering', { dragIndex, hoverIndex });
+  
+      // Only perform the move when the mouse has crossed half of the item's height
+      
+      // Dragging downwards - only move when cursor is below 50%
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+      
+      // Dragging upwards - only move when cursor is above 50%
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+  
+      // Time to actually perform the action
+      debugLog('Reordering', { 
+        dragIndex, 
+        hoverIndex, 
+        direction: dragIndex > hoverIndex ? 'up' : 'down',
+        mousePosition: {
+          hoverClientY,
+          hoverMiddleY
+        }
+      });
+      
+      // Call the reordering function
       onReorder(dragIndex, hoverIndex);
+      
+      // Update the index in the item so we can keep track of it
       item.index = hoverIndex;
     },
+    drop: (item) => {
+      debugLog('Drop complete - internal reorder', { 
+        fromIndex: item.originalIndex || item.index, 
+        toIndex: index,
+        employeeId: item.id
+      });
+      
+      return { moved: true, internal: true };
+    },
     collect: (monitor) => ({
-      isOver: monitor.isOver()
+      isOver: monitor.isOver({ shallow: true })
     }),
   }), [index, onReorder, projectId]);
 
@@ -152,17 +206,17 @@ const Employee = ({
         onContextMenu={handleContextMenu}
         style={{
           opacity: isDragging ? 0.5 : 1,
-          padding: isHighlighted ? '2px 4px' : '1px',
-          margin: isHighlighted ? '0 0 4px 2px' : '-8px 0 0 2px',
+          padding: isHighlighted ? '2px 4px' : '1px 4px',
+          margin: isHighlighted ? '1px 0' : '1px 0',
           cursor: 'move',
           borderRadius: '4px',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           backgroundColor: projectId ? (
-            isHighlighted ? 'yellow' : 
+            isHighlighted ? 'rgba(255, 255, 0, 0.3)' : 
             isDragging ? '#f0f0f0' : 
-            isOver ? 'lightblue' : 'transparent'
+            isOver ? 'rgba(173, 216, 230, 0.5)' : 'transparent'
           ) : (
             isDragging ? '#f0f0f0' : 'transparent'
           ),
@@ -170,6 +224,7 @@ const Employee = ({
           zIndex: isDragging ? 1000 : 1,
           transition: 'all 0.2s ease',
           transform: isDragging ? 'scale(1.05)' : 'scale(1)',
+          border: isHighlighted ? '1px solid #edd800' : '1px solid transparent',
           boxShadow: isDragging ? '0 5px 10px rgba(0,0,0,0.15)' : 'none'
         }}
         data-employee-id={actualId}
@@ -180,10 +235,10 @@ const Employee = ({
           className="primary"
           data-toggle="modal"
           data-target={`#${modalId}`}
-          style={{ color: unionColor }}
+          style={{ color: unionColor, margin: 0, padding: 0 }}
         >
-          {/* Add index for debug only */}
-          {name} <span style={{ fontSize: '8px', color: '#999' }}>[{index}]</span>
+          {name}
+          <span style={{ fontSize: '8px', color: '#999', marginLeft: '4px' }}>[{index}]</span>
         </h6>
       </div>
 

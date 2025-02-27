@@ -182,7 +182,7 @@ function* handleMoveEmployee(action) {
             employeeId,
             targetProjectId,
             sourceLocation,
-            dropIndex,
+            dropIndex: typeof dropIndex === 'number' ? dropIndex : 'undefined',
             date: formattedDate
         });
 
@@ -193,7 +193,7 @@ function* handleMoveEmployee(action) {
             { 
                 employeeId, 
                 targetProjectId,
-                dropIndex,
+                dropIndex: typeof dropIndex === 'number' ? dropIndex : null,
                 sourceLocation
             }
         );
@@ -297,6 +297,7 @@ function* updateProjectOrder(action) {
 }
 
 // In schedule.saga.js, update the updateEmployeeOrder saga
+// Improved updateEmployeeOrder saga
 function* updateEmployeeOrder(action) {
     try {
         const { projectId, orderedEmployeeIds, date } = action.payload;
@@ -322,27 +323,54 @@ function* updateEmployeeOrder(action) {
             date: formattedDate
         });
 
-        // Make API call
-        yield call(
-            axios.put,
-            '/api/project/updateOrder',
-            {
+        // First, update in Redux optimistically for a responsive UI
+        yield put({
+            type: 'UPDATE_EMPLOYEE_ORDER_LOCAL',
+            payload: {
                 projectId,
                 orderedEmployeeIds,
                 date: formattedDate
             }
-        );
-
-        // Refresh data
-        yield put({
-            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-            payload: { date: formattedDate }
         });
 
-        yield put({
-            type: 'FETCH_UNIONS_WITH_EMPLOYEES',
-            payload: { date: formattedDate }
-        });
+        // Then make the API call to persist the changes
+        try {
+            yield call(
+                axios.put,
+                '/api/project/updateOrder',
+                {
+                    projectId,
+                    orderedEmployeeIds,
+                    date: formattedDate
+                }
+            );
+
+            // If call succeeds, mark the operation as successful
+            yield put({
+                type: 'UPDATE_EMPLOYEE_ORDER_SUCCESS',
+                payload: {
+                    projectId,
+                    orderedEmployeeIds,
+                    date: formattedDate
+                }
+            });
+
+            // Refresh data to ensure backend and frontend are in sync
+            yield put({
+                type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+                payload: { date: formattedDate }
+            });
+        } catch (error) {
+            console.error('Error in API call to update employee order:', error);
+            
+            // If the API call fails, refresh the UI to match server state
+            yield put({
+                type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+                payload: { date: formattedDate }
+            });
+            
+            throw error; // Rethrow to be caught by the outer try/catch
+        }
     } catch (error) {
         console.error('Error updating employee order:', error);
         yield put({
