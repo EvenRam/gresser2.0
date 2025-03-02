@@ -6,9 +6,13 @@ const unionBoxReducer = (state = [], action) => {
                 console.warn('Invalid unions data received:', unions);
                 return state;
             }
+            // Keep array structure but ensure date is attached
             return unions.map(union => ({
                 ...union,
                 date,
+                employees: Array.isArray(union.employees) ? 
+                    union.employees.map(emp => ({...emp, date})) : 
+                    []
             }));
         }
 
@@ -22,8 +26,8 @@ const unionBoxReducer = (state = [], action) => {
                     if (union.id === sourceUnionId) {
                         return {
                             ...union,
-                            employees: union.employees.filter(emp => emp.id !== employeeId),
-                            date
+                            date,
+                            employees: union.employees.filter(emp => emp.id !== employeeId)
                         };
                     }
                     return union;
@@ -36,8 +40,8 @@ const unionBoxReducer = (state = [], action) => {
                     if (union.id === sourceUnionId) {
                         return {
                             ...union,
-                            employees: union.employees.filter(emp => emp.id !== employeeId),
-                            date
+                            date,
+                            employees: union.employees.filter(emp => emp.id !== employeeId)
                         };
                     }
                     if (union.id === targetUnionId) {
@@ -48,8 +52,8 @@ const unionBoxReducer = (state = [], action) => {
                         if (employeeToMove) {
                             return {
                                 ...union,
-                                employees: [...union.employees, employeeToMove],
-                                date
+                                date,
+                                employees: [...union.employees, {...employeeToMove, date}]
                             };
                         }
                     }

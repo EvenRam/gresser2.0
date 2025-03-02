@@ -121,35 +121,59 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
 });
 
 // Update employee order within a project for a specific date
+// In project.router.js, update the updateOrder endpoint
 router.put('/updateOrder', rejectUnauthenticated, validateDate, async (req, res) => {
+    const client = await pool.connect();
     try {
-        const { projectId, orderedEmployeeIds } = req.body;
-        const date = req.validatedDate;
+        const { projectId, orderedEmployeeIds, date } = req.body;
         
-        await pool.query('BEGIN');
-        // Update display order in schedule table
-        for (let i = 0; i < orderedEmployeeIds.length; i++) {
-            await pool.query(
-                `INSERT INTO schedule 
-                    (date, job_id, employee_id, employee_display_order)
+        if (!Array.isArray(orderedEmployeeIds) || orderedEmployeeIds.length === 0) {
+            throw new Error('Invalid employee order data - must be a non-empty array');
+        }
+        
+        console.log('Updating employee order:', {
+            projectId,
+            orderedEmployeeIds,
+            date
+        });
+        
+        await client.query('BEGIN');
+
+        // First, ensure all employees are assigned to this project
+        for (const employeeId of orderedEmployeeIds) {
+            await client.query(`
+                INSERT INTO schedule 
+                    (date, employee_id, job_id, current_location)
                 VALUES 
-                    ($1, $2, $3, $4)
+                    ($1, $2, $3, 'project')
                 ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
-                    employee_display_order = $4,
-                    job_id = $2;`,
-                [date, projectId, orderedEmployeeIds[i], i]
-            );
+                    job_id = $3,
+                    current_location = 'project'
+            `, [date, employeeId, projectId]);
         }
-        await pool.query('COMMIT');
+
+        // Then update each employee's order
+        for (let i = 0; i < orderedEmployeeIds.length; i++) {
+            await client.query(`
+                UPDATE schedule 
+                SET employee_display_order = $1
+                WHERE date = $2 
+                AND job_id = $3 
+                AND employee_id = $4
+            `, [i, date, projectId, orderedEmployeeIds[i]]);
+        }
+
+        await client.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
-        await pool.query('ROLLBACK');
+        await client.query('ROLLBACK');
         console.error('Error updating employee order:', error);
-        res.status(500).send('Error updating employee order');
+        res.status(500).send('Error updating employee order: ' + error.message);
+    } finally {
+        client.release();
     }
 });
-
 
 // Update rain day status
 router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, res) => {

@@ -15,7 +15,7 @@ const Scheduling = () => {
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
     const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
     const highlightedEmployees = useSelector((state) => state.employeeReducer.highlightedEmployees);
- 
+
     // Keep existing sort logic
     const sortedProjects = useMemo(() => {
         if (!projects) return [];
@@ -37,7 +37,8 @@ const Scheduling = () => {
     const totalAssignedEmployees = useMemo(() => {
         return projects.reduce((total, project) => total + (project.employees?.length || 0), 0);
     }, [projects]);
-    
+
+    // Keep existing initialization
     useEffect(() => {
         const initializeSchedule = async () => {
             setIsLoading(true);
@@ -49,10 +50,11 @@ const Scheduling = () => {
                 setIsLoading(false);
             }
         };
- 
+
         initializeSchedule();
     }, [dispatch]);
- 
+
+    // Keep existing data fetching
     useEffect(() => {
         const fetchData = async () => {
             if (!selectedDate) return;
@@ -79,11 +81,11 @@ const Scheduling = () => {
                 setIsLoading(false);
             }
         };
- 
+
         fetchData();
     }, [dispatch, selectedDate]);
 
-    // Restore the handleFinalize function
+    // Keep existing finalize handler
     const handleFinalize = useCallback(() => {
         if (!window.confirm('Are you sure you want to finalize this schedule?')) {
             return;
@@ -93,50 +95,41 @@ const Scheduling = () => {
             payload: { date: selectedDate }
         });
     }, [dispatch, selectedDate]);
- 
-    const moveEmployee = useCallback((employeeId, targetProjectId, sourceProjectId) => {
+
+    // Updated moveEmployee to handle dropIndex
+    const moveEmployee = useCallback(({
+        employeeId,
+        targetProjectId,
+        sourceLocation,
+        dropIndex,
+        date
+    }) => {
         if (!isEditable) {
             console.warn('Cannot modify past dates');
             return;
         }
- 
+
+        console.log('moveEmployee called with:', {
+            employeeId,
+            targetProjectId,
+            sourceLocation,
+            dropIndex,
+            date: selectedDate
+        });
+
         dispatch({
             type: 'MOVE_EMPLOYEE',
             payload: {
                 employeeId,
                 targetProjectId,
-                sourceProjectId,
-                date: selectedDate
+                sourceLocation,
+                dropIndex,
+                date: selectedDate || date
             },
         });
     }, [dispatch, selectedDate, isEditable]);
- 
-    const updateEmployeeOrder = useCallback(async (projectId, orderedEmployeeIds) => {
-        if (!isEditable) return;
- 
-        try {
-            await axios.put('/api/project/updateOrder', {
-                projectId,
-                orderedEmployeeIds,
-                date: selectedDate
-            });
- 
-            dispatch({
-                type: 'UPDATE_EMPLOYEE_ORDER',
-                payload: {
-                    projectId,
-                    employees: orderedEmployeeIds.map((id, index) => ({
-                        id,
-                        display_order: index
-                    })),
-                    date: selectedDate
-                }
-            });
-        } catch (error) {
-            console.error('Error updating employee order:', error);
-        }
-    }, [dispatch, selectedDate, isEditable]);
- 
+
+    // Keep existing project reordering logic
     const moveJob = useCallback(async (dragIndex, hoverIndex) => {
         if (!isEditable || dragIndex === hoverIndex) {
             return;
@@ -151,18 +144,14 @@ const Scheduling = () => {
                 return;
             }
     
-            // Remove draggedProject from array
             currentProjects.splice(dragIndex, 1);
-            // Insert it at the new position
             currentProjects.splice(hoverIndex, 0, draggedProject);
     
-            // Update display orders
             const updatedProjects = currentProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
     
-            // Update Redux first for immediate UI feedback
             dispatch({
                 type: 'REORDER_PROJECTS',
                 payload: {
@@ -173,7 +162,6 @@ const Scheduling = () => {
                 }
             });
     
-            // Then update the backend
             const orderedProjectIds = updatedProjects.map(p => p.job_id || p.id);
             await axios.put('/api/project/updateProjectOrder', {
                 orderedProjectIds,
@@ -182,22 +170,22 @@ const Scheduling = () => {
     
         } catch (error) {
             console.error('Error in moveJob:', error);
-            // Revert on error
             dispatch({ 
                 type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
                 payload: { date: selectedDate }
             });
         }
     }, [dispatch, sortedProjects, selectedDate, isEditable]);
- 
+
+    // Keep existing highlight toggle
     const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
         if (!isEditable) return;
- 
+
         try {
             await axios.put(`/api/schedule/${selectedDate}/${employeeId}/highlight`, {
                 isHighlighted
             });
- 
+
             dispatch({
                 type: 'SET_HIGHLIGHTED_EMPLOYEE',
                 payload: {
@@ -210,19 +198,27 @@ const Scheduling = () => {
             console.error('Error toggling highlight:', error);
         }
     }, [dispatch, selectedDate, isEditable]);
- 
+
     const handlePrint = useCallback(() => {
         window.print();
     }, []);
- 
+
     if (isLoading) {
         return <div>Loading...</div>;
     }
 
     return (
         <div className="scheduling-container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
-                <span className="total-employees">Total Employees: {totalAssignedEmployees}</span>
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginBottom: '20px', 
+                gap: '10px' 
+            }}>
+                <span className="total-employees">
+                    Total Employees: {totalAssignedEmployees}
+                </span>
                 <DateSchedule />
                 {isEditable && (
                     <button 
@@ -263,7 +259,6 @@ const Scheduling = () => {
                                 index={index}
                                 moveJob={moveJob}
                                 moveEmployee={moveEmployee}
-                                updateEmployeeOrder={updateEmployeeOrder}
                                 toggleHighlight={toggleHighlight}
                                 employees={project.employees}
                                 selectedDate={selectedDate}
