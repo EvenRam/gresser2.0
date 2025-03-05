@@ -21,6 +21,7 @@ const initialState = {
             
             const maxDate = new Date(today);
             maxDate.setDate(maxDate.getDate() + 7);
+            maxDate.setHours(12, 0, 0, 0);
             
             // Convert to strings for comparison
             const todayStr = today.toISOString().split('T')[0];

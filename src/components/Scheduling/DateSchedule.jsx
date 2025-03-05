@@ -15,17 +15,18 @@ const DateSchedule = () => {
             now.setHours(12, 0, 0, 0);
             const todayStr = now.toISOString().split('T')[0];
             
-            console.log('Setting initial MN date:', todayStr);
+            console.log('Setting initial date:', todayStr);
             dispatch({ type: 'SET_SELECTED_DATE', payload: todayStr });
         }
     }, [dispatch, selectedDate]);
 
     const handleDateChange = (event) => {
         const selectedValue = event.target.value;
+        console.log('Date change selected:', selectedValue);
         dispatch({ type: 'SET_SELECTED_DATE', payload: selectedValue });
     };
 
-    // Set range based on current MN date
+    // Set range based on current Central Time date
     const centralTime = new Date().toLocaleString("en-US", {
         timeZone: "America/Chicago"
     });

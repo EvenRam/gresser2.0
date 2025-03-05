@@ -77,11 +77,17 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
 });
 
 // Update project display order
+// In project.router.js, update the updateProjectOrder endpoint
 router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (req, res) => {
     const client = await pool.connect();
     try {
         const { orderedProjectIds } = req.body;
         const date = req.validatedDate;
+
+        console.log('Updating project order:', {
+            date,
+            orderedProjectIds
+        });
 
         if (!Array.isArray(orderedProjectIds)) {
             throw new Error('orderedProjectIds must be an array');
@@ -106,6 +112,7 @@ router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (re
             await client.query(`
                 INSERT INTO project_order (date, job_id, display_order)
                 VALUES ($1, $2, $3)
+                ON CONFLICT (date, job_id) DO UPDATE SET display_order = $3
             `, [date, orderedProjectIds[i], i]);
         }
 
