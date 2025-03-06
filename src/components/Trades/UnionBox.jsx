@@ -118,26 +118,25 @@ const UnionBox = ({ id, union_name, color }) => {
             </div>
 
             <div className="union_box"> 
-                {employees.length === 0 ? (
-                    <p className="no-employees">No employees assigned</p>
-                ) : (
-                    employees
-                        .filter(employee => employee.employee_status === true)
-                        .map((employee, index) => (
-                            <Employee
-                                key={employee.id}
-                                {...employee}
-                                id={employee.id} 
-                                className={`employee-name union-${unionNumber}`}
-                                name={`${employee.first_name} ${employee.last_name}`}
-                                union_id={id}
-                                union_name={union_name}
-                                current_location="union"
-                                index={index}
-                                onDragStart={handleDragStart}
-                            />
-                        ))
-                )}
+            {employees.length === 0 ? (
+    <p className="no-employees">No employees assigned</p>
+) : (
+    employees
+        .filter(employee => employee.employee_status === true)
+        .map((employee, index) => (
+            <Employee
+                key={employee.id} // Make sure this key prop is present
+                {...employee}
+                id={employee.id} 
+                className={`employee-name union-${unionNumber}`}
+                name={`${employee.first_name} ${employee.last_name}`}
+                union_id={id}
+                union_name={union_name}
+                current_location="union"
+                index={index}
+            />
+        ))
+)}
             </div>
         </div>
     );
