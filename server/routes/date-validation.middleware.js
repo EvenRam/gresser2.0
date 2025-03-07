@@ -16,13 +16,18 @@ const validateDate = (req, res, next) => {
         const today = new Date();
         today.setHours(12, 0, 0, 0);
 
+        // Allow editing yesterday's date
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(12, 0, 0, 0);
+        
         const maxDate = new Date(today);
         maxDate.setDate(maxDate.getDate() + 7);
         maxDate.setHours(12, 0, 0, 0);
 
         // Format all dates consistently
         const formattedRequestDate = formatLocalDate(requestDate);
-        const formattedToday = formatLocalDate(today);
+        const formattedYesterday = formatLocalDate(yesterday);
         const formattedMaxDate = formatLocalDate(maxDate);
 
         if (isNaN(requestDate.getTime())) {
@@ -31,8 +36,8 @@ const validateDate = (req, res, next) => {
 
         // For modification requests
         if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-            if (formattedRequestDate < formattedToday) {
-                return res.status(403).send('Cannot modify past dates');
+            if (formattedRequestDate < formattedYesterday) {
+                return res.status(403).send('Cannot modify dates more than 1 day in the past');
             }
             if (formattedRequestDate > formattedMaxDate) {
                 return res.status(403).send('Cannot modify dates more than 7 days in advance');
