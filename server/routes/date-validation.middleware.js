@@ -12,33 +12,24 @@ const validateDate = (req, res, next) => {
     }
     
     try {
-        // Use consistent timezone approach - force noon Central Time for all dates
-        // This ensures date comparisons work properly
+        // Create date objects with consistent time
         const requestDate = new Date(date + 'T12:00:00');
-        
-        // Get current date in Central Time
-        const centralTime = new Date().toLocaleString("en-US", {
-            timeZone: "America/Chicago"
-        });
-        const today = new Date(centralTime);
+        const today = new Date();
         today.setHours(12, 0, 0, 0);
+
+        // Allow editing yesterday's date
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(12, 0, 0, 0);
         
         const maxDate = new Date(today);
         maxDate.setDate(maxDate.getDate() + 7);
         maxDate.setHours(12, 0, 0, 0);
-        
-        // Format all dates as YYYY-MM-DD for simple string comparison
+
+        // Format all dates consistently
         const formattedRequestDate = formatLocalDate(requestDate);
-        const formattedToday = formatLocalDate(today);
+        const formattedYesterday = formatLocalDate(yesterday);
         const formattedMaxDate = formatLocalDate(maxDate);
-        
-        // Debugging output
-        console.log('Date validation:', {
-            requestDate: formattedRequestDate,
-            today: formattedToday,
-            maxDate: formattedMaxDate,
-            method: req.method
-        });
 
         if (isNaN(requestDate.getTime())) {
             return res.status(400).send('Invalid date format');
@@ -46,11 +37,11 @@ const validateDate = (req, res, next) => {
 
         // For modification requests
         if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
-            if (formattedRequestDate < formattedToday) {
-                return res.status(403).send(`Cannot modify past dates (request: ${formattedRequestDate}, today: ${formattedToday})`);
+            if (formattedRequestDate < formattedYesterday) {
+                return res.status(403).send('Cannot modify dates more than 1 day in the past');
             }
             if (formattedRequestDate > formattedMaxDate) {
-                return res.status(403).send(`Cannot modify dates more than 7 days in advance (request: ${formattedRequestDate}, max: ${formattedMaxDate})`);
+                return res.status(403).send('Cannot modify dates more than 7 days in advance');
             }
         }
 

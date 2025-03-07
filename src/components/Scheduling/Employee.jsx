@@ -145,7 +145,8 @@ const Employee = ({
       </div>
     </div>
   );
-  
+
+  // Use smaller visual height but maintain original drag target size
   return (
     <>
       <div
@@ -153,7 +154,7 @@ const Employee = ({
         onContextMenu={handleContextMenu}
         style={{
           opacity: isDragging ? 0.5 : 1,
-          padding: '1px',
+          padding: '0px',
           margin: '0',
           cursor: 'move',
           borderRadius: '2px',
@@ -161,21 +162,31 @@ const Employee = ({
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           backgroundColor: isHighlighted ? 'yellow' : (isOver ? '#f0f0f0' : 'transparent'),
-          height: '20px',
-          lineHeight: '20px'
+          // Keep original element height for drag calculation
+          height: '14px',
+          // This ensures the drop area extends beyond the visible content
+          // for better drag and drop positioning
+          position: 'relative'
         }}
+        data-employee-id={actualId}
       >
         <h6
           className="primary"
           data-toggle="modal"
           data-target={`#${modalId}`}
-          style={{ color: unionColor, margin: 0, padding: 0, fontSize: '14px', lineHeight: '18px' }}
+          style={{ 
+            color: unionColor, 
+            margin: 0, 
+            padding: 0, 
+            fontSize: '12px',
+            lineHeight: '14px',
+            fontWeight: 'normal'
+          }}
         >
           {name}
         </h6>
       </div>
       
-      {/* Render modal at document body level */}
       {ReactDOM.createPortal(
         modalContent,
         document.body

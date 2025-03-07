@@ -44,6 +44,8 @@ const ProjectBox = ({
   }
   
   // Calculate drop position based on mouse coordinates
+  // Use a constant CALCULATION_HEIGHT to maintain consistent drop positioning
+  // This is different from the visual display height
   const calculateDropPosition = useCallback((monitor) => {
     if (!boxRef.current || !monitor.getClientOffset()) {
       return orderedEmployees.length;
@@ -64,9 +66,17 @@ const ProjectBox = ({
       return 0;
     }
     
+    // IMPORTANT: This value is used for calculation only
+    // It should match the original value for consistent positioning
+    const CALCULATION_HEIGHT = 20;
+    
     // Calculate position based on mouse coordinates
-    const EMPLOYEE_HEIGHT = 20; // Height of each employee item
-    const calculatedIndex = Math.floor(mouseY / EMPLOYEE_HEIGHT);
+    const calculatedIndex = Math.floor(mouseY / CALCULATION_HEIGHT);
+    
+    // Special handling for drop position after the last item
+    if (mouseY > activeEmployees.length * CALCULATION_HEIGHT - 2) {
+      return activeEmployees.length;
+    }
     
     // Ensure index is within bounds
     return Math.max(0, Math.min(calculatedIndex, activeEmployees.length));
@@ -91,56 +101,51 @@ const ProjectBox = ({
     if (!isEditable || fromIndex === toIndex) return;
     
     try {
-        // Create a new array with the updated order
-        const newOrder = [...orderedEmployees];
-        const [movedEmployee] = newOrder.splice(fromIndex, 1);
-        newOrder.splice(toIndex, 0, movedEmployee);
-        
-        // Update the local state first for immediate UI feedback
-        setOrderedEmployees(newOrder);
-        
-        // Extract only active employees
-        const activeEmployees = newOrder.filter(emp => emp.employee_status === true);
-        
-        // Create an array of just the employee IDs
-        const orderedEmployeeIds = activeEmployees.map(emp => emp.id);
-        
-        // Make sure we have valid IDs
-        if (!orderedEmployeeIds.length) {
-            console.warn('No valid employee IDs for reordering');
-            return;
+      // Create a new array with the updated order
+      const newOrder = [...orderedEmployees];
+      const [movedEmployee] = newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, movedEmployee);
+      
+      // Update the local state first for immediate UI feedback
+      setOrderedEmployees(newOrder);
+      
+      // Extract only active employees
+      const activeEmployees = newOrder.filter(emp => emp.employee_status === true);
+      
+      // Create an array of just the employee IDs
+      const orderedEmployeeIds = activeEmployees.map(emp => emp.id);
+      
+      // Make sure we have valid IDs
+      if (!orderedEmployeeIds.length) {
+        console.warn('No valid employee IDs for reordering');
+        return;
+      }
+      
+      // Dispatch the action to update the order
+      dispatch({
+        type: 'UPDATE_EMPLOYEE_ORDER',
+        payload: {
+          projectId: id,
+          orderedEmployeeIds,
+          date: selectedDate
         }
-        
-        console.log('Reordering employees:', {
-            projectId: id,
-            orderedEmployeeIds,
-            date: selectedDate
-        });
-        
-        // Dispatch the action to update the order
-        dispatch({
-            type: 'UPDATE_EMPLOYEE_ORDER',
-            payload: {
-                projectId: id,
-                orderedEmployeeIds, // Send just the array of IDs
-                date: selectedDate
-            }
-        });
+      });
     } catch (error) {
-        console.error('Error reordering employees:', error);
-        
-        // Refresh from server on error
-        dispatch({
-            type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-            payload: { date: selectedDate }
-        });
+      console.error('Error reordering employees:', error);
+      
+      // Refresh from server on error
+      dispatch({
+        type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
+        payload: { date: selectedDate }
+      });
     }
-}, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
+  }, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
   
   // Handle employee drop
   const handleDrop = useCallback((item) => {
     if (!item?.id || !isEditable) return;
     
+    // Make sure dropPosition has a valid fallback for last position
     const dropIndex = dropPosition !== null ? dropPosition : orderedEmployees.length;
     
     // Determine if this is from another container
@@ -155,7 +160,7 @@ const ProjectBox = ({
       moveEmployee({
         employeeId: item.id,
         targetProjectId: id,
-        dropIndex: dropIndex,
+        dropIndex,
         date: selectedDate
       });
       
@@ -208,15 +213,20 @@ const ProjectBox = ({
     const newRainDayStatus = !currentRainDay;
     
     dispatch({
-        type: 'UPDATE_RAIN_DAY_STATUS_REQUEST',
-        payload: {
-            jobId: id,
-            isRainDay: newRainDayStatus,
-            date: selectedDate
-        }
+      type: 'UPDATE_RAIN_DAY_STATUS_REQUEST',
+      payload: {
+        jobId: id,
+        isRainDay: newRainDayStatus,
+        date: selectedDate
+      }
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
  
+  // CALCULATION_HEIGHT determines where to place the drop indicator
+  // This should match the value used in calculateDropPosition
+  const CALCULATION_HEIGHT = 20;
+  const VISUAL_HEIGHT = 14; // The actual visual height of the employee items
+
   return (
     <div
       ref={node => {
@@ -246,7 +256,7 @@ const ProjectBox = ({
         marginBottom: '10px',
         position: 'relative'
       }}>
-        {/* Drop position indicator */}
+        {/* Drop position indicator - position based on the CALCULATION_HEIGHT */}
         {isEditable && isOver && dropPosition !== null && (
           <div 
             className="drop-position-indicator"
@@ -256,8 +266,10 @@ const ProjectBox = ({
               right: 0,
               height: '2px',
               backgroundColor: '#4a90e2',
-              top: `${dropPosition * 20}px`,
-              zIndex: 5
+              // Multiply by the constant calculation height, not the visual height
+              top: `${dropPosition * CALCULATION_HEIGHT * (VISUAL_HEIGHT/CALCULATION_HEIGHT)}px`,
+              zIndex: 5,
+              boxShadow: '0 0 3px rgba(74, 144, 226, 0.7)'
             }}
           />
         )}

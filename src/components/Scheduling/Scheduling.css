@@ -160,7 +160,6 @@ Main Container Styles */
   border-radius: 4px 4px 0 0;
   position: relative;
   z-index: 2;
-  font-size: 16px;
 }
 
 .project-box-footer {
@@ -187,8 +186,8 @@ Main Container Styles */
 }
 
 .employee-item {
-  height: 20px;
-  line-height: 20px;
+  height: 14px; /* Reduced from 20px */
+  line-height: 14px; /* Reduced from 20px */
   margin: 0;
   padding: 0;
   white-space: nowrap;
@@ -209,17 +208,17 @@ Main Container Styles */
 
 .no-employees-message {
   color: #666;
-  font-size: 14px;
+  font-size: 11px;
   text-align: center;
   font-style: italic;
-  margin: 10px 0;
+  margin: 5px 0;
 }
 
 .primary {
-  font-size: 14px;
+  font-size: 12px;
   margin: 0;
   padding: 0;
-  line-height: 18px;
+  line-height: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -238,9 +237,9 @@ Main Container Styles */
   transition: top 0.15s ease;
 }
 
-/* Employee highlight styling */
+/* Employee highlight styling - maintain this */
 .employee-highlighted {
-  background-color: rgba(255, 255, 0, 0.5) !important;
+  background-color: rgba(255, 255, 0, 0.5);
   border-radius: 2px;
   box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
 }
@@ -390,15 +389,15 @@ Main Container Styles */
 
   /* Employee items - tight spacing in print mode */
   .employee-item {
-    height: 14px !important;
-    line-height: 14px !important;
+    height: 12px !important; /* Even smaller for print */
+    line-height: 12px !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
   .primary {
-    font-size: 10px !important;
-    line-height: 14px !important;
+    font-size: 8px !important;
+    line-height: 12px !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -439,10 +438,10 @@ Main Container Styles */
   }
   
   .no-employees-message {
-    font-size: 8px !important;
+    font-size: 7px !important;
     text-align: center !important;
     width: 100% !important;
-    padding: 8px 4px !important;
+    padding: 2px 2px !important;
     margin: 0 !important;
     color: #666 !important;
     font-style: italic !important;

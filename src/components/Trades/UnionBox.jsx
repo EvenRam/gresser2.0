@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import Employee from '../Scheduling/Employee';
@@ -10,95 +10,43 @@ const UnionBox = ({ id, union_name, color }) => {
         state.employeeReducer.employeesByDate?.[selectedDate] || []
     );
     const boxRef = useRef(null);
-    const [sourcePosition, setSourcePosition] = useState(null);
-
+    
     // Filter employees for this union
     const employees = allEmployees.filter(
         emp => emp.current_location === 'union' && emp.union_id === id
     );
-
-    // Track drag start position
-    const handleDragStart = useCallback((employeeId, event) => {
-        const boxRect = boxRef.current?.getBoundingClientRect();
-        const initialPosition = {
-            x: event.clientX - boxRect?.left,
-            y: event.clientY - boxRect?.top
-        };
-        setSourcePosition(initialPosition);
-        return {
-            type: 'union',
-            id: employeeId,
-            unionId: id,
-            initialPosition
-        };
-    }, [id]);
-
+    
     // Position-aware drop handling
     const handleDrop = useCallback((item, monitor) => {
         const didDrop = monitor.didDrop();
         if (didDrop) return;
-
+        
         if (!item || !item.id) {
             console.error('Invalid drop item:', item);
             return;
         }
 
-        // Calculate relative drop position
-        const dropClientOffset = monitor.getClientOffset();
-        const sourceClientOffset = monitor.getInitialClientOffset();
-        const dropPosition = {
-            x: dropClientOffset.x - sourceClientOffset.x,
-            y: dropClientOffset.y - sourceClientOffset.y
-        };
-
         // Only handle drops if moving to a different union or from a project
         if (item.union_id !== id || item.current_location !== 'union') {
-            console.log(`Moving employee ${item.id} to union ${id} for date ${selectedDate}`);
             dispatch({
                 type: 'MOVE_EMPLOYEE',
                 payload: {
                     employeeId: item.id,
                     targetProjectId: null,
-                    sourceLocation: {
-                        type: item.current_location,
-                        id: item.current_location === 'project' ? item.projectId : item.union_id
-                    },
-                    sourcePosition: item.initialPosition,
-                    dropPosition,
+                    sourceUnionId: item.union_id,
                     date: selectedDate
                 }
             });
         }
     }, [id, dispatch, selectedDate]);
 
-    // Enhanced drop configuration with position tracking
+    // Drop configuration
     const [{ isOver }, drop] = useDrop(() => ({
         accept: 'EMPLOYEE',
+        drop: handleDrop,
         collect: (monitor) => ({
             isOver: !!monitor.isOver()
-        }),
-        drop: handleDrop,
-        hover: (item, monitor) => {
-            if (!monitor.isOver({ shallow: true })) return;
-
-            const clientOffset = monitor.getClientOffset();
-            if (!clientOffset) return;
-
-            const boxRect = boxRef.current?.getBoundingClientRect();
-            if (!boxRect) return;
-
-            // Track hover position relative to box
-            const hoverPosition = {
-                x: clientOffset.x - boxRect.left,
-                y: clientOffset.y - boxRect.top
-            };
-
-            // Could be used for visual feedback or position calculations
-            if (item.union_id !== id) {
-                // Hovering from different union or project
-                // Could add visual feedback here
-            }
-        }
+        })
     }), [handleDrop]);
 
     // Get union number for styling
@@ -112,31 +60,57 @@ const UnionBox = ({ id, union_name, color }) => {
             }}
             className={`union-box union-${unionNumber}`}
             data-union-id={unionNumber}
+            style={{
+                backgroundColor: isOver ? 'rgba(200, 200, 255, 0.1)' : 'transparent',
+                border: isOver ? '1px dashed #4a90e2' : 'none',
+                borderRadius: '4px',
+                transition: 'background-color 0.2s ease'
+            }}
         >
-            <div className='union-label small-text' style={{ color }}>
+            <div 
+                className='union-label small-text' 
+                style={{ 
+                    color, 
+                    margin: '-2px -2px 2px -2px',
+                    padding: '3px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    backgroundColor: '#f8f8f8',
+                    borderBottom: '1px solid #ddd'
+                }}
+            >
                 {union_name}
             </div>
-
-            <div className="union_box"> 
-            {employees.length === 0 ? (
-    <p className="no-employees">No employees assigned</p>
-) : (
-    employees
-        .filter(employee => employee.employee_status === true)
-        .map((employee, index) => (
-            <Employee
-                key={employee.id} // Make sure this key prop is present
-                {...employee}
-                id={employee.id} 
-                className={`employee-name union-${unionNumber}`}
-                name={`${employee.first_name} ${employee.last_name}`}
-                union_id={id}
-                union_name={union_name}
-                current_location="union"
-                index={index}
-            />
-        ))
-)}
+            
+            <div className="union_box" style={{ 
+                marginTop: '2px',
+                padding: '0px'
+            }}> 
+                {employees.length === 0 ? (
+                    <p className="no-employees" style={{ 
+                        margin: '2px 0', 
+                        fontSize: '11px', 
+                        fontStyle: 'italic',
+                        padding: '2px',
+                        color: '#666'
+                    }}>No employees assigned</p>
+                ) : (
+                    employees
+                        .filter(employee => employee.employee_status === true)
+                        .map((employee, index) => (
+                            <Employee
+                                key={employee.id}
+                                {...employee}
+                                id={employee.id} 
+                                className={`employee-name union-${unionNumber}`}
+                                name={`${employee.first_name} ${employee.last_name}`}
+                                union_id={id}
+                                union_name={union_name}
+                                current_location="union"
+                                index={index}
+                            />
+                        ))
+                )}
             </div>
         </div>
     );

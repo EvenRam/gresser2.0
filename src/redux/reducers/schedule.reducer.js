@@ -19,20 +19,25 @@ const initialState = {
             const today = new Date(centralTime);
             today.setHours(12, 0, 0, 0);
             
+            // Allow editing yesterday's date
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday.setHours(12, 0, 0, 0);
+            
             const maxDate = new Date(today);
             maxDate.setDate(maxDate.getDate() + 7);
             maxDate.setHours(12, 0, 0, 0);
             
             // Convert to strings for comparison
-            const todayStr = today.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
             const maxDateStr = maxDate.toISOString().split('T')[0];
             
-            // A date is editable if it's today or a future date within 7 days
-            const isEditable = newDate >= todayStr && newDate <= maxDateStr;
+            // A date is editable if it's yesterday, today, or a future date within 7 days
+            const isEditable = newDate >= yesterdayStr && newDate <= maxDateStr;
             
             console.log('Date comparison:', {
                 selectedDate: newDate,
-                today: todayStr,
+                yesterday: yesterdayStr,
                 maxDate: maxDateStr,
                 isEditable
             });
