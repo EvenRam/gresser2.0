@@ -9,13 +9,12 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { employeeId, targetProjectId, dropIndex } = req.body;
     const date = req.validatedDate;
     
+    // Simple logging without transformation checks
     console.log('moveemployee.router received:', {
         employeeId,
         targetProjectId,
         dropIndex,
-        date,
-        rawDropIndex: req.body.dropIndex, // Check if there's any transformation happening
-        bodyKeys: Object.keys(req.body)
+        date
     });
     
     try {
@@ -36,41 +35,10 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
             console.log('Moving to project:', {
                 employeeId,
                 targetProjectId,
-                initialDropIndex: dropIndex
+                dropIndex
             });
             
-            // Get current max display order for proper last position handling
-            const maxDisplayOrderResult = await pool.query(
-                `SELECT COALESCE(MAX(employee_display_order), -1) as max_order,
-                 COUNT(*) as employee_count
-                 FROM schedule 
-                 WHERE date = $1 AND job_id = $2`,
-                [date, targetProjectId]
-            );
-            
-            const maxDisplayOrder = maxDisplayOrderResult.rows[0].max_order;
-            const employeeCount = maxDisplayOrderResult.rows[0].employee_count;
-            
-            // Validate drop index - ensure it's not null/undefined and is within valid range
-            let validDropIndex = dropIndex;
-            if (validDropIndex === undefined || validDropIndex === null) {
-                // If no index provided, append to end
-                validDropIndex = maxDisplayOrder + 1;
-            } else if (validDropIndex > maxDisplayOrder + 1) {
-                // Ensure index doesn't exceed valid range
-                validDropIndex = maxDisplayOrder + 1;
-            }
-            
-            console.log('moveemployee.router processed index:', {
-                originalDropIndex: dropIndex,
-                validatedDropIndex: validDropIndex,
-                maxDisplayOrder,
-                employeeCount,
-                isLastPosition: validDropIndex > maxDisplayOrder,
-                maxPlusOne: maxDisplayOrder + 1
-            });
-            
-            // Get existing employee position if any
+            // Check if employee is already in this project
             const existingEmployeeQuery = await pool.query(
                 `SELECT employee_display_order, job_id 
                  FROM schedule 
@@ -81,49 +49,37 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
             const existingPosition = existingEmployeeQuery.rows[0]?.employee_display_order;
             const existingJobId = existingEmployeeQuery.rows[0]?.job_id;
             
-            console.log('Existing employee position:', {
-                employeeId,
-                existingPosition,
-                existingJobId,
-                isSameProject: existingJobId == targetProjectId, // Use == for type coercion
-                moveType: existingJobId == targetProjectId ? 'reorder' : 'new-assignment'
-            });
-            
-            // First, make space for the new employee by adjusting existing employees' positions
-            if (existingJobId == targetProjectId && existingPosition < validDropIndex) {
-                // If moving later in same project, adjust the index
-                console.log('Moving later in same project - adjusting index');
-                validDropIndex = validDropIndex - 1;
+            // Use the dropIndex directly from frontend - convert to integer if needed
+            let finalDropIndex = dropIndex !== undefined && dropIndex !== null ? 
+                parseInt(dropIndex, 10) : null;
+                
+            // Handle case when no drop index is provided
+            if (finalDropIndex === null) {
+                // Get current max display order for last position
+                const maxOrderResult = await pool.query(
+                    `SELECT COALESCE(MAX(employee_display_order), -1) as max_order
+                     FROM schedule 
+                     WHERE date = $1 AND job_id = $2`,
+                    [date, targetProjectId]
+                );
+                finalDropIndex = maxOrderResult.rows[0].max_order + 1;
             }
             
-            // Now recheck if this is the last position
-            const isLastPosition = validDropIndex > maxDisplayOrder;
-            console.log('Final position check:', {
-                validDropIndex,
-                maxDisplayOrder,
-                isLastPosition
-            });
+            console.log('Using final drop index:', finalDropIndex);
             
-            // First, make space for the new employee by adjusting existing employees' positions
-            const updateResult = await pool.query(
+            // Make space for the employee by adjusting existing employees
+            await pool.query(
                 `UPDATE schedule 
                 SET employee_display_order = employee_display_order + 1
                 WHERE date = $1 
                   AND job_id = $2 
                   AND employee_display_order >= $3
                   AND employee_id != $4`,
-                [date, targetProjectId, validDropIndex, employeeId]
+                [date, targetProjectId, finalDropIndex, employeeId]
             );
-            
-            console.log('Space making result:', {
-                rowsAffected: updateResult.rowCount,
-                date,
-                targetProjectId,
-                validDropIndex
-            });
 
-            // Now insert or update the employee at the exact position
-            const insertResult = await pool.query(
+            // Insert or update the employee at the exact position
+            await pool.query(
                 `INSERT INTO schedule 
                     (date, employee_id, job_id, current_location, is_highlighted,
                     employee_display_order)
@@ -134,31 +90,11 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
                     job_id = EXCLUDED.job_id,
                     current_location = EXCLUDED.current_location,
                     is_highlighted = EXCLUDED.is_highlighted,
-                    employee_display_order = EXCLUDED.employee_display_order
-                RETURNING *`,
-                [date, employeeId, targetProjectId, validDropIndex]
+                    employee_display_order = EXCLUDED.employee_display_order`,
+                [date, employeeId, targetProjectId, finalDropIndex]
             );
-            
-            console.log('Insert/update result:', {
-                result: insertResult.rows[0],
-                finalPosition: insertResult.rows[0]?.employee_display_order
-            });
-            
-            // Verify final order
-            const finalOrderQuery = await pool.query(
-                `SELECT employee_id, employee_display_order 
-                 FROM schedule 
-                 WHERE date = $1 AND job_id = $2
-                 ORDER BY employee_display_order`,
-                [date, targetProjectId]
-            );
-            
-            console.log('Final project order:', {
-                employees: finalOrderQuery.rows,
-                employeeCount: finalOrderQuery.rows.length
-            });
         } else {
-            // Moving back to union
+            // Moving back to union - keep this functionality unchanged
             console.log('Moving back to union:', {
                 employeeId,
                 date
@@ -188,7 +124,8 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
         res.status(500).send(`Error moving employee: ${error.message}`);
     }
 });
-// Add bulk operations endpoint
+
+// Add bulk operations endpoint - keep as is
 router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { sourceDate, employeeIds, targetProjectId } = req.body;
     const targetDate = req.validatedDate;

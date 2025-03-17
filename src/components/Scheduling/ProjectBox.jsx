@@ -44,8 +44,6 @@ const ProjectBox = ({
   }
   
   // Calculate drop position based on mouse coordinates
-  // Use a constant CALCULATION_HEIGHT to maintain consistent drop positioning
-  // This is different from the visual display height
   const calculateDropPosition = useCallback((monitor) => {
     if (!boxRef.current || !monitor.getClientOffset()) {
       return orderedEmployees.length;
@@ -66,17 +64,11 @@ const ProjectBox = ({
       return 0;
     }
     
-    // IMPORTANT: This value is used for calculation only
-    // It should match the original value for consistent positioning
-    const CALCULATION_HEIGHT = 20;
+    // Use a fixed item height for consistent calculation
+    const ITEM_HEIGHT = 14; // Match the actual height of employee items
     
     // Calculate position based on mouse coordinates
-    const calculatedIndex = Math.floor(mouseY / CALCULATION_HEIGHT);
-    
-    // Special handling for drop position after the last item
-    if (mouseY > activeEmployees.length * CALCULATION_HEIGHT - 2) {
-      return activeEmployees.length;
-    }
+    const calculatedIndex = Math.floor(mouseY / ITEM_HEIGHT);
     
     // Ensure index is within bounds
     return Math.max(0, Math.min(calculatedIndex, activeEmployees.length));
@@ -145,8 +137,11 @@ const ProjectBox = ({
   const handleDrop = useCallback((item) => {
     if (!item?.id || !isEditable) return;
     
-    // Make sure dropPosition has a valid fallback for last position
+    // Use the saved drop position from hover - this matches what the user sees
     const dropIndex = dropPosition !== null ? dropPosition : orderedEmployees.length;
+    
+    // Log the drop position for debugging
+    console.log('Dropping employee at index:', dropIndex);
     
     // Determine if this is from another container
     const isExternalMove = item.current_location === 'union' || 
@@ -221,11 +216,6 @@ const ProjectBox = ({
       }
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
- 
-  // CALCULATION_HEIGHT determines where to place the drop indicator
-  // This should match the value used in calculateDropPosition
-  const CALCULATION_HEIGHT = 20;
-  const VISUAL_HEIGHT = 14; // The actual visual height of the employee items
 
   return (
     <div
@@ -237,12 +227,12 @@ const ProjectBox = ({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        border: '1px solid gray',
+        border: isOver ? '1px solid #4a90e2' : '1px solid gray',
         width: '170px',
         minHeight: '100px',
         margin: '-5px',
         padding: '5px',
-        backgroundColor: isOver ? 'lightgray' : 'white',
+        backgroundColor: 'white',
         position: 'relative'
       }}
     >
@@ -256,7 +246,7 @@ const ProjectBox = ({
         marginBottom: '10px',
         position: 'relative'
       }}>
-        {/* Drop position indicator - position based on the CALCULATION_HEIGHT */}
+        {/* Drop position indicator */}
         {isEditable && isOver && dropPosition !== null && (
           <div 
             className="drop-position-indicator"
@@ -266,8 +256,7 @@ const ProjectBox = ({
               right: 0,
               height: '2px',
               backgroundColor: '#4a90e2',
-              // Multiply by the constant calculation height, not the visual height
-              top: `${dropPosition * CALCULATION_HEIGHT * (VISUAL_HEIGHT/CALCULATION_HEIGHT)}px`,
+              top: `${dropPosition * 14}px`, // 14px matches employee height
               zIndex: 5,
               boxShadow: '0 0 3px rgba(74, 144, 226, 0.7)'
             }}
