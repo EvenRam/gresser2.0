@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import axios from 'axios';
 import DraggableJobBox from './DraggableJobBox';
@@ -9,6 +9,12 @@ import DateSchedule from './DateSchedule';
 const Scheduling = () => {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(true);
+    // Add ref for tracking move operations to prevent multiple calls
+    const isMoving = useRef(false);
+    // Add state to track which project box is being dragged
+    const [draggedBoxId, setDraggedBoxId] = useState(null);
+    // Add state to track the hover target for project boxes
+    const [hoverTargetIndex, setHoverTargetIndex] = useState(null);
     
     const projects = useSelector((state) => state.projectReducer.projects);
     const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
@@ -96,7 +102,7 @@ const Scheduling = () => {
         });
     }, [dispatch, selectedDate]);
 
-    // Updated moveEmployee to handle dropIndex
+    // Updated moveEmployee with debouncing to prevent multiple calls
     const moveEmployee = useCallback(({
         employeeId,
         targetProjectId,
@@ -108,6 +114,15 @@ const Scheduling = () => {
             console.warn('Cannot modify past dates');
             return;
         }
+
+        // Prevent multiple calls in quick succession
+        if (isMoving.current) return;
+        isMoving.current = true;
+        
+        // Clear the debounce after a short delay
+        setTimeout(() => {
+            isMoving.current = false;
+        }, 300);
 
         console.log('moveEmployee called with:', {
             employeeId,
@@ -129,53 +144,89 @@ const Scheduling = () => {
         });
     }, [dispatch, selectedDate, isEditable]);
 
-    // Keep existing project reordering logic
+    // Completely rewritten moveJob function for more reliable project box reordering
     const moveJob = useCallback(async (dragIndex, hoverIndex) => {
         if (!isEditable || dragIndex === hoverIndex) {
             return;
         }
-    
+        
+        // Update hover target index for visual indicator
+        setHoverTargetIndex(hoverIndex);
+        
+        // Get the projects from the current state
+        const currentProjects = [...sortedProjects];
+        const draggedProject = currentProjects[dragIndex];
+        
+        if (!draggedProject) {
+            console.warn('No project found at dragIndex:', dragIndex);
+            return;
+        }
+        
         try {
-            const currentProjects = [...sortedProjects];
-            const draggedProject = currentProjects[dragIndex];
+            // Update the dragged box ID for styling
+            setDraggedBoxId(draggedProject.job_id || draggedProject.id);
             
-            if (!draggedProject) {
-                console.warn('No project found at dragIndex:', dragIndex);
-                return;
-            }
-    
-            currentProjects.splice(dragIndex, 1);
-            currentProjects.splice(hoverIndex, 0, draggedProject);
-    
-            const updatedProjects = currentProjects.map((project, index) => ({
+            // Make a copy of the projects array
+            const updatedProjects = [...currentProjects];
+            
+            // Remove the dragged project
+            updatedProjects.splice(dragIndex, 1);
+            
+            // Insert at the new position
+            updatedProjects.splice(hoverIndex, 0, draggedProject);
+            
+            // Update display orders for all projects
+            const projectsWithOrder = updatedProjects.map((project, index) => ({
                 ...project,
                 display_order: index
             }));
-    
+            
+            // Update Redux immediately for a responsive UI
             dispatch({
                 type: 'REORDER_PROJECTS',
                 payload: {
                     sourceIndex: dragIndex,
                     targetIndex: hoverIndex,
                     date: selectedDate,
-                    projects: updatedProjects
+                    projects: projectsWithOrder
                 }
             });
-    
-            const orderedProjectIds = updatedProjects.map(p => p.job_id || p.id);
+            
+            // Prepare ordered IDs for the backend
+            const orderedProjectIds = projectsWithOrder.map(p => p.job_id || p.id);
+            
+            // Update the backend
             await axios.put('/api/project/updateProjectOrder', {
                 orderedProjectIds,
                 date: selectedDate
             });
-    
+            
+            console.log('Successfully updated project order:', {
+                dragIndex,
+                hoverIndex,
+                selectedDate
+            });
+            
         } catch (error) {
             console.error('Error in moveJob:', error);
+            
+            // Revert on error by refreshing from server
             dispatch({ 
                 type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
                 payload: { date: selectedDate }
             });
+        } finally {
+            // Clear the dragged box ID and hover target
+            setDraggedBoxId(null);
+            setHoverTargetIndex(null);
         }
     }, [dispatch, sortedProjects, selectedDate, isEditable]);
+    
+    // Handle drag end for cleanup
+    const handleDragEnd = useCallback(() => {
+        setDraggedBoxId(null);
+        setHoverTargetIndex(null);
+    }, []);
 
     // Keep existing highlight toggle
     const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
@@ -263,6 +314,9 @@ const Scheduling = () => {
                                 employees={project.employees}
                                 selectedDate={selectedDate}
                                 isEditable={isEditable}
+                                isDragging={project.job_id === draggedBoxId}
+                                isHoverTarget={index === hoverTargetIndex}
+                                onDragEnd={handleDragEnd}
                             />
                         ))}
                     </div>

@@ -1,6 +1,7 @@
 const formatLocalDate = (date) => {
+    // Ensure we're working with a date object
     const d = new Date(date);
-    d.setHours(12, 0, 0, 0);  // Set to noon to avoid timezone issues
+    // Return ISO date string (YYYY-MM-DD)
     return d.toISOString().split('T')[0];
 };
 
