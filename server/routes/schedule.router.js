@@ -2,7 +2,7 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
-const { validateDate } = require('../routes/date-validation.middleware');
+const { validateDate,isPastDate} = require('../routes/date-validation.middleware');
 
 //schedule.router.js
 // GET all employees with schedule status for a specific date
@@ -53,42 +53,150 @@ router.get('/employees/:date', rejectUnauthenticated, validateDate, async (req, 
     }
 });
 
-// GET employees grouped by unions
+
+
+// GET projects for a specific date
+router.get('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
+    try {
+        const date = req.validatedDate;
+        const sqlText = `
+            WITH scheduled_projects AS (
+                SELECT 
+                    job_id,
+                    display_order,
+                    rain_day
+                FROM project_order
+                WHERE date = $1
+            )
+            SELECT 
+                j.job_id,
+                j.job_name,
+                j.job_address,
+                j.customer_name,
+                j.customer_phone,
+                j.job_status,
+                COALESCE(sp.display_order, j.job_id) AS display_order,
+                COALESCE(sp.rain_day, false) AS rain_day
+            FROM jobs j
+            LEFT JOIN scheduled_projects sp ON j.job_id = sp.job_id
+            WHERE j.job_status = TRUE
+            ORDER BY sp.display_order NULLS LAST, j.job_name;
+        `;
+        const result = await pool.query(sqlText, [date]);
+        
+        res.send({
+            date,
+            projects: result.rows
+        });
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+
+
+
 router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     try {
         const date = req.validatedDate;
         console.log('Fetching unions with employees for date:', date);
-
-        const sqlText = `
-            SELECT 
-                u.id AS union_id,
-                u.union_name,
-                ae.id AS employee_id,
-                ae.first_name,
-                ae.last_name,
-                ae.phone_number,
-                ae.employee_status,
-                ae.email,
-                ae.address,
-                COALESCE(s.current_location, 'union') AS current_location,
-                ae.union_id AS employee_union_id,
-                COALESCE(s.is_highlighted, false) AS is_highlighted,
-                s.employee_display_order AS display_order,
-                s.job_id AS scheduled_job_id
-            FROM unions u
-            LEFT JOIN add_employee ae ON u.id = ae.union_id
-            LEFT JOIN (
-                SELECT * FROM schedule WHERE date = $1
-            ) s ON ae.id = s.employee_id
-            WHERE ae.employee_status = TRUE
-            AND (
-                s.employee_id IS NULL  -- Not scheduled for this date
-                OR (s.current_location = 'union')  -- Explicitly in union
-            )
-            ORDER BY u.union_name, s.employee_display_order NULLS LAST, ae.id;
-        `;
         
+        const isHistoricalData = isPastDate(date);
+        console.log('Is this a past date?', isHistoricalData);
+
+        let sqlText;
+        
+        if (isHistoricalData) {
+            // For PAST dates: Show all employees who were active on that date
+            // This shows the "available pool" of workers, regardless of assignments
+            console.log('Using query for: PAST DATE');
+            sqlText = `
+                SELECT 
+                    u.id AS union_id,
+                    u.union_name,
+                    ae.id AS employee_id,
+                    ae.first_name,
+                    ae.last_name,
+                    ae.phone_number,
+                    ae.employee_status,
+                    ae.email,
+                    ae.address,
+                    COALESCE(s.current_location, 'union') AS current_location,
+                    ae.union_id AS employee_union_id,
+                    COALESCE(s.is_highlighted, false) AS is_highlighted,
+                    s.employee_display_order AS display_order,
+                    s.job_id AS scheduled_job_id,
+                    j.status AS job_status
+                FROM unions u
+                LEFT JOIN add_employee ae ON u.id = ae.union_id
+                LEFT JOIN (
+                    SELECT * FROM schedule WHERE date = $1
+                ) s ON ae.id = s.employee_id
+                LEFT JOIN jobs j ON s.job_id = j.job_id
+                WHERE 
+                    -- For past dates: show all employees who were active then
+                    -- We assume if they exist in our system, they were active
+                    ae.employee_status = TRUE
+                    AND (
+                        -- Show employees who were in unions that day
+                        s.current_location = 'union'
+                        OR 
+                        -- Show employees assigned to inactive projects (back in union pool)
+                        (s.current_location = 'project' AND j.status = 'Inactive')
+                        OR
+                        -- Show employees who had no schedule entry (default to union)
+                        s.employee_id IS NULL
+                    )
+                ORDER BY u.union_name, s.employee_display_order NULLS LAST, ae.first_name, ae.last_name;
+            `;
+        } else {
+            // For CURRENT/FUTURE dates: Only show currently active employees not in projects
+            console.log('Using query for: CURRENT/FUTURE DATE');
+            sqlText = `
+                SELECT 
+                    u.id AS union_id,
+                    u.union_name,
+                    ae.id AS employee_id,
+                    ae.first_name,
+                    ae.last_name,
+                    ae.phone_number,
+                    ae.employee_status,
+                    ae.email,
+                    ae.address,
+                    COALESCE(s.current_location, 'union') AS current_location,
+                    ae.union_id AS employee_union_id,
+                    COALESCE(s.is_highlighted, false) AS is_highlighted,
+                    s.employee_display_order AS display_order,
+                    s.job_id AS scheduled_job_id,
+                    j.status AS job_status
+                FROM unions u
+                LEFT JOIN add_employee ae ON u.id = ae.union_id
+                LEFT JOIN (
+                    SELECT * FROM schedule WHERE date = $1
+                ) s ON ae.id = s.employee_id
+                LEFT JOIN jobs j ON s.job_id = j.job_id
+                WHERE 
+                    -- For current/future: only show active employees
+                    ae.employee_status = TRUE
+                    AND (
+                        -- Not scheduled for this date (default to union)
+                        s.employee_id IS NULL  
+                        OR 
+                        -- Explicitly in union
+                        s.current_location = 'union'  
+                        OR 
+                        -- Assigned to inactive project (effectively in union)
+                        (s.current_location = 'project' AND j.status = 'Inactive')
+                    )
+                ORDER BY u.union_name, s.employee_display_order NULLS LAST, ae.first_name, ae.last_name;
+            `;
+        }
+        
+        console.log('SQL params:', [date]);
         const result = await pool.query(sqlText, [date]);
+        console.log('Result count:', result.rows.length);
+        
         const unions = {};
         
         result.rows.forEach(row => {
@@ -112,7 +220,7 @@ router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req,
                     current_location: row.current_location,
                     union_id: row.employee_union_id,
                     is_highlighted: row.is_highlighted,
-                    display_order: row.employee_display_order,
+                    display_order: row.display_order,
                     scheduled_job_id: row.scheduled_job_id
                 });
             }
@@ -124,6 +232,77 @@ router.get('/withunions/:date', rejectUnauthenticated, validateDate, async (req,
         });
     } catch (error) {
         console.error('Error fetching unions with employees:', error);
+        res.status(500).send(error.message);
+    }
+});
+
+
+// ADD THIS TEMPORARY DIAGNOSTIC ROUTE
+router.get('/debug/:date', rejectUnauthenticated, async (req, res) => {
+    try {
+        const date = req.params.date;
+        console.log('\n=== DATABASE INVESTIGATION FOR DATE:', date, '===');
+        
+        // 1. Check if there are ANY schedule entries for this date
+        const scheduleCheck = await pool.query(
+            'SELECT COUNT(*) as count FROM schedule WHERE date = $1',
+            [date]
+        );
+        console.log('1. Schedule entries for this date:', scheduleCheck.rows[0].count);
+        
+        // 2. Show what's in the schedule table for this date
+        const scheduleDetails = await pool.query(`
+            SELECT 
+                s.*,
+                ae.first_name,
+                ae.last_name,
+                ae.employee_status,
+                j.job_name
+            FROM schedule s
+            JOIN add_employee ae ON s.employee_id = ae.id
+            LEFT JOIN jobs j ON s.job_id = j.job_id
+            WHERE s.date = $1
+            LIMIT 10
+        `, [date]);
+        console.log('2. Sample schedule entries:', scheduleDetails.rows);
+        
+        // 3. Check total active employees
+        const activeEmployees = await pool.query(`
+            SELECT COUNT(*) as count 
+            FROM add_employee 
+            WHERE employee_status = true
+        `);
+        console.log('3. Total active employees in system:', activeEmployees.rows[0].count);
+        
+        // 4. Check employees by union
+        const employeesByUnion = await pool.query(`
+            SELECT 
+                u.union_name,
+                COUNT(ae.id) as employee_count
+            FROM unions u
+            LEFT JOIN add_employee ae ON u.id = ae.union_id AND ae.employee_status = true
+            GROUP BY u.id, u.union_name
+            ORDER BY u.union_name
+        `);
+        console.log('4. Active employees by union:', employeesByUnion.rows);
+        
+        // 5. Check if schedule table has ANY data at all
+        const anyScheduleData = await pool.query(
+            'SELECT COUNT(*) as count, MIN(date) as earliest, MAX(date) as latest FROM schedule'
+        );
+        console.log('5. Schedule table summary:', anyScheduleData.rows[0]);
+        
+        res.json({
+            date,
+            scheduleEntriesCount: scheduleCheck.rows[0].count,
+            sampleEntries: scheduleDetails.rows,
+            totalActiveEmployees: activeEmployees.rows[0].count,
+            employeesByUnion: employeesByUnion.rows,
+            scheduleTableSummary: anyScheduleData.rows[0]
+        });
+        
+    } catch (error) {
+        console.error('Debug error:', error);
         res.status(500).send(error.message);
     }
 });

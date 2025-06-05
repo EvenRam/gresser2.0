@@ -54,6 +54,41 @@ function* fetchEmployees(action) {
         });
     }
 }
+
+// Fetch projects for a specific date
+function* fetchProjects(action) {
+    try {
+        yield put({ type: 'SET_PROJECT_LOADING', payload: true });
+        
+        const date = action.payload?.date || getDefaultDate();
+        const { isValid, formattedDate } = validateDate(date);
+        
+        if (!isValid) {
+            throw new Error('Invalid date format');
+        }
+        
+        console.log("Fetching projects for date:", formattedDate);
+        const response = yield call(
+            axios.get, 
+            `/api/project/${formattedDate}`
+        );
+        
+        yield put({
+            type: 'SET_PROJECTS',
+            payload: response.data.projects
+        });
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        yield put({ 
+            type: 'PROJECT_ERROR', 
+            payload: error.message 
+        });
+    } finally {
+        yield put({ type: 'SET_PROJECT_LOADING', payload: false });
+    }
+}
+
+
 function* fetchUnionsWithEmployees(action) {
     try {
         const date = typeof action.payload === 'string' 
@@ -439,6 +474,7 @@ function* updateRainDayStatus(action) {
 }
 export default function* scheduleSaga() {
     yield takeLatest('FETCH_EMPLOYEES', fetchEmployees);
+    yield takeLatest('FETCH_PROJECTS', fetchProjects);
     yield takeLatest('FETCH_UNIONS_WITH_EMPLOYEES', fetchUnionsWithEmployees);
     yield takeLatest('FETCH_PROJECTS_WITH_EMPLOYEES', fetchProjectsWithEmployees);
     yield takeLatest('ADD_EMPLOYEE_SCHEDULE', addEmployeeSchedule);

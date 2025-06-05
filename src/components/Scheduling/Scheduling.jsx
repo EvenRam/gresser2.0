@@ -16,11 +16,17 @@ const Scheduling = () => {
     // Add state to track the hover target for project boxes
     const [hoverTargetIndex, setHoverTargetIndex] = useState(null);
     
-    const projects = useSelector((state) => state.projectReducer.projects);
-    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
+    // Replace direct projects access with date-based lookup
+    const projectsByDate = useSelector((state) => state.projectReducer.projectsByDate);
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
     const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
     const highlightedEmployees = useSelector((state) => state.employeeReducer.highlightedEmployees);
+    const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
+    
+    // Get projects for the current selected date
+    const projects = useMemo(() => {
+        return projectsByDate[selectedDate] || [];
+    }, [projectsByDate, selectedDate]);
 
     // Keep existing sort logic
     const sortedProjects = useMemo(() => {
@@ -254,7 +260,9 @@ const Scheduling = () => {
         window.print();
     }, []);
 
-    if (isLoading) {
+    // Add a loading state that checks both local loading and Redux loading state
+    const projectLoading = useSelector((state) => state.projectReducer.loading);
+    if (isLoading || projectLoading) {
         return <div>Loading...</div>;
     }
 

@@ -2,6 +2,8 @@ const express = require('express');
 const pool = require('../modules/pool');
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
+const { validateDate } = require('../routes/date-validation.middleware');
+
 
 //Route to get all jobs
 router.get('/', (req, res) => {
@@ -76,41 +78,58 @@ router.put('/:job_id', rejectUnauthenticated, async (req, res) => {
         await client.query('BEGIN');
 
         // If only updating status
-        if (status !== undefined &&
-            !job_number &&
-            !job_name &&
-            !location &&
-            !start_date &&
-            !end_date) {
+if (status !== undefined &&
+    !job_number &&
+    !job_name &&
+    !location &&
+    !start_date &&
+    !end_date) {
 
-            const queryText = `
-                UPDATE "jobs"
-                SET "status" = $1
-                WHERE "job_id" = $2;
-            `;
-            console.log("Updating status with values:", { status, jobId });
+    const queryText = `
+        UPDATE "jobs"
+        SET "status" = $1
+        WHERE "job_id" = $2;
+    `;
+    console.log("Updating status with values:", { status, jobId });
 
-            await client.query(queryText, [status, jobId]);
+    await client.query(queryText, [status, jobId]);
 
-            // If setting to inactive, update schedule entries
-            if (status === 'Inactive') {
-                const moveEmployeesQuery = `
-                    DELETE FROM "schedule"
-                    WHERE "job_id" = $1;
-                `;
-                await client.query(moveEmployeesQuery, [jobId]);
+    // Get today's date in the central time zone
+    const centralTime = new Date().toLocaleString("en-US", {
+        timeZone: "America/Chicago"
+    });
+    const today = new Date(centralTime);
+    today.setHours(0, 0, 0, 0);
+    
+    // Format as YYYY-MM-DD
+    const formattedToday = today.toISOString().split('T')[0];
+    console.log("Using today's date for queries:", formattedToday);
+    
+    if (status === 'Inactive') {
+        // Only change current_location, keep job_id for "limbo" state
+        const moveEmployeesQuery = `
+            UPDATE schedule
+            SET current_location = 'union'
+            WHERE job_id = $1 
+            AND date >= $2;
+        `;
+        await client.query(moveEmployeesQuery, [jobId, formattedToday]);
+        console.log("Updated employees to union for job", jobId, "from date", formattedToday);
+    } else if (status === 'Active') {
+        // Restore employees that were in "limbo" state
+        const restoreEmployeesQuery = `
+            UPDATE schedule
+            SET current_location = 'project'
+            WHERE job_id = $1 
+            AND date >= $2;
+        `;
+        await client.query(restoreEmployeesQuery, [jobId, formattedToday]);
+        console.log("Restored employees to project for job", jobId, "from date", formattedToday);
+    }
 
-                // Clean up project_order entries
-                const cleanupProjectOrderQuery = `
-                    DELETE FROM "project_order"
-                    WHERE "job_id" = $1;
-                `;
-                await client.query(cleanupProjectOrderQuery, [jobId]);
-            }
-
-            await client.query('COMMIT');
-            res.sendStatus(204);
-        } else {
+    await client.query('COMMIT');
+    res.sendStatus(204);
+} else {
             // For full job updates
             const queryText = `
                 UPDATE "jobs"

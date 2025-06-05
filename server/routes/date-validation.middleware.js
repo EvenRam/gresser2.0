@@ -44,6 +44,7 @@ const validateDate = (req, res, next) => {
                 return res.status(403).send('Cannot modify dates more than 7 days in advance');
             }
         }
+        
 
         req.validatedDate = formattedRequestDate;
         next();
@@ -51,6 +52,19 @@ const validateDate = (req, res, next) => {
         console.error('Date validation error:', error);
         return res.status(400).send('Invalid date');
     }
+
+    
 };
 
-module.exports = { validateDate };
+
+const isPastDate = (dateString) => {
+    // Create date objects for comparison
+    const checkDate = new Date(dateString + 'T12:00:00');
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    
+    // Return true if the date is before today
+    return checkDate < today;
+};
+
+module.exports = { validateDate, isPastDate };
