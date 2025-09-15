@@ -28,8 +28,9 @@ import CreateJobs from '../CreateJobs/CreateJobs';
 import EditForm from '../CreateJobs/EditForm';
 import JobHistory from '../JobHistory/JobHistory';
 import DragDrop from '../SaveDrag/SaveDrag';
-import Scheduling from '../Scheduling/Scheduling';
-import Trades from '../Trades/Trades';
+// import Scheduling from '../Scheduling/Scheduling';
+// import Trades from '../Trades/Trades';
+import SchedulingLayout from '../Scheduling/SchedulingLayout';
 
 import './App.css';
 
@@ -64,10 +65,9 @@ function App() {
 
           <ProtectedRoute exact path="/user">
             <DndProvider backend={HTML5Backend}>
-              <div className="parent-container">
-                <Scheduling />
-                <Trades />
-              </div>
+            <div className="parent-container">
+              <SchedulingLayout />
+            </div>
             </DndProvider>
           </ProtectedRoute>
 
@@ -110,10 +110,9 @@ function App() {
 
           <ProtectedRoute exact path="/scheduling">
             <DndProvider backend={HTML5Backend}>
-              <div className="parent-container">
-                <Scheduling />
-                <Trades />
-              </div>
+            <div className="parent-container">
+  <SchedulingLayout />
+</div>
             </DndProvider>
           </ProtectedRoute>
 

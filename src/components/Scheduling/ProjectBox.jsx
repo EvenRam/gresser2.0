@@ -11,11 +11,12 @@ const ProjectBox = ({
   employees = [], 
   moveEmployee, 
   job_name,
-  rain_day 
+  rain_day,
+  isEditable // NEW: Explicitly passed prop
 }) => {
   const dispatch = useDispatch();
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
-  const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
+  // Remove isEditable from useSelector since it's now a prop
   const [orderedEmployees, setOrderedEmployees] = useState([]);
   const boxRef = useRef(null);
   const [dropPosition, setDropPosition] = useState(null);
@@ -56,11 +57,15 @@ const ProjectBox = ({
     const headerHeight = 35;
     const mouseY = clientOffset.y - boxRect.top - headerHeight;
     
-    // Get active employees
-    const activeEmployees = orderedEmployees.filter(emp => emp.employee_status === true);
+    // Get active employees (filtered based on isEditable)
+    const visibleEmployees = orderedEmployees.filter(emp => {
+      // For past dates (not editable): show all employees who were assigned
+      // For current/future dates (editable): only show currently active employees
+      return isEditable ? emp.employee_status === true : true;
+    });
     
     // Empty project handling
-    if (activeEmployees.length === 0) {
+    if (visibleEmployees.length === 0) {
       return 0;
     }
     
@@ -71,8 +76,8 @@ const ProjectBox = ({
     const calculatedIndex = Math.floor(mouseY / ITEM_HEIGHT);
     
     // Ensure index is within bounds
-    return Math.max(0, Math.min(calculatedIndex, activeEmployees.length));
-  }, [orderedEmployees]);
+    return Math.max(0, Math.min(calculatedIndex, visibleEmployees.length));
+  }, [orderedEmployees, isEditable]);
   
   // Handle employee highlighting
   const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
@@ -101,8 +106,10 @@ const ProjectBox = ({
       // Update the local state first for immediate UI feedback
       setOrderedEmployees(newOrder);
       
-      // Extract only active employees
-      const activeEmployees = newOrder.filter(emp => emp.employee_status === true);
+      // Extract only active employees (based on current date rules)
+      const activeEmployees = newOrder.filter(emp => {
+        return isEditable ? emp.employee_status === true : true;
+      });
       
       // Create an array of just the employee IDs
       const orderedEmployeeIds = activeEmployees.map(emp => emp.id);
@@ -217,6 +224,13 @@ const ProjectBox = ({
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
 
+  // Filter employees based on editable state
+  const visibleEmployees = orderedEmployees.filter(employee => {
+    // For past dates (not editable): show all employees who were assigned
+    // For current/future dates (editable): only show currently active employees
+    return isEditable ? employee.employee_status === true : true;
+  });
+
   return (
     <div
       ref={node => {
@@ -263,29 +277,27 @@ const ProjectBox = ({
           />
         )}
         
-        {orderedEmployees.length === 0 ? (
+        {visibleEmployees.length === 0 ? (
           <p className="no-employees-message">No employees assigned</p>
         ) : (
-          orderedEmployees
-            .filter(employee => employee.employee_status === true)
-            .map((employee, index) => (
-              <Employee
-                key={employee.id}
-                {...employee}
-                projectId={id}
-                index={index}
-                name={`${employee.first_name} ${employee.last_name}`}
-                isHighlighted={!!highlightedEmployees[employee.id]}
-                onClick={handleEmployeeClick}
-                onReorder={handleReorder}
-              />
-            ))
+          visibleEmployees.map((employee, index) => (
+            <Employee
+              key={employee.id}
+              {...employee}
+              projectId={id}
+              index={index}
+              name={`${employee.first_name} ${employee.last_name}`}
+              isHighlighted={!!highlightedEmployees[employee.id]}
+              onClick={handleEmployeeClick}
+              onReorder={handleReorder}
+            />
+          ))
         )}
       </div>
       
       <div className="project-box-footer">
         <div className="employee-count">
-          Employees: {orderedEmployees.filter(emp => emp.employee_status === true).length}
+          Employees: {visibleEmployees.length}
         </div>
         <div className="rain-day-toggle">
           <label>

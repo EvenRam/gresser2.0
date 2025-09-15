@@ -3,7 +3,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
 import Employee from '../Scheduling/Employee';
 
-const UnionBox = ({ id, union_name, color }) => {
+const UnionBox = ({ 
+  id, 
+  union_name, 
+  color,
+  isEditable // NEW: Explicitly passed prop
+}) => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
     const allEmployees = useSelector((state) => 
@@ -52,6 +57,13 @@ const UnionBox = ({ id, union_name, color }) => {
     // Get union number for styling
     const unionNumber = union_name.match(/^\d+/)?.[0];
     
+    // Filter employees based on editable state
+    const visibleEmployees = employees.filter(employee => {
+        // For past dates (not editable): show all employees who were in unions
+        // For current/future dates (editable): only show currently active employees
+        return isEditable ? employee.employee_status === true : true;
+    });
+    
     return (
         <div 
             ref={node => {
@@ -86,7 +98,7 @@ const UnionBox = ({ id, union_name, color }) => {
                 marginTop: '2px',
                 padding: '0px'
             }}> 
-                {employees.length === 0 ? (
+                {visibleEmployees.length === 0 ? (
                     <p className="no-employees" style={{ 
                         margin: '2px 0', 
                         fontSize: '11px', 
@@ -95,21 +107,19 @@ const UnionBox = ({ id, union_name, color }) => {
                         color: '#666'
                     }}>No employees assigned</p>
                 ) : (
-                    employees
-                        .filter(employee => employee.employee_status === true)
-                        .map((employee, index) => (
-                            <Employee
-                                key={employee.id}
-                                {...employee}
-                                id={employee.id} 
-                                className={`employee-name union-${unionNumber}`}
-                                name={`${employee.first_name} ${employee.last_name}`}
-                                union_id={id}
-                                union_name={union_name}
-                                current_location="union"
-                                index={index}
-                            />
-                        ))
+                    visibleEmployees.map((employee, index) => (
+                        <Employee
+                            key={`${employee.id}-${index}`}
+                            {...employee}
+                            id={employee.id} 
+                            className={`employee-name union-${unionNumber}`}
+                            name={`${employee.first_name} ${employee.last_name}`}
+                            union_id={id}
+                            union_name={union_name}
+                            current_location="union"
+                            index={index}
+                        />
+                    ))
                 )}
             </div>
         </div>
