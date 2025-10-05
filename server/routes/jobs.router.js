@@ -171,26 +171,42 @@ if (status !== undefined &&
     }
 });
 
-router.delete('/:job_id', (req, res) => {
+router.delete('/:job_id', async (req, res) => {
     const jobId = req.params.job_id;
     console.log('Delete request for jobId', jobId);
-    const queryText = `
-        DELETE FROM "jobs"
-        WHERE "job_id" = $1;
-    `;
     
-    pool.query(queryText, [jobId])
-        .then((result) => {
-            if (result.rowCount > 0) {
-                res.sendStatus(204);
-            } else {
-                res.sendStatus(403);
-            }
-        })
-        .catch((error) => {
-            console.log('error making query...', error);
-            res.sendStatus(500);
-        });
+    const client = await pool.connect();
+    
+    try {
+        await client.query('BEGIN');
+        
+        // First, delete all schedule entries for this job
+        await client.query(
+            'DELETE FROM schedule WHERE job_id = $1',
+            [jobId]
+        );
+        
+        // Then delete the job itself
+        const result = await client.query(
+            'DELETE FROM jobs WHERE job_id = $1',
+            [jobId]
+        );
+        
+        await client.query('COMMIT');
+        
+        if (result.rowCount > 0) {
+            res.sendStatus(204);
+        } else {
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.log('Error deleting job:', error);
+        res.status(500).send(error.message);
+    } finally {
+        client.release();
+    }
+
 });
 
 module.exports = router;
