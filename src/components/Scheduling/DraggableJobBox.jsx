@@ -6,14 +6,19 @@ import './EmployeeStyles.css';
 const DraggableJobBox = ({ 
   job, 
   index, 
-  moveJob, 
+  moveJob,
+  onDragEnd,
   moveEmployee, 
-  updateEmployeeOrder,
-  isEditable 
+  toggleHighlight,
+  employees,
+  selectedDate,
+  isEditable,
+  isDragging,
+  isHoverTarget
 }) => {
   const ref = useRef(null);
 
-  const [{ isDragging }, drag] = useDrag({
+  const [{ isDraggingState }, drag] = useDrag({
     type: 'JOB',
     item: () => ({
       job_id: job.job_id,
@@ -23,12 +28,16 @@ const DraggableJobBox = ({
     }),
     canDrag: () => isEditable,
     collect: (monitor) => ({
-      isDragging: monitor.isDragging()
+      isDraggingState: monitor.isDragging()
     }),
     end: (item, monitor) => {
       const didDrop = monitor.didDrop();
       if (!didDrop && isEditable) {
         moveJob(item.index, item.originalIndex);
+      }
+      // Save order to backend when drag ends
+      if (isEditable && onDragEnd) {
+        onDragEnd();
       }
     }
   });
@@ -75,14 +84,14 @@ const DraggableJobBox = ({
       ref={ref}
       className={`draggable-job-box ${isOver ? 'job-over' : ''}`}
       style={{
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDraggingState ? 0.5 : 1,
         cursor: isEditable ? 'move' : 'default',
         position: 'relative',
         marginBottom: '10px',
         backgroundColor: isOver ? '#f0f0f0' : 'transparent',
         transition: 'all 0.2s ease',
         border: isOver ? '2px dashed #666' : '2px solid transparent',
-        transform: isDragging ? 'scale(1.05)' : 'scale(1)'
+        transform: isDraggingState ? 'scale(1.05)' : 'scale(1)'
       }}
       data-handler-id={handlerId}
     >
@@ -91,7 +100,7 @@ const DraggableJobBox = ({
         job_name={job.job_name}
         employees={job.employees || []}
         moveEmployee={moveEmployee}
-        updateEmployeeOrder={updateEmployeeOrder}  // Pass it through to ProjectBox
+        toggleHighlight={toggleHighlight}
         display_order={job.display_order}
         rain_day={job.rain_day}
         isEditable={isEditable}

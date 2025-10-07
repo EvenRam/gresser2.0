@@ -9,26 +9,20 @@ import DateSchedule from './DateSchedule';
 const Scheduling = () => {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(true);
-    // Add ref for tracking move operations to prevent multiple calls
     const isMoving = useRef(false);
-    // Add state to track which project box is being dragged
     const [draggedBoxId, setDraggedBoxId] = useState(null);
-    // Add state to track the hover target for project boxes
     const [hoverTargetIndex, setHoverTargetIndex] = useState(null);
     
-    // Replace direct projects access with date-based lookup
     const projectsByDate = useSelector((state) => state.projectReducer.projectsByDate);
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
     const isEditable = useSelector((state) => state.scheduleReducer.isEditable);
     const highlightedEmployees = useSelector((state) => state.employeeReducer.highlightedEmployees);
     const employeesByDate = useSelector((state) => state.scheduleReducer.employeesByDate);
     
-    // Get projects for the current selected date
     const projects = useMemo(() => {
         return projectsByDate[selectedDate] || [];
     }, [projectsByDate, selectedDate]);
 
-    // Keep existing sort logic
     const sortedProjects = useMemo(() => {
         if (!projects) return [];
         
@@ -50,7 +44,6 @@ const Scheduling = () => {
         return projects.reduce((total, project) => total + (project.employees?.length || 0), 0);
     }, [projects]);
 
-    // Keep existing initialization
     useEffect(() => {
         const initializeSchedule = async () => {
             setIsLoading(true);
@@ -66,7 +59,6 @@ const Scheduling = () => {
         initializeSchedule();
     }, [dispatch]);
 
-    // Keep existing data fetching
     useEffect(() => {
         const fetchData = async () => {
             if (!selectedDate) return;
@@ -97,7 +89,6 @@ const Scheduling = () => {
         fetchData();
     }, [dispatch, selectedDate]);
 
-    // Keep existing finalize handler
     const handleFinalize = useCallback(() => {
         if (!window.confirm('Are you sure you want to finalize this schedule?')) {
             return;
@@ -108,7 +99,6 @@ const Scheduling = () => {
         });
     }, [dispatch, selectedDate]);
 
-    // Updated moveEmployee with debouncing to prevent multiple calls
     const moveEmployee = useCallback(({
         employeeId,
         targetProjectId,
@@ -121,11 +111,9 @@ const Scheduling = () => {
             return;
         }
 
-        // Prevent multiple calls in quick succession
         if (isMoving.current) return;
         isMoving.current = true;
         
-        // Clear the debounce after a short delay
         setTimeout(() => {
             isMoving.current = false;
         }, 300);
@@ -150,16 +138,12 @@ const Scheduling = () => {
         });
     }, [dispatch, selectedDate, isEditable]);
 
-    // Completely rewritten moveJob function for more reliable project box reordering
-    const moveJob = useCallback(async (dragIndex, hoverIndex) => {
-        if (!isEditable || dragIndex === hoverIndex) {
-            return;
-        }
+    // UPDATED: Visual reordering only - no API call
+    const moveJob = useCallback((dragIndex, hoverIndex) => {
+        if (!isEditable || dragIndex === hoverIndex) return;
         
-        // Update hover target index for visual indicator
         setHoverTargetIndex(hoverIndex);
         
-        // Get the projects from the current state
         const currentProjects = [...sortedProjects];
         const draggedProject = currentProjects[dragIndex];
         
@@ -168,73 +152,60 @@ const Scheduling = () => {
             return;
         }
         
+        setDraggedBoxId(draggedProject.job_id || draggedProject.id);
+        
+        const updatedProjects = [...currentProjects];
+        updatedProjects.splice(dragIndex, 1);
+        updatedProjects.splice(hoverIndex, 0, draggedProject);
+        
+        const projectsWithOrder = updatedProjects.map((project, index) => ({
+            ...project,
+            display_order: index
+        }));
+        
+        // Update Redux for smooth UI - no API call here
+        dispatch({
+            type: 'REORDER_PROJECTS',
+            payload: {
+                sourceIndex: dragIndex,
+                targetIndex: hoverIndex,
+                date: selectedDate,
+                projects: projectsWithOrder
+            }
+        });
+    }, [dispatch, sortedProjects, selectedDate, isEditable]);
+
+    // NEW: Save to backend only when drag ends
+    const saveProjectOrder = useCallback(async () => {
+        if (!isEditable || !sortedProjects.length) return;
+
         try {
-            // Update the dragged box ID for styling
-            setDraggedBoxId(draggedProject.job_id || draggedProject.id);
+            const orderedProjectIds = sortedProjects.map(p => p.job_id || p.id);
             
-            // Make a copy of the projects array
-            const updatedProjects = [...currentProjects];
-            
-            // Remove the dragged project
-            updatedProjects.splice(dragIndex, 1);
-            
-            // Insert at the new position
-            updatedProjects.splice(hoverIndex, 0, draggedProject);
-            
-            // Update display orders for all projects
-            const projectsWithOrder = updatedProjects.map((project, index) => ({
-                ...project,
-                display_order: index
-            }));
-            
-            // Update Redux immediately for a responsive UI
-            dispatch({
-                type: 'REORDER_PROJECTS',
-                payload: {
-                    sourceIndex: dragIndex,
-                    targetIndex: hoverIndex,
-                    date: selectedDate,
-                    projects: projectsWithOrder
-                }
-            });
-            
-            // Prepare ordered IDs for the backend
-            const orderedProjectIds = projectsWithOrder.map(p => p.job_id || p.id);
-            
-            // Update the backend
             await axios.put('/api/project/updateProjectOrder', {
                 orderedProjectIds,
                 date: selectedDate
             });
             
-            console.log('Successfully updated project order:', {
-                dragIndex,
-                hoverIndex,
-                selectedDate
-            });
-            
+            console.log('Project order saved successfully');
         } catch (error) {
-            console.error('Error in moveJob:', error);
-            
-            // Revert on error by refreshing from server
+            console.error('Error saving project order:', error);
+            // Reload on error to revert to server state
             dispatch({ 
                 type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
                 payload: { date: selectedDate }
             });
         } finally {
-            // Clear the dragged box ID and hover target
             setDraggedBoxId(null);
             setHoverTargetIndex(null);
         }
-    }, [dispatch, sortedProjects, selectedDate, isEditable]);
+    }, [sortedProjects, selectedDate, isEditable, dispatch]);
     
-    // Handle drag end for cleanup
     const handleDragEnd = useCallback(() => {
         setDraggedBoxId(null);
         setHoverTargetIndex(null);
     }, []);
 
-    // Keep existing highlight toggle
     const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
         if (!isEditable) return;
 
@@ -260,7 +231,6 @@ const Scheduling = () => {
         window.print();
     }, []);
 
-    // Add a loading state that checks both local loading and Redux loading state
     const projectLoading = useSelector((state) => state.projectReducer.loading);
     if (isLoading || projectLoading) {
         return <div>Loading...</div>;
@@ -317,6 +287,7 @@ const Scheduling = () => {
                                 job={project}
                                 index={index}
                                 moveJob={moveJob}
+                                onDragEnd={saveProjectOrder}
                                 moveEmployee={moveEmployee}
                                 toggleHighlight={toggleHighlight}
                                 employees={project.employees}
@@ -324,7 +295,6 @@ const Scheduling = () => {
                                 isEditable={isEditable}
                                 isDragging={project.job_id === draggedBoxId}
                                 isHoverTarget={index === hoverTargetIndex}
-                                onDragEnd={handleDragEnd}
                             />
                         ))}
                     </div>
