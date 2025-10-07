@@ -188,22 +188,22 @@ const AddEmployee = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {employees.map((emp) => (
-                        <tr key={emp.id}>
-                            <td>{emp.last_name}</td>
-                            <td>{emp.first_name}</td>
-                            <td>{emp.employee_number}</td>
-                            <td>{emp.union_name}
-                            {console.log(" union name:", emp.union_name,  "union_id: ",emp.union_id)}</td>
-                            <td>
-                                <ToggleEmployee emp={emp} />
-                            </td>
-                            <td>{emp.phone_number}</td>
-                            <td>{emp.email}</td>
-                            <td>{emp.address}</td>
-                            <td><button className='employee-editbtn' onClick={() => handleEditClick(emp)}>Edit</button></td>
-                        </tr>
-                    ))}
+                {employees.map((emp) => (
+    <tr key={emp.id}>
+        <td>{emp.last_name}</td>
+        <td>{emp.first_name}</td>
+        <td>{emp.employee_number}</td>
+        <td>{emp.union_name}
+        {console.log(" union name:", emp.union_name,  "union_id: ",emp.union_id)}</td>
+        <td>
+            <ToggleEmployee emp={emp} />
+        </td>
+        <td>{emp.phone_number}</td>
+        <td>{emp.email}</td>
+        <td>{emp.address}</td>
+        <td><button className='employee-editbtn' onClick={() => handleEditClick(emp)}>Edit</button></td>
+    </tr>
+))}
                 </tbody>
             </table>
         </>
