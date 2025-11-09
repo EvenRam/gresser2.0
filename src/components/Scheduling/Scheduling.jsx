@@ -269,16 +269,28 @@ const Scheduling = () => {
     return (
         <div className="scheduling-container">
             <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                marginBottom: '20px', 
-                gap: '10px' 
-            }}>
-                <span className="total-employees">
-                    Total Employees: {totalAssignedEmployees}
-                </span>
-                <DateSchedule />
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: '20px', 
+    gap: '10px' 
+}}>
+    <span className="total-employees">
+        Total Employees: {totalAssignedEmployees}
+    </span>
+    
+    {/* Formatted date for print */}
+    <div className="date-display-print">
+        {selectedDate && new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })}
+    </div>
+    
+    {/* Date picker for screen */}
+    <DateSchedule />
                 {isEditable && (
                     <button 
                         onClick={handleFinalize}

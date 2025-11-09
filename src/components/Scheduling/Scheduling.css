@@ -291,6 +291,14 @@ Main Container Styles */
   background-color: rgba(217, 83, 79, 0.1);
 }
 
+/* Date display - hidden on screen, shown in print */
+.date-display-print {
+  display: none;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+}
+
 /* Print Optimization */
 @media print {
   @page {
@@ -480,11 +488,24 @@ Main Container Styles */
   .finalize-schedule,
   .print-container button,
   .schedule-controls button,
-  .date-schedule,
   .date-navigation,
   .view-only-warning {
     display: none !important;
   }
+
+/* Hide the date picker input in print */
+.date-schedule {
+  display: none !important;
+}
+
+/* Show formatted date in print */
+.date-display-print {
+  display: block !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  text-align: center !important;
+  margin-bottom: 10px !important;
+}
 
   /* Preserve colors and formatting */
   .projectboxname {
