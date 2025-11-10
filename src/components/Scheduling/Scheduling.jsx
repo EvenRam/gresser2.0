@@ -266,6 +266,12 @@ const Scheduling = () => {
         return <div>Loading...</div>;
     }
 
+    console.log('Scheduling.jsx projects data:', sortedProjects.map(p => ({
+        job_id: p.job_id,
+        job_number: p.job_number,
+        job_name: p.job_name
+      })));
+
     return (
         <div className="scheduling-container">
             <div style={{ 

@@ -10,12 +10,21 @@ const ProjectBox = ({
   id, 
   employees = [], 
   moveEmployee, 
+  job_number,
   job_name,
   rain_day,
   isEditable // NEW: Explicitly passed prop
 }) => {
   const dispatch = useDispatch();
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
+  
+   // ADD THIS CONSOLE.LOG HERE:
+   console.log('ProjectBox received props:', {
+    id,
+    job_number,
+    job_name
+  });
+  
   // Remove isEditable from useSelector since it's now a prop
   const [orderedEmployees, setOrderedEmployees] = useState([]);
   const boxRef = useRef(null);
@@ -251,9 +260,9 @@ const ProjectBox = ({
       }}
     >
       <h4 className='projectboxname' 
-        style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px', margin: '-5px -5px 5px -5px' }}>
-        {job_name}
-      </h4>
+  style={{ backgroundColor: '#396a54', color: 'white', padding: '5px', fontSize: '16px', margin: '-5px -5px 5px -5px' }}>
+  {job_number} - {job_name}
+</h4>
       
       <div style={{ 
         flex: 1, 

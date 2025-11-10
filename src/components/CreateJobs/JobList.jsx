@@ -20,8 +20,7 @@ return(
 
             <thead>
                 <tr>
-                    <th>Project Number</th>
-                    <th> Name</th>
+                    <th>Project Number - Name</th>
                     <th>Location</th>
                     <th>Start Date</th>
                     <th>End Date</th>
