@@ -13,11 +13,15 @@ useEffect(()=>{
     dispatch({ type: "FETCH_JOB"})
 }, []);
 
+// Sort jobs by project number before rendering
+const sortedJobs = jobs && Array.isArray(jobs) 
+    ? [...jobs].sort((a, b) => a.job_number - b.job_number)
+    : [];
+
 return(
     <>
     <div>
         <table className="job-table">
-
             <thead>
                 <tr>
                     <th>Project Number - Name</th>
@@ -29,19 +33,16 @@ return(
                 </tr>
             </thead>
             <tbody>
-               {/** if the condition is true render you have no jobs otherwise render the jobs */}
-            {!jobs || jobs.length === 0 || !Array.isArray(jobs) ? (
+               {!jobs || jobs.length === 0 || !Array.isArray(jobs) ? (
               <tr>
-                <td colSpan="7">YOU HAVE NO PROJECTS</td>
+                <td colSpan="6">YOU HAVE NO PROJECTS</td>
               </tr>
             ) : (
-              jobs.map((job) => (
+              sortedJobs.map((job) => (
                 <JobDetails key={job.job_id} job={job} />
               ))
             )}
           </tbody>
-
-
         </table>
     </div>
     </>
