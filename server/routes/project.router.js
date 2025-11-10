@@ -22,6 +22,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
             sqlText = `
                 SELECT 
                     j.job_id,
+                    j.job_number,
                     j.job_name,
                     j.status AS job_status,
                     po.display_order,
@@ -55,6 +56,7 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
             sqlText = `
                 SELECT 
                     j.job_id,
+                    j.job_number,
                     j.job_name,
                     j.status AS job_status,
                     po.display_order,
@@ -93,6 +95,8 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
             if (!jobs[row.job_id]) {
                 jobs[row.job_id] = {
                     id: row.job_id,
+                    job_id: row.job_id,
+                    job_number: row.job_number,
                     job_name: row.job_name,
                     job_status: row.job_status,
                     display_order: row.display_order,

@@ -88,22 +88,12 @@ function* toggleJobStatus(action) {
     }
 }
 
-// Delete a job from the server and update the redux store
-function* deleteJob(action){
-    try{
-        console.log("action.payload.id:",action.payload.jobid);
-        yield axios.delete(`/api/jobs/${action.payload.jobid}`);
-        yield put({type: "FETCH_JOB"})
-    } catch(error){
-        console.log("Error with the Job delete request", error)
-    }
-}
+
 
 function* jobSaga() {
     yield takeLatest ('FETCH_JOB', fetchJob);
     yield takeLatest ('ADD_JOB', addJob);
     yield takeLatest('TOGGLE_JOB_STATUS', toggleJobStatus)
-    yield takeLatest("DELETE_JOB",deleteJob);
   }
 
 export default jobSaga;

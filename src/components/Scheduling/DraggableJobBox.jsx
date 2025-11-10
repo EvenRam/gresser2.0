@@ -13,6 +13,13 @@ const DraggableJobBox = ({
 }) => {
   const ref = useRef(null);
 
+  // ADD THIS CONSOLE.LOG HERE:
+  console.log('DraggableJobBox received job:', {
+    job_id: job.job_id,
+    job_number: job.job_number,
+    job_name: job.job_name
+  });
+
   const [{ isDragging }, drag] = useDrag({
     type: 'JOB',
     item: () => ({
@@ -88,6 +95,7 @@ const DraggableJobBox = ({
     >
       <ProjectBox
         id={job.job_id}
+        job_number={job.job_number}
         job_name={job.job_name}
         employees={job.employees || []}
         moveEmployee={moveEmployee}
