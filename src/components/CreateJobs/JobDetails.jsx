@@ -20,16 +20,6 @@ const JobDetails = (props) => {
         history.push('/edit');
     }
 
-    // Dispatch action to delete job with job id
-    const handleDelete = () => {
-        if (window.confirm('Are you sure you want to delete this job?')) {
-            console.log("Delete Clicked for job id:", props.job.job_id);
-            dispatch({
-                type: "DELETE_JOB",
-                payload: { jobid: props.job.job_id }
-            });
-        }
-    };
 
     // toggles the job between active and inactive
     const toggleStatus = () => {
@@ -86,11 +76,7 @@ const JobDetails = (props) => {
                         Edit
                     </button> 
                 </td>
-                <td> 
-                    <button className="job-delete" onClick={() => handleDelete(props.job.id)}>
-                        Delete
-                    </button> 
-                </td>
+                
             </tr>
         </>
     )
