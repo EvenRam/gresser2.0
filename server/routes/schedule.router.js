@@ -398,6 +398,8 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
         nextDate.setDate(nextDate.getDate() + 1);
         const formattedNextDate = nextDate.toISOString().split('T')[0];
         
+        console.log('Finalizing schedule:', { currentDate, formattedNextDate });
+        
         await client.query('BEGIN');
 
         // 1. Copy schedule entries (employee assignments and highlights)
@@ -410,6 +412,11 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
                 is_highlighted, employee_display_order
             FROM schedule
             WHERE date = $1
+            ON CONFLICT (date, employee_id) DO UPDATE SET
+                job_id = EXCLUDED.job_id,
+                current_location = EXCLUDED.current_location,
+                is_highlighted = EXCLUDED.is_highlighted,
+                employee_display_order = EXCLUDED.employee_display_order
         `, [currentDate, formattedNextDate]);
 
         // 2. Copy project_order entries (project ordering and rain day status)
@@ -420,9 +427,14 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
                 $2, job_id, display_order, FALSE
             FROM project_order
             WHERE date = $1
+            ON CONFLICT (date, job_id) DO UPDATE SET
+                display_order = EXCLUDED.display_order,
+                rain_day = EXCLUDED.rain_day
         `, [currentDate, formattedNextDate]);
 
         await client.query('COMMIT');
+        
+        console.log('Schedule finalized successfully');
         res.json({ nextDate: formattedNextDate });
     } catch (error) {
         await client.query('ROLLBACK');
@@ -431,6 +443,6 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
     } finally {
         client.release();
     }
-});
+});.l
 
 module.exports = router;
