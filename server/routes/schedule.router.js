@@ -443,6 +443,6 @@ router.post('/finalize/:date', rejectUnauthenticated, validateDate, async (req, 
     } finally {
         client.release();
     }
-});.l
+});
 
 module.exports = router;
