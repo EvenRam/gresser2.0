@@ -75,7 +75,7 @@ const EditForm = () => {
                      </label> 
                 </div>
 
-                <div className='startdate'>
+                {/* <div className='startdate'>
                 <label> 
                     Start Date
                     <input
@@ -96,7 +96,7 @@ const EditForm = () => {
                         onChange={(event) => handleChange(event, 'end_date')}
                     />
                      </label> 
-                </div>
+                </div> */}
 
                 <input className="update-button" type='submit' value='Update Job' />
             </form>

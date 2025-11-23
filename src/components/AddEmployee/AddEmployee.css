@@ -1,115 +1,118 @@
 .employee-title{
-    text-align: center;
-    margin-bottom: 50px;
-    font-weight: 600;
+  text-align: center;
+  margin-bottom: 50px;
+  font-weight: 600;
 }
 
-.employee-table,th, td {
-    margin-top: 55px;
-    border: 3px solid rgb(11, 8, 8);
-      border-collapse: collapse;
-      padding-left: 50px;
-      padding-right: 50px;
-      margin-left: 50px;
-      margin-right: 50px;
+/* Make employee table styles MORE specific */
+.employee-table {
+  margin-top: 55px;
+  border: 3px solid rgb(11, 8, 8);
+  border-collapse: collapse;
+  margin-left: 50px;
+  margin-right: 50px;
+  width: 90%;  /* Added to control table width */
+}
 
-  }
+.employee-table th, 
+.employee-table td {
+  border: 3px solid rgb(11, 8, 8);
+  padding-left: 50px;
+  padding-right: 50px;
+  padding: .2em;
+  min-width: 1.5em;
+  text-align: center;
+}
 
-  .employee-toggle.Active{
-    background-color: #396a54;
-    color: rgb(247, 243, 243);
-    /* font-weight: 700; */
+.employee-table thead {
+  background: rgb(218, 221, 222);
+  color: black;
+  text-align: center;
+}
 
-  }
+.employee-toggle.Active{
+  background-color: #396a54;
+  color: rgb(247, 243, 243);
+}
 
-  .employee-toggle.Inactive{
-    background-color: rgb(134, 22, 22);
-    color: rgb(247, 243, 243);
-    /* font-weight: 700; */
-  }
-  
-  
+.employee-toggle.Inactive{
+  background-color: rgb(134, 22, 22);
+  color: rgb(247, 243, 243);
+}
 
-  .employee-button{
-font-weight: 600;
-  }
+.employee-button{
+  font-weight: 600;
+}
 
-  .employee-editbtn{
-    font-weight: 700;
-    color: rgb(5, 6, 11);
+.employee-editbtn{
+  font-weight: 700;
+  color: rgb(5, 6, 11);
+}
 
-  }
+.employee-inputs{
+  text-align: center;
+}
 
-  .employee-inputs{
-text-align: center;
+/*-------------------------------
+Edit employee
+-----------------------*/
+.Edit-title{
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 25px;
+}
 
-  }
+.employee-edit{
+  text-align: center;
+  border: 2px solid hsl(0, 0%, 80%);
+  border-radius: 10px;
+  box-shadow: 10px 30px 10px hsla(0,0%,0%,0.1);
+  padding: 50px;
+  margin-left: 350px;
+  max-width: 700px;
+}
 
+.submit-employee-edit{
+  font-weight: 600;
+  margin-top: 25px;
+  font-size: large;
+}
 
+label{
+  font-weight: 600;
+}
 
-  /*-------------------------------
-  Edit employee
-  -----------------------*/
-  .Edit-title{
-    text-align: center;
-    font-weight: 600;
-    margin-bottom: 25px;
-  }
+.employee-toedit{
+  font-size: 20px;
+  margin-bottom: 25px;
+}
 
-  .employee-edit{
-    text-align: center;
-border: 2px solid hsl(0, 0%, 80%);
-    border-radius: 10px;
-    box-shadow: 10px 30px 10px hsla(0,0%,0%,0.1);
-    padding: 50px;
-    margin-left: 350px;
-    max-width: 700px;
-  }
+.email-input, .adress-input{
+  width:100%;
+  text-align: center;
+}
 
-  .submit-employee-edit{
-    font-weight: 600;
-    margin-top: 25px;
-    font-size: large;
+.l-name{
+  width:70%;
+  text-align: center;
+} 
 
-  }
+.union-id{
+  width:70%;
+  text-align: center;
+}
 
-  label{
-    font-weight: 600;
+.employee-num{
+  width: 55%;
+  text-align: center;
+}
 
-  }
+.phone-input{
+  width:60%;
+  text-align: center;
+}
 
-  .employee-toedit{
-    font-size: 20px;
-    margin-bottom: 25px;
-  }
-
-  
-   .email-input, .adress-input{
-    width:100%;
-    text-align: center;
-  }
-
-   .l-name{
-    width:70%;
-    text-align: center;
-  } 
-
-  .union-id{
-    width:70%;
-    text-align: center;
-  }
-
-  .employee-num{
-    width: 55%;
-    text-align: center;
-  }
-
-  .phone-input{
-    width:60%;
-    text-align: center;
-  }
-
-  .f-name{
-    width:70%;
-    text-align: center;
-  }
+.f-name{
+  width:70%;
+  text-align: center;
+}

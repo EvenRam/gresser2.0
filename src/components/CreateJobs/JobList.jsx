@@ -21,13 +21,11 @@ const sortedJobs = jobs && Array.isArray(jobs)
 return(
     <>
     <div>
-        <table className="job-table">
+        <table className="projects-table">  {/* Changed from job-table to projects-table */}
             <thead>
                 <tr>
                     <th>Project Number - Name</th>
                     <th>Location</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
                     <th>Status</th>
                     <th>Edit</th>
                 </tr>
@@ -35,7 +33,7 @@ return(
             <tbody>
                {!jobs || jobs.length === 0 || !Array.isArray(jobs) ? (
               <tr>
-                <td colSpan="6">YOU HAVE NO PROJECTS</td>
+                <td colSpan="4">YOU HAVE NO PROJECTS</td>
               </tr>
             ) : (
               sortedJobs.map((job) => (
