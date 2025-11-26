@@ -1,9 +1,9 @@
+
 const express = require('express');
 const pool = require('../modules/pool'); 
 const router = express.Router();
 const { rejectUnauthenticated } = require('../modules/authentication-middleware');
 const { validateDate } = require('../routes/date-validation.middleware');
-
 // Move employee to project or back to union with specific position
 router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { employeeId, targetProjectId, dropIndex } = req.body;
@@ -19,17 +19,14 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     
     try {
         await pool.query('BEGIN');
-
         // Get employee info
         const employeeResult = await pool.query(
             'SELECT id, union_id FROM "add_employee" WHERE "id" = $1',
             [employeeId]
         );
-
         if (employeeResult.rowCount === 0) {
             throw new Error('Employee not found');
         }
-
         if (targetProjectId) {
             // Moving to a project at a specific position
             console.log('Moving to project:', {
@@ -77,7 +74,6 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
                   AND employee_id != $4`,
                 [date, targetProjectId, finalDropIndex, employeeId]
             );
-
             // Insert or update the employee at the exact position
             await pool.query(
                 `INSERT INTO schedule 
@@ -104,17 +100,16 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
                 `INSERT INTO schedule 
                     (date, employee_id, current_location, is_highlighted)
                 VALUES 
-                    ($1, $2, 'union', FALSE)
+                    ($1, $2, 'union', TRUE)
                 ON CONFLICT (date, employee_id) 
                 DO UPDATE SET 
                     job_id = NULL,
                     current_location = EXCLUDED.current_location,
-                    is_highlighted = EXCLUDED.is_highlighted,
+                    is_highlighted = TRUE,
                     employee_display_order = NULL`,
                 [date, employeeId]
             );
         }
-
         await pool.query('COMMIT');
         console.log('Transaction committed successfully');
         res.sendStatus(200);
@@ -124,15 +119,12 @@ router.post('/:date', rejectUnauthenticated, validateDate, async (req, res) => {
         res.status(500).send(`Error moving employee: ${error.message}`);
     }
 });
-
 // Add bulk operations endpoint - keep as is
 router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res) => {
     const { sourceDate, employeeIds, targetProjectId } = req.body;
     const targetDate = req.validatedDate;
-
     try {
         await pool.query('BEGIN');
-
         for (const employeeId of employeeIds) {
             if (targetProjectId) {
                 await pool.query(
@@ -162,7 +154,6 @@ router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res)
                 );
             }
         }
-
         await pool.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
@@ -171,5 +162,4 @@ router.post('/bulk/:date', rejectUnauthenticated, validateDate, async (req, res)
         res.status(500).send(`Error in bulk move operation: ${error.message}`);
     }
 });
-
 module.exports = router;

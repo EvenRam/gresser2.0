@@ -7,13 +7,19 @@ const UnionBox = ({
   id, 
   union_name, 
   color,
-  isEditable // NEW: Explicitly passed prop
+  isEditable 
 }) => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
     const allEmployees = useSelector((state) => 
         state.employeeReducer.employeesByDate?.[selectedDate] || []
     );
+
+    // Get highlighted employees for this date
+    const highlightedEmployees = useSelector(state => 
+        state.employeeReducer.highlightedEmployeesByDate[selectedDate] || {}
+    );
+
     const boxRef = useRef(null);
     
     // Filter employees for this union
@@ -49,21 +55,35 @@ const UnionBox = ({
     const [{ isOver }, drop] = useDrop(() => ({
         accept: 'EMPLOYEE',
         drop: handleDrop,
+        canDrop: () => isEditable,
         collect: (monitor) => ({
             isOver: !!monitor.isOver()
         })
-    }), [handleDrop]);
+    }), [handleDrop, isEditable]);
+
+    // Handle employee click for highlighting toggle
+    const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
+        if (!isEditable) return;
+        
+        dispatch({ 
+            type: 'SET_HIGHLIGHTED_EMPLOYEE', 
+            payload: { 
+                id: employeeId, 
+                isHighlighted: !currentHighlightState,
+                date: selectedDate
+            }
+        });
+    }, [dispatch, selectedDate, isEditable]);
 
     // Get union number for styling
     const unionNumber = union_name.match(/^\d+/)?.[0];
-    
-    // Filter employees based on editable state
-    const visibleEmployees = employees.filter(employee => {
-        // For past dates (not editable): show all employees who were in unions
-        // For current/future dates (editable): only show currently active employees
+
+    const filtered = employees.filter(employee => {
         return isEditable ? employee.employee_status === true : true;
     });
-    
+    console.log(`🔵 UnionBox ${union_name} - After filter (active only):`, filtered.length);
+       
+
     return (
         <div 
             ref={node => {
@@ -98,7 +118,7 @@ const UnionBox = ({
                 marginTop: '2px',
                 padding: '0px'
             }}> 
-                {visibleEmployees.length === 0 ? (
+                {employees.length === 0 ? (
                     <p className="no-employees" style={{ 
                         margin: '2px 0', 
                         fontSize: '11px', 
@@ -107,19 +127,42 @@ const UnionBox = ({
                         color: '#666'
                     }}>No employees assigned</p>
                 ) : (
-                    visibleEmployees.map((employee, index) => (
-                        <Employee
-                            key={`${employee.id}-${index}`}
-                            {...employee}
-                            id={employee.id} 
-                            className={`employee-name union-${unionNumber}`}
-                            name={`${employee.first_name} ${employee.last_name}`}
-                            union_id={id}
-                            union_name={union_name}
-                            current_location="union"
-                            index={index}
-                        />
-                    ))
+                    employees
+                        .filter(employee => {
+                            // For past dates: show all employees who were in unions
+                            // For current/future dates: only show currently active employees
+                            return isEditable ? employee.employee_status === true : true;
+                        })
+                        .map((employee, index) => {
+                            //  Remove BOTH is_highlighted AND isHighlighted from spread
+                            const { is_highlighted, isHighlighted, ...cleanProps } = employee;
+                            
+                            // Handle both employee_id and id
+                            const employeeId = employee.employee_id || employee.id;
+                            
+                            // Get the CORRECT highlight status from Redux using employeeId
+                            const shouldBeHighlighted = !!highlightedEmployees[employeeId];
+                            
+                        
+                            
+                            return (
+                                <Employee
+                                    key={`${employeeId}-${index}`}
+                                    {...cleanProps}
+                                    id={employeeId}
+                                    employee_id={employeeId}
+                                    className={`employee-name union-${unionNumber}`}
+                                    name={`${employee.first_name} ${employee.last_name}`}
+                                    union_id={id}
+                                    union_name={union_name}
+                                    current_location="union"
+                                    index={index}
+                                    isHighlighted={shouldBeHighlighted}
+                                    onClick={handleEmployeeClick}
+                                    isEditable={isEditable}
+                                />
+                            );
+                        })
                 )}
             </div>
         </div>
