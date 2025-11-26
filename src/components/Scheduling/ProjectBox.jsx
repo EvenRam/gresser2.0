@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
@@ -5,7 +6,6 @@ import axios from 'axios';
 import Employee from './Employee';
 import '../Trades/Box.css';
 import '../Scheduling/Scheduling.css';
-
 const ProjectBox = ({ 
   id, 
   employees = [], 
@@ -18,12 +18,7 @@ const ProjectBox = ({
   const dispatch = useDispatch();
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
   
-   // ADD THIS CONSOLE.LOG HERE:
-   console.log('ProjectBox received props:', {
-    id,
-    job_number,
-    job_name
-  });
+  
   
   // Remove isEditable from useSelector since it's now a prop
   const [orderedEmployees, setOrderedEmployees] = useState([]);
@@ -232,14 +227,12 @@ const ProjectBox = ({
       }
     });
   }, [dispatch, id, currentRainDay, selectedDate, isEditable]);
-
   // Filter employees based on editable state
   const visibleEmployees = orderedEmployees.filter(employee => {
     // For past dates (not editable): show all employees who were assigned
     // For current/future dates (editable): only show currently active employees
     return isEditable ? employee.employee_status === true : true;
   });
-
   return (
     <div
       ref={node => {
@@ -287,21 +280,35 @@ const ProjectBox = ({
         )}
         
         {visibleEmployees.length === 0 ? (
-          <p className="no-employees-message">No employees assigned</p>
-        ) : (
-          visibleEmployees.map((employee, index) => (
-            <Employee
-              key={employee.id}
-              {...employee}
-              projectId={id}
-              index={index}
-              name={`${employee.first_name} ${employee.last_name}`}
-              isHighlighted={!!highlightedEmployees[employee.id]}
-              onClick={handleEmployeeClick}
-              onReorder={handleReorder}
-            />
-          ))
-        )}
+  <p className="no-employees-message">No employees assigned</p>
+) : (
+ // In your ProjectBox.jsx, replace the visibleEmployees.map section
+// (around line 215-235):
+
+visibleEmployees.map((employee, index) => {
+  // ✅ Remove BOTH is_highlighted AND isHighlighted from spread
+  const { is_highlighted, isHighlighted, ...cleanProps } = employee;
+  
+  // ✅ Get the CORRECT highlight status from Redux
+  const shouldBeHighlighted = !!highlightedEmployees[employee.id];
+  
+ 
+  
+  return (
+      <Employee
+          key={employee.id}
+          {...cleanProps}
+          projectId={id}
+          index={index}
+          name={`${employee.first_name} ${employee.last_name}`}
+          isHighlighted={shouldBeHighlighted}
+          onClick={handleEmployeeClick}
+          onReorder={handleReorder}
+          isEditable={isEditable}
+      />
+  );
+})
+)}  
       </div>
       
       <div className="project-box-footer">
@@ -324,5 +331,4 @@ const ProjectBox = ({
     </div>
   );
 };
-
 export default React.memo(ProjectBox);

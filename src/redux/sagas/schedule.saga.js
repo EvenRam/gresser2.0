@@ -1,9 +1,7 @@
 
-import { takeLatest, call, put, select, take } from "redux-saga/effects";
+import { takeLatest, call, put } from "redux-saga/effects";
 import axios from 'axios';
-
 // Helper functions for date handling
-// set to noon
 const getDefaultDate = () => {
     const now = new Date();
     now.setHours(12, 0, 0, 0);  
@@ -54,8 +52,6 @@ function* fetchEmployees(action) {
         });
     }
 }
-
-// Fetch projects for a specific date
 function* fetchProjects(action) {
     try {
         yield put({ type: 'SET_PROJECT_LOADING', payload: true });
@@ -87,8 +83,6 @@ function* fetchProjects(action) {
         yield put({ type: 'SET_PROJECT_LOADING', payload: false });
     }
 }
-
-
 function* fetchUnionsWithEmployees(action) {
     try {
         const date = typeof action.payload === 'string' 
@@ -104,10 +98,37 @@ function* fetchUnionsWithEmployees(action) {
             axios.get, 
             `/api/schedule/withunions/${formattedDate}`
         );
+        
+        console.log('🟢 Union fetch response received');
+        console.log('🟢 Response data:', response.data);
+        
+        const highlightedEmployees = {};
+        if (response.data.unions) {
+            response.data.unions.forEach(union => {
+                union.employees?.forEach(employee => {
+                    if (employee.is_highlighted) {
+                        highlightedEmployees[employee.id] = true;
+                    }
+                });
+            });
+        }
+        
+        console.log('🟢 Highlighted employees from UNIONS:', highlightedEmployees);
+        
         yield put({ 
             type: 'SET_EMPLOYEE_WITH_UNION', 
             payload: response.data 
         });
+        
+        yield put({
+            type: 'SET_HIGHLIGHTED_EMPLOYEES',
+            payload: {
+                date: formattedDate,
+                highlights: highlightedEmployees
+            }
+        });
+        
+        console.log('🟢 SET_HIGHLIGHTED_EMPLOYEES dispatched for UNIONS');
     } catch (error) {
         console.error('Error fetching unions with employees:', error);
         yield put({ 
@@ -128,6 +149,9 @@ function* fetchProjectsWithEmployees(action) {
             axios.get, 
             `/api/project/withEmployees/${formattedDate}`
         );
+        
+        console.log('🟠 Projects fetch response received');
+        
         const highlightedEmployees = {};
         response.data.forEach(project => {
             project.employees?.forEach(employee => {
@@ -136,6 +160,9 @@ function* fetchProjectsWithEmployees(action) {
                 }
             });
         });
+        
+        console.log('🟠 Highlighted employees from PROJECTS:', highlightedEmployees);
+        
         yield put({
             type: 'SET_PROJECTS_WITH_EMPLOYEES',
             payload: {
@@ -150,6 +177,8 @@ function* fetchProjectsWithEmployees(action) {
                 highlights: highlightedEmployees
             }
         });
+        
+        console.log('🟠 SET_HIGHLIGHTED_EMPLOYEES dispatched for PROJECTS');
     } catch (error) {
         console.error('Error in Saga - fetchProjectsWithEmployees:', error);
         yield put({ 
@@ -220,6 +249,7 @@ function* handleMoveEmployee(action) {
             date: formattedDate
         });
         
+        // Make the backend call - backend sets is_highlighted = TRUE
         yield call(
             axios.post, 
             `/api/moveemployee/${formattedDate}`, 
@@ -229,15 +259,19 @@ function* handleMoveEmployee(action) {
                 dropIndex 
             }
         );
+
+        console.log('✅ Backend move completed successfully');
         
+        // Set the date in localStorage and Redux
         localStorage.setItem('selectedScheduleDate', formattedDate);
-        
         yield put({
             type: 'SET_SELECTED_DATE',
             payload: formattedDate
         });
         
-        // Refresh data for the current date
+        console.log('🔄 Starting data refresh...');
+        
+        // Refresh data from backend - this will include the highlight from database
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: formattedDate } 
@@ -252,6 +286,14 @@ function* handleMoveEmployee(action) {
             type: 'FETCH_EMPLOYEES',
             payload: { date: formattedDate }
         });
+        
+        console.log('🔄 Data refresh dispatched');
+        
+        // ❌ REMOVED: Don't manually set highlight here since the fetch will bring
+        // the correct highlight status from the database (which was set by backend)
+        // The fetchUnionsWithEmployees and fetchProjectsWithEmployees sagas will
+        // dispatch SET_HIGHLIGHTED_EMPLOYEES with the database values
+        
     } catch (error) {
         console.error('Error moving employee:', error);
         yield put({ 
@@ -297,7 +339,6 @@ function* initializeScheduleDate() {
         });
     }
 }
-
 function* updateProjectOrder(action) {
     try {
         const { orderedProjectIds, date } = action.payload;
@@ -311,7 +352,6 @@ function* updateProjectOrder(action) {
         if (!isWithinRange) {
             throw new Error('Date is out of allowed range');
         }
-
         yield call(
             axios.put,
             `/api/project/updateProjectOrder`,
@@ -320,7 +360,6 @@ function* updateProjectOrder(action) {
                 date: formattedDate
             }
         );
-
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
@@ -333,9 +372,6 @@ function* updateProjectOrder(action) {
         });
     }
 }
-
-// In schedule.saga.js, update the updateEmployeeOrder saga
-// Improved updateEmployeeOrder saga
 function* updateEmployeeOrder(action) {
     try {
         const { projectId, orderedEmployeeIds, date } = action.payload;
@@ -350,25 +386,21 @@ function* updateEmployeeOrder(action) {
             throw new Error('Date is out of allowed range');
         }
         
-        // Log the payload for debugging
         console.log('Update employee order payload:', {
             projectId,
             orderedEmployeeIds,
             date: formattedDate
         });
         
-        // Validate the orderedEmployeeIds array
         if (!Array.isArray(orderedEmployeeIds) || orderedEmployeeIds.length === 0) {
             throw new Error('Invalid employee order data');
         }
         
-        // Make sure all IDs are valid numbers
         const validIds = orderedEmployeeIds.every(id => typeof id === 'number' || typeof id === 'string');
         if (!validIds) {
             throw new Error('Invalid employee IDs in order data');
         }
         
-        // Update the employee order in the backend
         yield call(
             axios.put,
             '/api/project/updateOrder',
@@ -379,7 +411,6 @@ function* updateEmployeeOrder(action) {
             }
         );
         
-        // After successfully updating in the backend, update the Redux store
         yield put({
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
             payload: { date: formattedDate }
@@ -392,7 +423,6 @@ function* updateEmployeeOrder(action) {
         });
     }
 }
-
 function* finalizeSchedule(action) {
     try {
         const { date } = action.payload;
@@ -411,18 +441,15 @@ function* finalizeSchedule(action) {
         const { nextDate } = response.data;
         console.log('Next date from response:', nextDate);
         
-        // Store in localStorage and update Redux
         localStorage.setItem('selectedScheduleDate', nextDate);
         console.log('Updated localStorage with new date');
         
-        // Update the selected date in Redux
         yield put({ 
             type: 'SET_SELECTED_DATE', 
             payload: nextDate 
         });
         console.log('Dispatched SET_SELECTED_DATE');
         
-        // Refresh all data for the new date
         console.log('Starting data refresh for new date');
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
@@ -440,7 +467,6 @@ function* finalizeSchedule(action) {
         });
         console.log('Completed all refresh dispatches');
         
-        // Add a success notification
         yield put({
             type: 'SET_SUCCESS_MESSAGE',
             payload: `Schedule finalized. Moved to ${nextDate}`
@@ -483,5 +509,5 @@ export default function* scheduleSaga() {
     yield takeLatest('UPDATE_PROJECT_ORDER', updateProjectOrder);
     yield takeLatest('UPDATE_EMPLOYEE_ORDER', updateEmployeeOrder);
     yield takeLatest('FINALIZE_SCHEDULE', finalizeSchedule);
-    yield takeLatest('UPDATE_RAIN_DAY_STATUS_REQUEST', updateRainDayStatus)
+    yield takeLatest('UPDATE_RAIN_DAY_STATUS_REQUEST', updateRainDayStatus);
 }

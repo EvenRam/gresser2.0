@@ -1,16 +1,15 @@
+
 const initialState = {
     date: null,
     projects: [],
     projectsByDate: {},
     error: null
 };
-
 const findProjectWithEmployee = (projects, employeeId) => {
     return projects.find(project => 
         project.employees?.some(emp => emp.id === employeeId)
     );
 };
-
 const sortProjectsByOrder = (projects) => {
     return [...projects].sort((a, b) => {
         const orderA = a.display_order ?? Infinity;
@@ -18,7 +17,6 @@ const sortProjectsByOrder = (projects) => {
         return orderA - orderB;
     });
 };
-
 // Improved helper function for inserting employee at specific position
 const insertEmployeeAtPosition = (employees, employeeToMove, dropIndex) => {
     // Remove employee if they already exist in the array
@@ -30,14 +28,12 @@ const insertEmployeeAtPosition = (employees, employeeToMove, dropIndex) => {
         { ...employeeToMove, display_order: dropIndex },
         ...existingEmployees.slice(dropIndex)
     ];
-
     // Update all display orders sequentially
     return newEmployees.map((emp, index) => ({
         ...emp,
         display_order: index
     }));
 };
-
 const projectReducer = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_PROJECTS_WITH_EMPLOYEES': {
@@ -57,7 +53,6 @@ const projectReducer = (state = initialState, action) => {
             }));
             
             const sortedProjects = sortProjectsByOrder(processedProjects);
-
             return {
                 ...state,
                 date,
@@ -69,7 +64,6 @@ const projectReducer = (state = initialState, action) => {
                 error: null
             };
         }
-
         case 'MOVE_EMPLOYEE': {
             const { employeeId, targetProjectId, sourceLocation, dropIndex, date } = action.payload;
             if (!date) {
@@ -98,7 +92,7 @@ const projectReducer = (state = initialState, action) => {
         
             // Update projects
             const updatedProjects = currentProjects.map(project => {
-                // Remove from source project
+                // Remove from source project (always remove from old location)
                 if (project.id === sourceProject?.id) {
                     return {
                         ...project,
@@ -106,8 +100,9 @@ const projectReducer = (state = initialState, action) => {
                     };
                 }
                 
-                // Add to target project at specified position
-                if (project.id === targetProjectId) {
+                // Add to target project ONLY if targetProjectId is provided (not null)
+                // If targetProjectId is null/undefined, employee is moving back to union
+                if (targetProjectId && project.id === targetProjectId) {
                     const updatedEmployees = [...(project.employees || [])];
                     
                     // Create updated employee with new location
@@ -157,7 +152,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
         case 'REORDER_PROJECTS': {
             const { sourceIndex, targetIndex, date } = action.payload;
             if (!date) return state;
@@ -172,7 +166,6 @@ const projectReducer = (state = initialState, action) => {
                 ...project,
                 display_order: index
             }));
-
             const sortedProjects = sortProjectsByOrder(updatedProjects);
         
             return {
@@ -184,7 +177,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
         case 'UPDATE_PROJECT_ORDER': {
             const { orderedProjectIds, date } = action.payload;
             if (!date || !Array.isArray(orderedProjectIds)) return state;
@@ -195,7 +187,6 @@ const projectReducer = (state = initialState, action) => {
                 display_order: orderedProjectIds.indexOf(project.job_id)
             }));
             const sortedProjects = sortProjectsByOrder(updatedProjects);
-
             return {
                 ...state,
                 projects: date === state.date ? sortedProjects : state.projects,
@@ -205,7 +196,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
         case 'UPDATE_EMPLOYEE_ORDER': {
             const { projectId, orderedEmployeeIds, date } = action.payload;
             if (!date || !projectId || !Array.isArray(orderedEmployeeIds)) return state;
@@ -218,14 +208,12 @@ const projectReducer = (state = initialState, action) => {
                         map[emp.id] = emp;
                         return map;
                     }, {});
-
                     const updatedEmployees = orderedEmployeeIds
                         .filter(id => employeeMap[id])
                         .map((id, index) => ({
                             ...employeeMap[id],
                             display_order: index
                         }));
-
                     return {
                         ...project,
                         employees: updatedEmployees
@@ -233,7 +221,6 @@ const projectReducer = (state = initialState, action) => {
                 }
                 return project;
             });
-
             return {
                 ...state,
                 projects: date === state.date ? updatedProjects : state.projects,
@@ -243,7 +230,6 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
         case 'UPDATE_RAIN_DAY_STATUS': {
             const { jobId, isRainDay, date } = action.payload;
             if (!date) return state;
@@ -268,10 +254,8 @@ const projectReducer = (state = initialState, action) => {
                 }
             };
         }
-
         default:
             return state;
     }
 };
-
 export default projectReducer;

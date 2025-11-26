@@ -1,8 +1,8 @@
+
 import React, { useCallback, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import ReactDOM from 'react-dom';
 import unionColors from '../Trades/UnionColors';
-
 const Employee = ({
   id,
   employee_id,
@@ -17,9 +17,11 @@ const Employee = ({
   onClick,
   index,
   onReorder,
-  projectId
+  projectId,
+  isEditable
 }) => {
   const actualId = employee_id || id;
+  
   const unionColor = unionColors[union_name] || 'black';
   const modalId = `employee-modal-${actualId}`;
   const ref = useRef(null);
@@ -36,6 +38,7 @@ const Employee = ({
       index,
       projectId
     },
+    canDrag:() =>isEditable, // only allow drag if editable
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
@@ -145,7 +148,6 @@ const Employee = ({
       </div>
     </div>
   );
-
   // Use smaller visual height but maintain original drag target size
   return (
     <>
@@ -156,12 +158,13 @@ const Employee = ({
           opacity: isDragging ? 0.5 : 1,
           padding: '0px',
           margin: '0',
-          cursor: 'move',
+          cursor: isEditable ? 'move' : 'default', //show move cursor only if editable
           borderRadius: '2px',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          backgroundColor: isHighlighted ? 'yellow' : (isOver ? '#f0f0f0' : 'transparent'),
+          // only show yellow if editable and hightlighted
+          backgroundColor: (isHighlighted && isEditable) ? 'yellow' : (isOver ? '#f0f0f0' : 'transparent'),
           // Keep original element height for drag calculation
           height: '14px',
           // This ensures the drop area extends beyond the visible content
@@ -194,5 +197,4 @@ const Employee = ({
     </>
   );
 };
-
-export default React.memo(Employee);
+export default Employee;
