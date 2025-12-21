@@ -2,11 +2,15 @@
 .scheduling-layout-wrapper {
   display: flex;
   width: 100%;
+  gap: 10px; /* Reduced from 20px - tighter gap between sections */
+  padding-left: 5px; /* Small left padding */
+  align-items: flex-start;
 }
 
 .print-page-1 {
   order: 2; /* Projects on RIGHT on screen */
   flex: 1;
+  min-width: 0;
 }
 
 .print-page-2 {
@@ -18,15 +22,16 @@
 @media print {
   .scheduling-layout-wrapper {
     display: block !important;
+    padding-left: 0 !important;
   }
 
   .print-page-1 {
     page-break-after: always !important;
-    order: 1 !important; /* Projects print FIRST */
+    order: 1 !important;
   }
 
   .print-page-2 {
     page-break-before: always !important;
-    order: 2 !important; /* Unions print SECOND */
+    order: 2 !important;
   }
 }

@@ -277,8 +277,8 @@ const Scheduling = () => {
             <div style={{ 
     display: 'flex', 
     justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: '20px', 
+    alignItems: 'flex-start', // Changed from center
+    marginBottom: '10px', // Reduced from 20px
     gap: '10px' 
 }}>
     <span className="total-employees">
@@ -297,27 +297,37 @@ const Scheduling = () => {
     
     {/* Date picker for screen */}
     <DateSchedule />
-                {isEditable && (
-                    <button 
-                        onClick={handleFinalize}
-                        className="btn btn-primary"
-                    >
-                        Carry Forward
-                    </button>
-                )}
-                {!isEditable && (
-                    <div className="view-only-warning" style={{ color: 'red', margin: '0 10px' }}>
-                        View Only
-                    </div>
-                )}
-                <button
-                    onClick={handlePrint}
-                    className="btn"
-                    style={{ marginLeft: 'auto' }}
-                >
-                    Print Schedule
-                </button>
-            </div>
+    {isEditable && (
+        <button 
+            onClick={handleFinalize}
+            className="btn btn-primary"
+            style={{
+                padding: '6px 12px',
+                fontSize: '13px',
+                height: '32px'
+            }}
+        >
+            Carry Forward
+        </button>
+    )}
+    {!isEditable && (
+        <div className="view-only-warning" style={{ color: 'red', margin: '0 10px' }}>
+            View Only
+        </div>
+    )}
+    <button
+        onClick={handlePrint}
+        className="btn"
+        style={{ 
+            marginLeft: 'auto',
+            padding: '6px 12px', // Smaller padding
+            fontSize: '12px', // Smaller font
+            height: '32px' // Reduced height
+        }}
+    >
+        Print Schedule
+    </button>
+</div>
             <div>
                 {!projects || projects.length === 0 ? (
                     <table className="no-jobs-table">
