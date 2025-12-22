@@ -59,8 +59,8 @@ scheduling.css file
 /* Grid Layout - Essential for Drag Context */
 .jobs-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 4px; /* CHANGED from 10px */
+  grid-template-columns: repeat(5, 1fr); /* Forces exactly 5 columns */
+  gap: 28px; /* CHANGED from 10px */
   justify-content: center;
   background-color: transparent;
   position: relative;
