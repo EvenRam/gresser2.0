@@ -1,11 +1,11 @@
 /* 
 scheduling.css file
-Main Container Styles */
+/* Main Container Styles */
 .scheduling-container {
   display: flex;
   flex-direction: column;
   padding: 2px;
-  width: 120%;
+  width: 100%; /* CHANGED from 120% */
   position: relative;
   z-index: 1;
   touch-action: none;
@@ -60,7 +60,7 @@ Main Container Styles */
 .jobs-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 10px;
+  gap: 4px; /* CHANGED from 10px */
   justify-content: center;
   background-color: transparent;
   position: relative;
@@ -299,7 +299,6 @@ Main Container Styles */
   text-align: center;
 }
 
-/* Print Optimization */
 @media print {
   @page {
     size: landscape;
@@ -312,288 +311,155 @@ Main Container Styles */
     background-color: transparent;
   }
 
-  .scheduling-container {
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    transform: scale(0.90) !important;
-    transform-origin: top left !important;
+  /* Hide the navigation banner */
+  .nav,
+  .websitelogo,
+  header,
+  nav,
+  [class*="nav-"],
+  [class*="header"] {
+    display: none !important;
   }
 
+  /* Projects container */
+  .scheduling-container {
+    width: 98% !important; /* Slight reduction to prevent cutoff */
+    padding: 0 !important;
+    margin: 0 auto !important;
+    transform: none !important;
+  }
+
+  /* Unions container */
+  .trades-container {
+    display: block !important;
+    width: 98% !important;
+    max-width: none !important;
+    padding: 5px !important;
+    margin: 0 auto !important;
+  }
+
+  /* PAGE 1: Projects - 6 columns */
   .jobs-container {
     display: grid !important;
     grid-template-columns: repeat(6, 1fr) !important;
-    gap: 4px !important;
+    gap: 3px !important; /* Reduced from 4px */
     margin: 0 !important;
     padding: 0 !important;
-    width: calc(155% - 260px) !important;
-    float: left !important;
+    width: 100% !important;
+    max-width: none !important;
+    float: none !important;
+  }
+
+  /* PAGE 2: Unions - 8 columns */
+  .unions-container {
+    display: grid !important;
+    grid-template-columns: repeat(8, 1fr) !important;
+    gap: 3px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Union box spacing */
+  .union-box {
+    width: auto !important;
+    flex: none !important;
+    margin: 0 !important; /* Removed margin */
+    padding: 2px !important;
+    font-size: 8px !important;
+    border: 1px solid #ddd !important;
   }
 
   .union-box .union-label.small-text {
     font-size: 7px !important;
-    padding: 3px !important;
-    margin: -2px -2px 4px -2px !important;
-    font-weight: 600 !important;
-    background-color: #f8f8f8 !important;
-    border-bottom: 1px solid #ddd !important;
+    padding: 1px 2px !important; /* Reduced vertical padding */
+    margin: 0 0 1px 0 !important;
   }
 
-  /* Union Boxes Print Layout */
-  .union-boxes-container {
-    position: absolute !important;
-    right: 0 !important;
-    top: 0 !important;
-    width: 100px !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 1px !important;
+  .union-box .employee-item {
+    height: 9px !important;
+    line-height: 9px !important;
     margin: 0 !important;
-    padding: 0 !important;
-    float: right !important;
+    padding: 0 1px !important;
   }
 
-  .union-box {
-    margin-bottom: 2px !important;
-    padding: 1px !important;
-    font-size: 14px !important;
+  .union-box .primary {
+    font-size: 6px !important;
+    line-height: 9px !important;
   }
 
-  /* Project Box Print Adjustments */
+  /* Project boxes - more compact */
   .draggable-job-box {
-    display: flex !important;
-    flex-direction: column !important;
-    margin: 0 !important;
-    padding: 0px !important;
-    box-shadow: none !important;
-    background-color: transparent !important;
-    border: 1px solid #ddd !important;
-    padding-bottom: 16px !important; /* Make space for footer */
-    margin-bottom: 6px !important; /* Increased space after project name */
-    position: relative !important;
-    min-height: 40px !important;
-    overflow: hidden !important; /* Prevent content from creating gaps */
-    justify-content: space-between !important; /* This will push the footer to bottom */
+    margin-bottom: 2px !important; /* Reduced from 4px */
+    padding: 2px !important;
   }
 
   .projectboxname {
-    font-size: 10px !important;
-    padding: 1px 2px !important;
-    margin: 0 !important; /* Remove negative margins */
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    border-radius: 0 !important; /* Remove border radius to align with box */
-    margin-bottom: 3px !important; /* Add space after project name */
+    font-size: 9px !important; /* Reduced from 10px */
+    padding: 2px 3px !important; /* Less vertical padding */
+    margin: -2px -2px 2px -2px !important; /* Tighter margins */
   }
 
-  .draggable-job-box > div:not(.projectboxname):not(.project-box-footer) {
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    min-height: 0 !important; /* Allow content to shrink */
-  }
-
-  /* Employee items - tight spacing in print mode */
   .employee-item {
-    height: 12px !important; /* Even smaller for print */
-    line-height: 12px !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    height: 11px !important; /* Reduced from 12px */
+    line-height: 11px !important;
+    padding: 0 2px !important;
   }
 
   .primary {
-    font-size: 8px !important;
-    line-height: 12px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Employee Count in Footer */
-  .employee-count {
-    font-size: 8px !important;
-    margin-left: auto !important;
-    white-space: nowrap !important;
+    font-size: 7px !important; /* Reduced from 8px */
   }
 
   .project-box-footer {
-    padding: 1px 1px !important;
-    font-size: 8px !important;
+    font-size: 7px !important; /* Reduced from 8px */
+    padding: 1px 3px !important; /* Less vertical padding */
     margin: -2px !important;
   }
 
-  /* Rain day controls */
-  .rain-day-toggle {
-    font-size: 5px !important;
-    display: flex !important;
-    align-items: center !important;
-    min-width: auto !important;
-    margin-right: 4px !important;
-    white-space: nowrap !important;
+  /* Make empty boxes more compact */
+  .project-box {
+    min-height: auto !important; /* Remove minimum height */
   }
 
-  .rain-day-label {
-    font-size: 7px !important;
-    margin-right: 2px !important;
-    white-space: nowrap !important;
-    color: white !important;
+  .employees-container {
+    min-height: 30px !important; /* Reduced minimum height for empty boxes */
+    padding: 2px 0 !important;
   }
 
-  .rain-day-checkbox {
-    transform: scale(0.7) !important;
-    margin: 0 2px !important;
-  }
-  
   .no-employees-message {
-    font-size: 7px !important;
-    text-align: center !important;
-    width: 100% !important;
-    padding: 2px 2px !important;
-    margin: 0 !important;
-    color: #666 !important;
-    font-style: italic !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    white-space: nowrap !important;
+    font-size: 7px !important; /* Smaller "no employees" text */
+    margin: 2px 0 !important;
+    padding: 2px !important;
   }
 
-  /* Force colors to print */
+  /* Show total employees on Page 1 */
+  .total-employees {
+    display: block !important;
+    font-size: 13px !important; /* Slightly smaller */
+    font-weight: 600 !important;
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Date display on BOTH pages */
+  .date-display-print {
+    display: block !important;
+    font-size: 14px !important; /* Slightly smaller */
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Hide UI elements */
+  .btn, button, .date-schedule, .view-only-warning {
+    display: none !important;
+  }
+
+  /* Preserve colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-
-  /* Preserve drag context in print */
-  .draggable-job-box,
-  .union-box,
-  .jobs-container,
-  .union-boxes-container {
-    touch-action: none !important;
-    user-select: none !important;
-  }
-
-  /* Hide UI Elements */
-  .finalize-button,
-  .print-button,
-  .nav,
-  .websitelogo,
-  button,
-  .btn,
-  .btn-primary,
-  input[type="button"],
-  .print-schedule,
-  .finalize-schedule,
-  .print-container button,
-  .schedule-controls button,
-  .date-navigation,
-  .view-only-warning {
-    display: none !important;
-  }
-
-/* Hide the date picker input in print */
-.date-schedule {
-  display: none !important;
-}
-
-/* Show formatted date in print */
-.date-display-print {
-  display: block !important;
-  font-size: 16px !important;
-  font-weight: bold !important;
-  text-align: center !important;
-  margin-bottom: 10px !important;
-}
-
-  /* Preserve colors and formatting */
-  .projectboxname {
-    background-color: #396a54 !important;
-    color: white !important;
-  }
-
-  .project-box-footer {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    background-color: rgb(79, 76, 76) !important;
-    padding: 2px 4px !important;
-    font-size: 8px !important;
-    margin: 0 !important;
-    width: 100% !important;
-    position: absolute !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    height: 16px !important;
-  }
-
-  /* Remove drop indicators and highlighting in print */
-  .drop-position-indicator {
-    display: none !important;
-  }
-
-  /* Highlighted employees in print */
-  .employee-highlighted,
-  div[style*="background-color: yellow"] {
-    background-color: rgba(255, 255, 0, 0.2) !important;
-    box-shadow: none !important;
-  }
-}
-
-/* Date-based elements */
-.date-disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-/* Employee element at absolute positions */
-.employee-positioned {
-  position: absolute;
-  left: 0;
-  right: 0;
-}
-
-/* Employee highlight states */
-.employee-highlighted {
-  background-color: rgba(255, 255, 0, 0.5);
-}
-
-/* Drop indicators for project boxes */
-.project-drop-indicator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #4a90e2;
-  z-index: 10;
-  pointer-events: none;
-}
-
-/* Drag hover states */
-.drag-over {
-  background-color: rgba(200, 200, 255, 0.1);
-  box-shadow: inset 0 0 0 1px #4a90e2;
-}
-
-/* Finalize button styles */
-.finalize-button {
-  background-color: #396a54;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.finalize-button:hover {
-  background-color: #2c543f;
-}
-
-.finalize-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
 }

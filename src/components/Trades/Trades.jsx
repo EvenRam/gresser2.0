@@ -31,23 +31,33 @@ const Trades = ({ isEditable}) => {
     };
     
     return (
-        <div className="trades-container">
-            <div className="unions-container">
-                {unionBox.map(union => (
-                    <div key={union.id} className="union-box">
-                        <UnionBox
-                            id={union.id}
-                            union_name={union.union_name}
-                            employees={union.employees}
-                            color={unionColors[union.union_name]} 
-                            moveEmployee={moveEmployee}
-                            isEditable={isEditable}
-                        />
-                    </div>
-                ))}
-            </div>
+    <div className="trades-container">
+        {/* Date display for print - shown on page 2 */}
+        <div className="date-display-print">
+            {selectedDate && new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })}
         </div>
-    );
+        
+        <div className="unions-container">
+            {unionBox.map(union => (
+                <div key={union.id} className="union-box">
+                    <UnionBox
+                        id={union.id}
+                        union_name={union.union_name}
+                        employees={union.employees}
+                        color={unionColors[union.union_name]} 
+                        moveEmployee={moveEmployee}
+                        isEditable={isEditable}
+                    />
+                </div>
+            ))}
+        </div>
+    </div>
+);
 };
 
 export default Trades;
