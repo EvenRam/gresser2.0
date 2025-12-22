@@ -59,8 +59,8 @@ const JobDetails = (props) => {
             <tr>
             <td>{props.job.job_number} - {props.job.job_name}</td>  
                 <td> {props.job.location}</td>
-                <td> {new Date(props.job.start_date).toLocaleDateString()}</td>
-                <td> {new Date(props.job.end_date).toLocaleDateString()} </td>
+                {/* <td> {new Date(props.job.start_date).toLocaleDateString()}</td>
+                <td> {new Date(props.job.end_date).toLocaleDateString()} </td> */}
                 <td>
                     <button 
                         className={buttonClass} 
