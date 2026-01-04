@@ -10,8 +10,7 @@ function Nav() {
 
   return (
     <div className="nav">
-        <img className='only-logo' src='/documentation/images/logogresser.png' alt='Only Logo' />
-        {/* <img className='gresser' src='/documentation/images/Gresser.png' alt='Gresser' /> */}
+<img className='only-logo' src='/logogresser.png' alt='Only Logo' />        {/* <img className='gresser' src='/documentation/images/Gresser.png' alt='Gresser' /> */}
       {/* <Link to="/home">
   
       </Link> */}
