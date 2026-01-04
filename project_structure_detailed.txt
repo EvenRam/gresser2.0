@@ -1,0 +1,148 @@
+.
+├── PostmanPrimeSoloRoutesv2.json
+├── README.md
+├── database.sql
+├── documentation
+│   └── images
+│       ├── GresserLogo.png
+│       ├── Schedule.png
+│       ├── logo.png
+│       ├── logogresser.png
+│       ├── vscode-debug-bar.png
+│       ├── vscode-toolbar.png
+│       └── websitelogo.jpeg
+├── index.html
+├── package-lock.json
+├── package.json
+├── project_structure.txt
+├── project_structure_detailed.txt
+├── public
+│   ├── README.md
+│   └── favicon.ico
+├── server
+│   ├── constants
+│   │   └── warnings.js
+│   ├── modules
+│   │   ├── authentication-middleware.js
+│   │   ├── encryption.js
+│   │   ├── pool.js
+│   │   └── session-middleware.js
+│   ├── routes
+│   │   ├── addemployee.router.js
+│   │   ├── date-validation.middleware.js
+│   │   ├── jobs.router.js
+│   │   ├── jobshistory.router.js
+│   │   ├── moveemployee.router.js
+│   │   ├── project.router.js
+│   │   ├── schedule.router.js
+│   │   ├── template.router.js
+│   │   └── user.router.js
+│   ├── server.js
+│   └── strategies
+│       └── user.strategy.js
+├── src
+│   ├── components
+│   │   ├── AboutPage
+│   │   │   └── AboutPage.jsx
+│   │   ├── AddEmployee
+│   │   │   ├── AddEmployee.css
+│   │   │   ├── AddEmployee.jsx
+│   │   │   ├── EditAddEmployee.jsx
+│   │   │   └── ToggleEmployee.jsx
+│   │   ├── App
+│   │   │   ├── App.css
+│   │   │   └── App.jsx
+│   │   ├── CreateJobs
+│   │   │   ├── CreateJobs.css
+│   │   │   ├── CreateJobs.jsx
+│   │   │   ├── EditForm.jsx
+│   │   │   ├── JobDetails.jsx
+│   │   │   └── JobList.jsx
+│   │   ├── EmployeeStats.js
+│   │   │   └── EmployeeStats.js
+│   │   ├── Footer
+│   │   │   ├── Footer.css
+│   │   │   └── Footer.jsx
+│   │   ├── InfoPage
+│   │   │   └── InfoPage.jsx
+│   │   ├── JobHistory
+│   │   │   ├── JobHistory.css
+│   │   │   └── JobHistory.jsx
+│   │   ├── LandingPage
+│   │   │   ├── LandingPage.css
+│   │   │   └── LandingPage.jsx
+│   │   ├── LogOutButton
+│   │   │   └── LogOutButton.jsx
+│   │   ├── LoginForm
+│   │   │   └── LoginForm.jsx
+│   │   ├── LoginPage
+│   │   │   └── LoginPage.jsx
+│   │   ├── Nav
+│   │   │   ├── Nav.css
+│   │   │   └── Nav.jsx
+│   │   ├── ProtectedRoute
+│   │   │   └── ProtectedRoute.jsx
+│   │   ├── RegisterForm
+│   │   │   └── RegisterForm.jsx
+│   │   ├── RegisterPage
+│   │   │   └── RegisterPage.jsx
+│   │   ├── ReportOne
+│   │   │   └── ReportOne.jsx
+│   │   ├── SaveDrag
+│   │   │   └── SaveDrag.jsx
+│   │   ├── Scheduling
+│   │   │   ├── CrystalClearLLC
+│   │   │   ├── DateSchedule.jsx
+│   │   │   ├── DraggableJobBox.jsx
+│   │   │   ├── Employee.jsx
+│   │   │   ├── EmployeeSelection.js
+│   │   │   ├── EmployeeStyles.css
+│   │   │   ├── ProjectBox.jsx
+│   │   │   ├── Scheduling.css
+│   │   │   ├── Scheduling.jsx
+│   │   │   ├── SchedulingLayout.css
+│   │   │   └── SchedulingLayout.jsx
+│   │   ├── TemplateClass
+│   │   │   └── TemplateClass.jsx
+│   │   ├── TemplateFunction
+│   │   │   └── TemplateFunction.jsx
+│   │   ├── Trades
+│   │   │   ├── Box.css
+│   │   │   ├── EmployeeUnion.jsx
+│   │   │   ├── Trades.css
+│   │   │   ├── Trades.jsx
+│   │   │   ├── UnionBox.jsx
+│   │   │   └── UnionColors.jsx
+│   │   └── UserPage
+│   │       └── UserPage.jsx
+│   ├── hooks
+│   │   └── useReduxStore.js
+│   ├── index.jsx
+│   └── redux
+│       ├── reducers
+│       │   ├── _root.reducer.js
+│       │   ├── addemployee.reducer.js
+│       │   ├── card.reducer.js
+│       │   ├── editaddemployee.reducer.js
+│       │   ├── editjob.reducer.js
+│       │   ├── employeeReducer.js
+│       │   ├── errors.reducer.js
+│       │   ├── job.reducer.js
+│       │   ├── project.reducer.js
+│       │   ├── projectOrder.reducer.js
+│       │   ├── schedule.reducer.js
+│       │   ├── union.reducer.js
+│       │   ├── unionBox.reducer.js
+│       │   └── user.reducer.js
+│       ├── sagas
+│       │   ├── _root.saga.js
+│       │   ├── employee.saga.js
+│       │   ├── job.saga.js
+│       │   ├── login.saga.js
+│       │   ├── registration.saga.js
+│       │   ├── schedule.saga.js
+│       │   └── user.saga.js
+│       └── store.js
+└── vite.config.js
+
+39 directories, 107 files
