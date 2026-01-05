@@ -1,6 +1,7 @@
 
-import { takeLatest, call, put } from "redux-saga/effects";
+import { takeLatest, call, put, all } from "redux-saga/effects";
 import axios from 'axios';
+
 // Helper functions for date handling
 const getDefaultDate = () => {
     const now = new Date();
@@ -261,6 +262,7 @@ function* handleMoveEmployee(action) {
             }
         );
 
+        console.log('✅ SAGA: Backend move completed successfully');
         
         // Set the date in localStorage and Redux
         localStorage.setItem('selectedScheduleDate', formattedDate);
@@ -269,23 +271,75 @@ function* handleMoveEmployee(action) {
             payload: formattedDate
         });
         
+        console.log('🔄 SAGA: Starting data refresh (waiting for ALL to complete)...');
         
-        // Refresh data from backend - this will include the highlight from database
-        yield put({ 
-            type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
-            payload: { date: formattedDate } 
-        });
+        // ✨ SOLUTION: Make the API calls directly and wait for ALL to complete
+        const [projectsResponse, unionsResponse, employeesResponse] = yield all([
+            call(axios.get, `/api/project/withEmployees/${formattedDate}`),
+            call(axios.get, `/api/schedule/withunions/${formattedDate}`),
+            call(axios.get, `/api/schedule/employees/${formattedDate}`)
+        ]);
         
+        console.log('✅ SAGA: All 3 API calls completed!');
         
-        yield put({ 
-            type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
-            payload: { date: formattedDate } 
+        // Now process and dispatch all the data at once
+        
+        // 1. Process projects
+        const projectHighlights = {};
+        projectsResponse.data.forEach(project => {
+            project.employees?.forEach(employee => {
+                if (employee.is_highlighted) {
+                    projectHighlights[employee.id] = true;
+                }
+            });
         });
         
         yield put({
-            type: 'FETCH_EMPLOYEES',
-            payload: { date: formattedDate }
+            type: 'SET_PROJECTS_WITH_EMPLOYEES',
+            payload: {
+                date: formattedDate,
+                jobs: projectsResponse.data
+            }
         });
+        
+        // 2. Process unions
+        const unionHighlights = {};
+        if (unionsResponse.data.unions) {
+            unionsResponse.data.unions.forEach(union => {
+                union.employees?.forEach(employee => {
+                    if (employee.is_highlighted) {
+                        unionHighlights[employee.id] = true;
+                    }
+                });
+            });
+        }
+        
+        yield put({ 
+            type: 'SET_EMPLOYEE_WITH_UNION', 
+            payload: unionsResponse.data 
+        });
+        
+        // 3. Merge highlights from both projects and unions
+        const allHighlights = { ...projectHighlights, ...unionHighlights };
+        
+        yield put({
+            type: 'SET_HIGHLIGHTED_EMPLOYEES',
+            payload: {
+                date: formattedDate,
+                highlights: allHighlights
+            }
+        });
+        
+        // 4. Set employees
+        yield put({
+            type: 'SET_EMPLOYEES',
+            payload: {
+                date: formattedDate,
+                employees: employeesResponse.data.employees
+            }
+        });
+        
+        console.log('🎉 SAGA: All data dispatched, UI should update smoothly now!');
         
     } catch (error) {
         console.error('❌ SAGA: Error moving employee:', error);
