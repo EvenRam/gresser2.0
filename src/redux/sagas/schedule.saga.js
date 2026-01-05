@@ -241,12 +241,13 @@ function* handleMoveEmployee(action) {
             throw new Error('Date is out of allowed range');
         }
         
-        console.log('Moving employee:', {
+        console.log('⚙️ SAGA: moveEmployee started', {
             employeeId, 
             targetProjectId, 
             sourceLocation,
             dropIndex,
-            date: formattedDate
+            date: formattedDate,
+            timestamp: new Date().toISOString()
         });
         
         // Make the backend call - backend sets is_highlighted = TRUE
@@ -260,7 +261,6 @@ function* handleMoveEmployee(action) {
             }
         );
 
-        console.log('✅ Backend move completed successfully');
         
         // Set the date in localStorage and Redux
         localStorage.setItem('selectedScheduleDate', formattedDate);
@@ -269,13 +269,13 @@ function* handleMoveEmployee(action) {
             payload: formattedDate
         });
         
-        console.log('🔄 Starting data refresh...');
         
         // Refresh data from backend - this will include the highlight from database
         yield put({ 
             type: 'FETCH_PROJECTS_WITH_EMPLOYEES', 
             payload: { date: formattedDate } 
         });
+        
         
         yield put({ 
             type: 'FETCH_UNIONS_WITH_EMPLOYEES', 
@@ -287,15 +287,8 @@ function* handleMoveEmployee(action) {
             payload: { date: formattedDate }
         });
         
-        console.log('🔄 Data refresh dispatched');
-        
-        // ❌ REMOVED: Don't manually set highlight here since the fetch will bring
-        // the correct highlight status from the database (which was set by backend)
-        // The fetchUnionsWithEmployees and fetchProjectsWithEmployees sagas will
-        // dispatch SET_HIGHLIGHTED_EMPLOYEES with the database values
-        
     } catch (error) {
-        console.error('Error moving employee:', error);
+        console.error('❌ SAGA: Error moving employee:', error);
         yield put({ 
             type: 'MOVE_EMPLOYEE_FAILURE', 
             payload: error.message || 'Failed to move employee' 
