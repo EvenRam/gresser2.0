@@ -6,6 +6,7 @@ import axios from 'axios';
 import Employee from './Employee';
 import '../Trades/Box.css';
 import '../Scheduling/Scheduling.css';
+
 const ProjectBox = ({ 
   id, 
   employees = [], 
@@ -18,7 +19,7 @@ const ProjectBox = ({
   const dispatch = useDispatch();
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
   
-  
+
   
   // Remove isEditable from useSelector since it's now a prop
   const [orderedEmployees, setOrderedEmployees] = useState([]);
@@ -145,48 +146,47 @@ const ProjectBox = ({
   }, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
   
   // Handle employee drop
-  const handleDrop = useCallback((item) => {
-    if (!item?.id || !isEditable) return;
-    
-    // Use the saved drop position from hover - this matches what the user sees
-    const dropIndex = dropPosition !== null ? dropPosition : orderedEmployees.length;
-    
-    // Log the drop position for debugging
-    console.log('Dropping employee at index:', dropIndex);
-    
-    // Determine if this is from another container
-    const isExternalMove = item.current_location === 'union' || 
-                          (item.current_location === 'project' && item.projectId !== id);
-    
-    // Handle internal reordering
-    if (!isExternalMove && typeof item.index === 'number') {
-      handleReorder(item.index, dropIndex);
-    } else {
-      // Move from union or another project
-      moveEmployee({
-        employeeId: item.id,
-        targetProjectId: id,
-        dropIndex,
-        date: selectedDate
-      });
-      
-      // Highlight on external move
-      if (isExternalMove) {
-        dispatch({ 
-          type: 'SET_HIGHLIGHTED_EMPLOYEE', 
-          payload: { 
-            id: item.id, 
-            isHighlighted: true,
-            date: selectedDate
-          } 
-        });
-      }
-    }
-    
-    // Reset drop position
-    setDropPosition(null);
-  }, [id, moveEmployee, dispatch, selectedDate, isEditable, dropPosition, orderedEmployees.length, handleReorder]);
+const handleDrop = useCallback((item) => {
+  if (!item?.id || !isEditable) return;
   
+  console.log('🎯 DROP STARTED', {
+    employeeId: item.id,
+    from: item.current_location,
+    fromProjectId: item.projectId,
+    toProjectId: id,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Use the saved drop position from hover - this matches what the user sees
+  const dropIndex = dropPosition !== null ? dropPosition : orderedEmployees.length;
+  
+  // Determine if this is from another container
+  const isExternalMove = item.current_location === 'union' || 
+                        (item.current_location === 'project' && item.projectId !== id);
+  
+  console.log('🔄 Move Type:', isExternalMove ? 'EXTERNAL (union→project or project→project)' : 'INTERNAL (reorder within project)');
+  
+  // Handle internal reordering
+  if (!isExternalMove && typeof item.index === 'number') {
+    console.log('📊 Internal reorder from index', item.index, 'to', dropIndex);
+    handleReorder(item.index, dropIndex);
+  } else {
+    console.log('🚀 Calling moveEmployee API...');
+    
+    // Move from union or another project
+    moveEmployee({
+      employeeId: item.id,
+      targetProjectId: id,
+      dropIndex,
+      date: selectedDate
+    });
+  }
+  
+  // Reset drop position
+  setDropPosition(null);
+  console.log('✅ DROP COMPLETED');
+}, [id, moveEmployee, dispatch, selectedDate, isEditable, dropPosition, orderedEmployees.length, handleReorder]);
+
   // Configure drop target
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'EMPLOYEE',

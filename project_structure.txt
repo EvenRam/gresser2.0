@@ -1,0 +1,76 @@
+.
+├── PostmanPrimeSoloRoutesv2.json
+├── README.md
+├── database.sql
+├── documentation
+│   └── images
+│       ├── GresserLogo.png
+│       ├── Schedule.png
+│       ├── logo.png
+│       ├── logogresser.png
+│       ├── vscode-debug-bar.png
+│       ├── vscode-toolbar.png
+│       └── websitelogo.jpeg
+├── index.html
+├── package-lock.json
+├── package.json
+├── project_structure.txt
+├── public
+│   ├── README.md
+│   └── favicon.ico
+├── server
+│   ├── constants
+│   │   └── warnings.js
+│   ├── modules
+│   │   ├── authentication-middleware.js
+│   │   ├── encryption.js
+│   │   ├── pool.js
+│   │   └── session-middleware.js
+│   ├── routes
+│   │   ├── addemployee.router.js
+│   │   ├── date-validation.middleware.js
+│   │   ├── jobs.router.js
+│   │   ├── jobshistory.router.js
+│   │   ├── moveemployee.router.js
+│   │   ├── project.router.js
+│   │   ├── schedule.router.js
+│   │   ├── template.router.js
+│   │   └── user.router.js
+│   ├── server.js
+│   └── strategies
+│       └── user.strategy.js
+├── src
+│   ├── components
+│   │   ├── AboutPage
+│   │   ├── AddEmployee
+│   │   ├── App
+│   │   ├── CreateJobs
+│   │   ├── EmployeeStats.js
+│   │   ├── Footer
+│   │   ├── InfoPage
+│   │   ├── JobHistory
+│   │   ├── LandingPage
+│   │   ├── LogOutButton
+│   │   ├── LoginForm
+│   │   ├── LoginPage
+│   │   ├── Nav
+│   │   ├── ProtectedRoute
+│   │   ├── RegisterForm
+│   │   ├── RegisterPage
+│   │   ├── ReportOne
+│   │   ├── SaveDrag
+│   │   ├── Scheduling
+│   │   ├── TemplateClass
+│   │   ├── TemplateFunction
+│   │   ├── Trades
+│   │   └── UserPage
+│   ├── hooks
+│   │   └── useReduxStore.js
+│   ├── index.jsx
+│   └── redux
+│       ├── reducers
+│       ├── sagas
+│       └── store.js
+└── vite.config.js
+
+38 directories, 36 files
