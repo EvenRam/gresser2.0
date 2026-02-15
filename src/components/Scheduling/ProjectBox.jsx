@@ -10,11 +10,12 @@ import '../Scheduling/Scheduling.css';
 const ProjectBox = ({ 
   id, 
   employees = [], 
-  moveEmployee, 
+  moveEmployee,
+  toggleHighlight,  
   job_number,
   job_name,
   rain_day,
-  isEditable // NEW: Explicitly passed prop
+  isEditable 
 }) => {
   const dispatch = useDispatch();
   const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
@@ -85,18 +86,13 @@ const ProjectBox = ({
   }, [orderedEmployees, isEditable]);
   
   // Handle employee highlighting
-  const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
+ // ADD THIS:
+const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     if (!isEditable) return;
     
-    dispatch({ 
-      type: 'SET_HIGHLIGHTED_EMPLOYEE', 
-      payload: { 
-        id: employeeId, 
-        isHighlighted: !currentHighlightState,
-        date: selectedDate
-      }
-    });
-  }, [dispatch, selectedDate, isEditable]);
+    // Call toggleHighlight which updates BOTH database and Redux
+    toggleHighlight(employeeId, !currentHighlightState);
+}, [toggleHighlight, isEditable]);
   
   // Handle employee reordering
   const handleReorder = useCallback(async (fromIndex, toIndex) => {

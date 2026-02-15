@@ -236,25 +236,25 @@ const Scheduling = () => {
 
     // Keep existing highlight toggle
     const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
-        if (!isEditable) return;
+    if (!isEditable) return;
 
-        try {
-            await axios.put(`/api/schedule/${selectedDate}/${employeeId}/highlight`, {
-                isHighlighted
-            });
+    console.log('🚨 toggleHighlight called:', { employeeId, isHighlighted, selectedDate });
 
-            dispatch({
-                type: 'SET_HIGHLIGHTED_EMPLOYEE',
-                payload: {
-                    id: employeeId,
-                    isHighlighted,
-                    date: selectedDate
-                }
-            });
-        } catch (error) {
-            console.error('Error toggling highlight:', error);
-        }
-    }, [dispatch, selectedDate, isEditable]);
+    try {
+        console.log('🚨 About to make API call...');
+        await axios.put(`/api/schedule/${selectedDate}/${employeeId}/highlight`, {
+            isHighlighted
+        });
+        console.log('🚨 API call completed');
+
+        dispatch({
+            type: 'SET_HIGHLIGHTED_EMPLOYEE',
+            payload: { id: employeeId, isHighlighted, date: selectedDate }
+        });
+    } catch (error) {
+        console.error('Error toggling highlight:', error);
+    }
+}, [dispatch, selectedDate, isEditable]);
 
     const handlePrint = useCallback(() => {
         window.print();

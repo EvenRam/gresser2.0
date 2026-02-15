@@ -55,40 +55,45 @@ const employeeReducer = (state = initialState, action) => {
             };
         }
         
-        case 'SET_HIGHLIGHTED_EMPLOYEES': {
-            const { date, highlights } = action.payload;
-            console.log('🔵 SET_HIGHLIGHTED_EMPLOYEES reducer called:', { date, highlights });
-            
-            if (!date || typeof highlights !== 'object') {
-                console.warn('Invalid payload for SET_HIGHLIGHTED_EMPLOYEES');
-                return state;
-            }
-        
-            const existingHighlights = state.highlightedEmployeesByDate[date] || {};
-            console.log('🔵 Existing highlights before merge:', existingHighlights);
-            
-            const mergedHighlights = {
-                ...existingHighlights,
-                ...highlights
-            };
-            
-            console.log('🔵 Merged highlights:', mergedHighlights);
-        
-            return {
-                ...state,
-                highlightedEmployeesByDate: {
-                    ...state.highlightedEmployeesByDate,
-                    [date]: mergedHighlights
-                },
-                employeesByDate: {
-                    ...state.employeesByDate,
-                    [date]: state.employeesByDate[date]?.map((emp) => ({
-                        ...emp,
-                        is_highlighted: !!mergedHighlights[emp.id]
-                    })) || []
-                }
-            };
+        // ADD THIS:
+case 'SET_HIGHLIGHTED_EMPLOYEES': {
+    const { date, highlights } = action.payload;
+    
+    if (!date || typeof highlights !== 'object') {
+        console.warn('Invalid payload for SET_HIGHLIGHTED_EMPLOYEES');
+        return state;
+    }
+
+    // Get existing highlights for this date
+    const existingHighlights = state.highlightedEmployeesByDate[date] || {};
+    
+    // MERGE new highlights with existing ones
+    const mergedHighlights = {
+        ...existingHighlights,  // ← Keep what we have
+        ...highlights           // ← Add new ones
+    };
+    
+    console.log('✅ MERGING highlights:', { 
+        existing: existingHighlights, 
+        new: highlights, 
+        merged: mergedHighlights 
+    });
+
+    return {
+        ...state,
+        highlightedEmployeesByDate: {
+            ...state.highlightedEmployeesByDate,
+            [date]: mergedHighlights  // ← Use merged version!
+        },
+        employeesByDate: {
+            ...state.employeesByDate,
+            [date]: state.employeesByDate[date]?.map((emp) => ({
+                ...emp,
+                is_highlighted: !!mergedHighlights[emp.id]
+            })) || []
         }
+    };
+}
         case 'CLEAR_HIGHLIGHTED_EMPLOYEES': {
             const { date } = action.payload;
             if (!date) return state;
