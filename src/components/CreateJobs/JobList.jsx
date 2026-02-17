@@ -17,7 +17,6 @@ useEffect(()=>{
 const sortedJobs = jobs && Array.isArray(jobs) 
     ? [...jobs].sort((a, b) => a.job_number - b.job_number)
     : [];
-
 return(
     <>
     <div>

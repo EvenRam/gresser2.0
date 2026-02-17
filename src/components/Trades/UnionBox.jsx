@@ -7,7 +7,8 @@ const UnionBox = ({
   id, 
   union_name, 
   color,
-  isEditable 
+  isEditable,
+  toggleHighlight
 }) => {
     const dispatch = useDispatch();
     const selectedDate = useSelector((state) => state.scheduleReducer.selectedDate);
@@ -62,18 +63,13 @@ const UnionBox = ({
     }), [handleDrop, isEditable]);
 
     // Handle employee click for highlighting toggle
-    const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
-        if (!isEditable) return;
-        
-        dispatch({ 
-            type: 'SET_HIGHLIGHTED_EMPLOYEE', 
-            payload: { 
-                id: employeeId, 
-                isHighlighted: !currentHighlightState,
-                date: selectedDate
-            }
-        });
-    }, [dispatch, selectedDate, isEditable]);
+    // ADD THIS:
+const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
+    if (!isEditable) return;
+    
+    // Call toggleHighlight which updates BOTH database and Redux
+    toggleHighlight(employeeId, !currentHighlightState);
+}, [toggleHighlight, isEditable]);
 
     // Get union number for styling
     const unionNumber = union_name.match(/^\d+/)?.[0];
@@ -160,6 +156,7 @@ const UnionBox = ({
                                     isHighlighted={shouldBeHighlighted}
                                     onClick={handleEmployeeClick}
                                     isEditable={isEditable}
+                                    toggleHighlight={toggleHighlight}
                                 />
                             );
                         })
