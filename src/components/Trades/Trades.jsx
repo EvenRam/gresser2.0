@@ -4,7 +4,7 @@ import UnionBox from './UnionBox';
 import unionColors from './UnionColors';
 import './Trades.css';
 
-const Trades = ({ isEditable}) => {
+const Trades = ({ isEditable,toggleHighlight}) => {
     const dispatch = useDispatch();
     const unions = useSelector((state) => state.unionReducer);
     const unionBox = useSelector((state) => state.unionBoxReducer);
@@ -52,6 +52,7 @@ const Trades = ({ isEditable}) => {
                         color={unionColors[union.union_name]} 
                         moveEmployee={moveEmployee}
                         isEditable={isEditable}
+                        toggleHighlight={toggleHighlight}
                     />
                 </div>
             ))}

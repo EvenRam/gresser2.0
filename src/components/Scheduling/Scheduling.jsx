@@ -6,7 +6,7 @@ import './EmployeeStyles.css';
 import './Scheduling.css';
 import DateSchedule from './DateSchedule';
 
-const Scheduling = () => {
+const Scheduling = ({toggleHighlight}) => {
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(true);
     // Add ref for tracking move operations to prevent multiple calls
@@ -234,27 +234,6 @@ const Scheduling = () => {
         setHoverTargetIndex(null);
     }, []);
 
-    // Keep existing highlight toggle
-    const toggleHighlight = useCallback(async (employeeId, isHighlighted) => {
-    if (!isEditable) return;
-
-    console.log('🚨 toggleHighlight called:', { employeeId, isHighlighted, selectedDate });
-
-    try {
-        console.log('🚨 About to make API call...');
-        await axios.put(`/api/schedule/${selectedDate}/${employeeId}/highlight`, {
-            isHighlighted
-        });
-        console.log('🚨 API call completed');
-
-        dispatch({
-            type: 'SET_HIGHLIGHTED_EMPLOYEE',
-            payload: { id: employeeId, isHighlighted, date: selectedDate }
-        });
-    } catch (error) {
-        console.error('Error toggling highlight:', error);
-    }
-}, [dispatch, selectedDate, isEditable]);
 
     const handlePrint = useCallback(() => {
         window.print();
