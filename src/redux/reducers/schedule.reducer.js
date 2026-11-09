@@ -27,17 +27,16 @@ const initialState = {
             // Convert to strings for comparison
             const maxDateStr = maxDate.toISOString().split('T')[0];
             
-            // A date is editable if it's yesterday, today, or a future date within 7 days
-            const todayStr = today.toISOString().split('T')[0];
+            //Editable from 2 days back through 7 days ahead. 
+            // Must match PAST_DAYS_EDITABLE in date-validation.middleware.js
 
-            const isEditable = newDate >= todayStr && newDate <= maxDateStr;
+            const minDate = new Date(today);
+            minDate.setDate(minDate.getDate() - 2);
+            minDate.setHours(12,0,0,0);
+            const minDateStr = minDate.toISOString().split('T')[0];
+            
+            const isEditable = newDate >= minDateStr && newDate <= maxDateStr;
 
-            console.log('Date comparison:', {
-    selectedDate: newDate,
-    today: todayStr,
-    maxDate: maxDateStr,
-    isEditable
-});
         
             return {
                 ...state,
@@ -45,6 +44,13 @@ const initialState = {
                 isEditable,
                 error: null
             };
+            
+            console.log('Date comparison:', {
+    selectedDate: newDate,
+    minDate: minDateStr,
+    maxDate: maxDateStr,
+    isEditable
+});
         }
         
         case 'SET_EMPLOYEES': {

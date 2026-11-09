@@ -99,7 +99,20 @@ const Scheduling = ({toggleHighlight}) => {
 
     // Keep existing finalize handler
     const handleFinalize = useCallback(() => {
-        if (!window.confirm('Are you sure you want to finalize this schedule?')) {
+        const current = new Date(selectedDate + 'T12:00:00');
+        const next = new Date(current);
+        next.setDate(next.getDate() + 1);
+    
+        const opts = {weekday: 'long', month: 'long', day: 'numeric'};
+        const fromLabel = current.toLocaleDateString('en-US', opts);
+        const toLabel = next.toLocaleDateString('en-US',opts);
+
+        const message = 
+        `Carry Forward ${fromLabel} to ${toLabel}?\n\n` +
+        `Everything Currently scheduled on ${toLabel} will be removed and ` +
+        `replace with ${fromLabel}'s schedule. This cannot be undone.`;
+
+        if (!window.confirm(message)){
             return;
         }
         dispatch({
