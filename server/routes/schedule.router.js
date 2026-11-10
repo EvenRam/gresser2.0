@@ -314,7 +314,6 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
     const { isHighlighted } = req.body;
     
     try {
-        await pool.query('BEGIN');
         await pool.query(
             `INSERT INTO schedule 
                 (date, employee_id, is_highlighted, current_location)
@@ -327,10 +326,8 @@ router.put('/:date/:id/highlight', rejectUnauthenticated, validateDate, async (r
             DO UPDATE SET is_highlighted = $3`,
             [date, employeeId, isHighlighted]
         );
-        await pool.query('COMMIT');
         res.sendStatus(204);
     } catch (error) {
-        await pool.query('ROLLBACK');
         console.error('Error updating highlight status:', error);
         res.status(500).send(error.message);
     }

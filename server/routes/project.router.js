@@ -243,8 +243,6 @@ router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, r
     const date = req.validatedDate;
 
     try {
-        await pool.query('BEGIN');
-        
         await pool.query(
             `INSERT INTO project_order (date, job_id, rain_day)
              VALUES ($1, $2, $3)
@@ -253,10 +251,8 @@ router.put('/:jobId/rainday', rejectUnauthenticated, validateDate, async (req, r
             [date, jobId, isRainDay]
         );
 
-        await pool.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
-        await pool.query('ROLLBACK');
         console.error('Error updating rain day status:', error);
         res.status(500).send(error.message);
     }
