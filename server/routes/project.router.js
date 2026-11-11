@@ -137,47 +137,31 @@ router.get('/withEmployees/:date', rejectUnauthenticated, validateDate, async (r
         res.status(500).send('Error fetching jobs with employees');
     }
 });
-// Update project display order
+// Update project display order for one date.
+// Only changes display_order. rain_day and other columns are left alone.
 router.put('/updateProjectOrder', rejectUnauthenticated, validateDate, async (req, res) => {
-    const client = await pool.connect();
     try {
         const { orderedProjectIds } = req.body;
         const date = req.validatedDate;
 
         if (!Array.isArray(orderedProjectIds)) {
-            throw new Error('orderedProjectIds must be an array');
+            return res.status(400).send('orderedProjectIds must be an array');
         }
 
-        await client.query('BEGIN');
+        // One statement = no transaction needed.
+        // unnest turns the array into rows; WITH ORDINALITY numbers them 1, 2, 3...
+        await pool.query(`
+            INSERT INTO project_order (date, job_id, display_order)
+            SELECT $1::date, t.job_id, t.ord - 1
+            FROM unnest($2::int[]) WITH ORDINALITY AS t(job_id, ord)
+            ON CONFLICT (date, job_id)
+            DO UPDATE SET display_order = EXCLUDED.display_order
+        `, [date, orderedProjectIds]);
 
-        // First, lock the entire project_order table for this date
-        // This prevents deadlocks by ensuring consistent lock order
-        await client.query(`
-            LOCK TABLE project_order IN EXCLUSIVE MODE
-        `);
-
-        // Delete all existing orders for this date
-        await client.query(`
-            DELETE FROM project_order 
-            WHERE date = $1
-        `, [date]);
-
-        // Insert new orders
-        for (let i = 0; i < orderedProjectIds.length; i++) {
-            await client.query(`
-                INSERT INTO project_order (date, job_id, display_order)
-                VALUES ($1, $2, $3)
-            `, [date, orderedProjectIds[i], i]);
-        }
-
-        await client.query('COMMIT');
         res.sendStatus(200);
     } catch (error) {
-        await client.query('ROLLBACK');
         console.error('Error updating project order:', error);
         res.status(500).send(error.message);
-    } finally {
-        client.release();
     }
 });
 
