@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useDrop } from 'react-dnd';
@@ -25,6 +24,7 @@ const ProjectBox = ({
   // Remove isEditable from useSelector since it's now a prop
   const [orderedEmployees, setOrderedEmployees] = useState([]);
   const boxRef = useRef(null);
+  const listRef = useRef(null);   // the area that holds the employee names
   const [dropPosition, setDropPosition] = useState(null);
   
   // Sort employees by display_order
@@ -50,40 +50,23 @@ const ProjectBox = ({
     return null;
   }
   
-  // Calculate drop position based on mouse coordinates
+  // Find the drop spot by comparing the mouse to each name's real position on screen
   const calculateDropPosition = useCallback((monitor) => {
-    if (!boxRef.current || !monitor.getClientOffset()) {
-      return orderedEmployees.length;
+    const offset = monitor.getClientOffset();
+    if (!listRef.current || !offset) return 0;
+
+    // Every Employee row has a data-employee-id attribute
+    const rows = listRef.current.querySelectorAll('[data-employee-id]');
+
+    for (let i = 0; i < rows.length; i++) {
+      const rect = rows[i].getBoundingClientRect();
+      // Above the middle of this name = drop before it
+      if (offset.y < rect.top + rect.height / 2) {
+        return i;
+      }
     }
-  
-    const boxRect = boxRef.current.getBoundingClientRect();
-    const clientOffset = monitor.getClientOffset();
-    
-    // Account for the header height
-    const headerHeight = 35;
-    const mouseY = clientOffset.y - boxRect.top - headerHeight;
-    
-    // Get active employees (filtered based on isEditable)
-    const visibleEmployees = orderedEmployees.filter(emp => {
-      // For past dates (not editable): show all employees who were assigned
-      // For current/future dates (editable): only show currently active employees
-      return isEditable ? emp.employee_status === true : true;
-    });
-    
-    // Empty project handling
-    if (visibleEmployees.length === 0) {
-      return 0;
-    }
-    
-    // Use a fixed item height for consistent calculation
-    const ITEM_HEIGHT = 14; // Match the actual height of employee items
-    
-    // Calculate position based on mouse coordinates
-    const calculatedIndex = Math.floor(mouseY / ITEM_HEIGHT);
-    
-    // Ensure index is within bounds
-    return Math.max(0, Math.min(calculatedIndex, visibleEmployees.length));
-  }, [orderedEmployees, isEditable]);
+    return rows.length;   // below every name = drop at the end
+  }, []);
   
   // Handle employee highlighting
  // ADD THIS:
@@ -94,51 +77,31 @@ const handleEmployeeClick = useCallback((employeeId, currentHighlightState) => {
     toggleHighlight(employeeId, !currentHighlightState);
 }, [toggleHighlight, isEditable]);
   
-  // Handle employee reordering
-  const handleReorder = useCallback(async (fromIndex, toIndex) => {
-    if (!isEditable || fromIndex === toIndex) return;
-    
-    try {
-      // Create a new array with the updated order
-      const newOrder = [...orderedEmployees];
-      const [movedEmployee] = newOrder.splice(fromIndex, 1);
-      newOrder.splice(toIndex, 0, movedEmployee);
-      
-      // Update the local state first for immediate UI feedback
-      setOrderedEmployees(newOrder);
-      
-      // Extract only active employees (based on current date rules)
-      const activeEmployees = newOrder.filter(emp => {
-        return isEditable ? emp.employee_status === true : true;
-      });
-      
-      // Create an array of just the employee IDs
-      const orderedEmployeeIds = activeEmployees.map(emp => emp.id);
-      
-      // Make sure we have valid IDs
-      if (!orderedEmployeeIds.length) {
-        console.warn('No valid employee IDs for reordering');
-        return;
+  // Move one employee within this box, then save the new order once
+  const handleReorder = useCallback((fromIndex, toIndex) => {
+    if (!isEditable) return;
+
+    // Work from the same list the user sees (active employees only)
+    const visible = orderedEmployees.filter(emp => emp.employee_status === true);
+
+    // Moving down: removing the employee shifts everyone below up one spot
+    const target = fromIndex < toIndex ? toIndex - 1 : toIndex;
+    if (fromIndex === target) return;   // dropped where it already was
+
+    const newOrder = [...visible];
+    const [moved] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(target, 0, moved);
+
+    setOrderedEmployees(newOrder);      // update the screen right away
+
+    dispatch({
+      type: 'UPDATE_EMPLOYEE_ORDER',
+      payload: {
+        projectId: id,
+        orderedEmployeeIds: newOrder.map(emp => emp.id),
+        date: selectedDate
       }
-      
-      // Dispatch the action to update the order
-      dispatch({
-        type: 'UPDATE_EMPLOYEE_ORDER',
-        payload: {
-          projectId: id,
-          orderedEmployeeIds,
-          date: selectedDate
-        }
-      });
-    } catch (error) {
-      console.error('Error reordering employees:', error);
-      
-      // Refresh from server on error
-      dispatch({
-        type: 'FETCH_PROJECTS_WITH_EMPLOYEES',
-        payload: { date: selectedDate }
-      });
-    }
+    });
   }, [orderedEmployees, id, dispatch, selectedDate, isEditable]);
   
   // Handle employee drop
@@ -253,7 +216,7 @@ const handleDrop = useCallback((item) => {
   {job_number} - {job_name}
 </h4>
       
-      <div style={{ 
+      <div ref={listRef} style={{ 
         flex: 1, 
         marginBottom: '10px',
         position: 'relative'

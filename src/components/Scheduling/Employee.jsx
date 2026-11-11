@@ -51,48 +51,7 @@ const Employee = ({
       // Only allow drops from same project (for reordering)
       return item.projectId === projectId && item.id !== actualId;
     },
-    hover: (item, monitor) => {
-      if (!ref.current || !projectId) return;
-      if (item.projectId !== projectId) return;
-      if (typeof onReorder !== 'function') return;
-      
-      const dragIndex = item.index;
-      const hoverIndex = index;
-      
-      // Don't replace items with themselves
-      if (dragIndex === hoverIndex) return;
-      
-      // Determine rectangle on screen
-      const hoverBoundingRect = ref.current.getBoundingClientRect();
-      
-      // Get vertical middle
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      
-      // Determine mouse position
-      const clientOffset = monitor.getClientOffset();
-      
-      // Get pixels to the top
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-      
-      // Dragging downwards
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-        return;
-      }
-      
-      // Dragging upwards
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-        return;
-      }
-      
-      // Time to actually perform the action
-      onReorder(dragIndex, hoverIndex);
-      
-      // Note: we're mutating the monitor item here!
-      // Generally it's better to avoid mutations,
-      // but it's good here for the sake of performance
-      // to avoid expensive index searches.
-      item.index = hoverIndex;
-    },
+    //Reordering is handled once,on drop, in Projectbox.jsx
     collect: (monitor) => ({
       isOver: monitor.isOver({ shallow: true })
     }),
